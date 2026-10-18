@@ -1,0 +1,64 @@
+import { checkAdminSecret } from "../../_lib/auth.js";
+
+function docShape(d) {
+  return {
+    id: d.id,
+    field: d.field,
+    label: d.label || d.field,
+    filename: d.filename,
+    status: d.status,
+    reviewNote: d.review_note,
+    uploadedAt: d.uploaded_at,
+  };
+}
+
+export async function onRequestGet(context) {
+  const { request, env } = context;
+  if (!checkAdminSecret(request, env)) return Response.json({ error: "unauthorized" }, { status: 401 });
+  if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
+
+  const url = new URL(request.url);
+  const id = Number(url.searchParams.get("id"));
+  if (!id) return Response.json({ error: "invalid_id" }, { status: 400 });
+
+  const partner = await env.DB.prepare(
+    `SELECT id, email, company_name, contact_name, phone, country, country_name, status, admin_note, created_at, activated_at
+     FROM partners WHERE id = ?`
+  ).bind(id).first();
+  if (!partner) return Response.json({ error: "not_found" }, { status: 404 });
+
+  const [vehiclesRes, driversRes, documentsRes] = await Promise.all([
+    env.DB.prepare("SELECT id, plate, category FROM vehicles WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
+    env.DB.prepare("SELECT id, full_name FROM drivers WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
+    env.DB.prepare(
+      "SELECT id, owner_type, owner_id, field, label, filename, status, review_note, uploaded_at FROM documents WHERE partner_id = ? ORDER BY uploaded_at DESC"
+    ).bind(id).all(),
+  ]);
+
+  const docs = documentsRes.results || [];
+  const byOwner = (type, oid) => docs.filter((d) => d.owner_type === type && (oid == null ? d.owner_id == null : d.owner_id === oid)).map(docShape);
+
+  const vehicles = (vehiclesRes.results || []).map((v) => ({ id: v.id, plate: v.plate, category: v.category, documents: byOwner("vehicle", v.id) }));
+  const drivers = (driversRes.results || []).map((d) => ({ id: d.id, fullName: d.full_name, documents: byOwner("driver", d.id) }));
+
+  return Response.json({
+    ok: true,
+    partner: {
+      id: partner.id,
+      email: partner.email,
+      companyName: partner.company_name,
+      contactName: partner.contact_name,
+      phone: partner.phone,
+      country: partner.country,
+      countryName: partner.country_name,
+      status: partner.status,
+      adminNote: partner.admin_note,
+      createdAt: partner.created_at,
+      activatedAt: partner.activated_at,
+    },
+    company: { documents: byOwner("company", null) },
+    other: { documents: byOwner("other", null) },
+    vehicles,
+    drivers,
+  });
+}

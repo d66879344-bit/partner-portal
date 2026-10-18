@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+  .orow { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface-2); margin-bottom: 10px; }
+  .orow-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .orow-route { font-weight: 600; }
+  .orow-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+  .orow-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .minibtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 8px 14px; min-height: 38px; cursor: pointer; font-weight: 600; font-size: 13px; }
+  .minibtn.accept { background: var(--good); color: #fff; border-color: var(--good); }
+  .minibtn.decline { background: var(--crit); color: #fff; border-color: var(--crit); }
+  .docrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .docrow:first-child { border-top: 0; }
+  .docrow-main { font-size: 13px; }
+  .docrow-main a { color: var(--focus); }
+  .block { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+  .block:first-of-type { margin-top: 10px; }
+  .block-title { font-weight: 600; margin-bottom: 6px; }
+  .addrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .addrow select, .addrow input[type=text] { min-height: 36px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 8px; }
+  .addform { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-top: 14px; }
+  .addform .field { margin-bottom: 0; min-width: 160px; flex: 1 1 160px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="head">
+    <span class="eyebrow">Partner portal</span>
+    <h1>Dashboard</h1>
+  </header>
+
+  <div class="navbar">
+    <span class="who">Signed in as <b id="whoCompany">…</b></span>
+    <button type="button" class="minibtn" id="logoutBtn">Log out</button>
+  </div>
+
+  <div class="card" id="pendingBanner" hidden style="border-color:#E8C65A;background:#FDF6E0;margin-bottom:18px;padding:14px 18px;">
+    <strong>Your documents are still under review.</strong>
+    <span style="color:var(--ink-2);">You can use your dashboard, but you won't receive orders until an admin activates your account.</span>
+  </div>
+
+  <div class="tabs" role="tablist" id="mainTabs">
+    <button type="button" class="tab" data-tab="orders" aria-pressed="true">Orders</button>
+    <button type="button" class="tab" data-tab="fleet" aria-pressed="false">Fleet &amp; Documents</button>
+    <button type="button" class="tab" data-tab="account" aria-pressed="false">Account</button>
+  </div>
+
+  <section class="card panel active" id="panel-orders">
+    <h2>Your orders</h2>
+    <p class="sub" style="color:var(--ink-2);font-size:13px;margin:4px 0 14px;">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
+    <div class="tabs" role="tablist" id="orderTabs" style="margin-bottom:12px;">
+      <button type="button" class="tab" data-order-tab="new" aria-pressed="true">New</button>
+      <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">Accepted</button>
+    </div>
+    <p class="status" id="ordersStatus"></p>
+    <div id="ordersList"></div>
+  </section>
+
+  <section class="card panel" id="panel-fleet">
+    <h2>Company documents</h2>
+    <div id="companyDocs"></div>
+
+    <h2 style="margin-top:28px;">Vehicles</h2>
+    <div id="vehiclesList"></div>
+    <div class="addform">
+      <div class="field"><label for="newPlate">Plate number</label><input type="text" id="newPlate"></div>
+      <div class="field"><label for="newCategory">Category <span class="hint">optional</span></label><input type="text" id="newCategory" placeholder="e.g. Economy Sedan"></div>
+      <button type="button" class="minibtn" id="addVehicleBtn">Add vehicle</button>
+    </div>
+
+    <h2 style="margin-top:28px;">Drivers</h2>
+    <div id="driversList"></div>
+    <div class="addform">
+      <div class="field"><label for="newDriver">Driver name</label><input type="text" id="newDriver"></div>
+      <button type="button" class="minibtn" id="addDriverBtn">Add driver</button>
+    </div>
+
+    <h2 style="margin-top:28px;">Other documents</h2>
+    <div id="otherDocs"></div>
+  </section>
+
+  <section class="card panel" id="panel-account">
+    <h2>Account</h2>
+    <div class="field"><label>Email</label><div id="acctEmail"></div></div>
+    <div class="field"><label>Company</label><div id="acctCompany"></div></div>
+    <div class="field"><label>Country</label><div id="acctCountry"></div></div>
+    <div class="field"><label>Status</label><div id="acctStatus"></div></div>
+    <div class="field"><label>Member since</label><div id="acctSince"></div></div>
+  </section>
+</div>
+
+<script src="/assets/doc-defs.js"></script>
+<script src="/assets/partner-dashboard.js"></script>
+</body>
+</html>

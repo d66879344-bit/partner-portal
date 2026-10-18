@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner CRM Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+  .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .row { padding: 12px 0; border-top: 1px solid var(--line); }
+  .row:first-child { border-top: 0; }
+  .row-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; cursor: pointer; }
+  .row-title { font-weight: 600; }
+  .row-meta { font-size: 13px; color: var(--ink-2); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .toolbar select, .toolbar input { min-height: 38px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface-2); padding: 6px 10px; }
+  .detail { margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); display: none; }
+  .detail.open { display: block; }
+  .block { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .block:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
+  .block-title { font-weight: 600; margin-bottom: 6px; }
+  .docrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .docrow:first-child { border-top: 0; }
+  .docrow-main a { color: var(--focus); }
+  .docrow-actions { display: flex; gap: 6px; }
+  .minibtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 6px 10px; min-height: 32px; cursor: pointer; font-weight: 600; font-size: 12px; }
+  .minibtn.good { background: var(--good); color: #fff; border-color: var(--good); }
+  .minibtn.crit { background: var(--crit); color: #fff; border-color: var(--crit); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .addform { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px; }
+  .addform .field { margin-bottom: 0; min-width: 140px; flex: 1 1 140px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <span class="eyebrow">Admin</span>
+    <h1>Partner CRM</h1>
+    <p class="lede">Review partner documents and activate accounts, and create &amp; assign orders to a specific partner.</p>
+  </header>
+
+  <section class="card" id="gate">
+    <div class="field">
+      <label for="secret">Admin password</label>
+      <input type="text" id="secret" autocomplete="off">
+    </div>
+    <button type="button" class="btn" id="unlock">Sign in</button>
+    <p class="status err" id="gateStatus"></p>
+  </section>
+
+  <div id="panelsWrap" hidden>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" data-tab="partners" aria-pressed="true">Partners</button>
+      <button type="button" class="tab" data-tab="orders" aria-pressed="false">Orders</button>
+    </div>
+
+    <section class="card panel active" id="panel-partners">
+      <div class="toolbar">
+        <select id="fStatus">
+          <option value="">All statuses</option>
+          <option value="pending">Pending review</option>
+          <option value="active">Active</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <input type="text" id="fSearch" placeholder="Search company / email">
+      </div>
+      <p class="status" id="partnersStatus"></p>
+      <ul class="list" id="partnersList"></ul>
+    </section>
+
+    <section class="card panel" id="panel-orders">
+      <h2>Create order</h2>
+      <div class="addform">
+        <div class="field"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
+        <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
+        <div class="field"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
+        <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
+        <div class="field"><label for="opTime">Time</label><input type="time" id="opTime"></div>
+        <div class="field"><label for="opVehicle">Vehicle type</label><input type="text" id="opVehicle" placeholder="e.g. Economy Sedan"></div>
+        <div class="field"><label for="opPassengers">Passengers</label><input type="text" id="opPassengers" inputmode="numeric"></div>
+        <div class="field"><label for="opPrice">Price</label><input type="text" id="opPrice" inputmode="decimal"></div>
+        <div class="field"><label for="opCurrency">Currency</label><input type="text" id="opCurrency" value="EUR"></div>
+        <div class="field" style="flex:2 1 260px;"><label for="opNotes">Notes</label><input type="text" id="opNotes"></div>
+        <button type="button" class="minibtn good" id="createOrderBtn">Create &amp; assign</button>
+      </div>
+      <p class="status" id="createOrderStatus"></p>
+
+      <h2>All orders</h2>
+      <div class="toolbar">
+        <select id="fOrderStatus">
+          <option value="">All statuses</option>
+          <option value="offered">Offered</option>
+          <option value="accepted">Accepted</option>
+          <option value="declined">Declined</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <input type="text" id="fOrderSearch" placeholder="Search partner / route">
+      </div>
+      <p class="status" id="ordersStatus"></p>
+      <ul class="list" id="ordersList"></ul>
+    </section>
+  </div>
+</div>
+
+<script src="/assets/admin-crm.js"></script>
+</body>
+</html>
