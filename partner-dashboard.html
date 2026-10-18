@@ -9,11 +9,21 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="/assets/style.css">
 <style>
-  .orow { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface-2); margin-bottom: 10px; }
+  .orow { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface-2); margin-bottom: 10px; cursor: pointer; }
+  .orow:hover { border-color: var(--line-strong); }
   .orow-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
   .orow-route { font-weight: 600; }
   .orow-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
   .orow-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .modal-wide { max-width: 520px; max-height: 86vh; overflow-y: auto; }
+  .modal-wide h2 { margin-bottom: 14px; }
+  .om-row { padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .om-row:first-of-type { border-top: 0; }
+  .om-label { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
+  .om-contact { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .om-contact a { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 999px; background: var(--accent); color: var(--on-accent); text-decoration: none; font-size: 15px; margin-left: 6px; }
+  .om-close { position: absolute; top: 14px; right: 16px; background: none; border: 0; font-size: 22px; line-height: 1; cursor: pointer; color: var(--ink-2); }
+  .modal { position: relative; }
   .minibtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 8px 14px; min-height: 38px; cursor: pointer; font-weight: 600; font-size: 13px; }
   .minibtn.accept { background: var(--good); color: #fff; border-color: var(--good); }
   .minibtn.decline { background: var(--crit); color: #fff; border-color: var(--crit); }
@@ -66,6 +76,14 @@
     <p class="status" id="ordersStatus"></p>
     <div id="ordersList"></div>
   </section>
+
+  <div class="modal-backdrop" id="orderModalBackdrop" hidden>
+    <div class="modal modal-wide">
+      <button type="button" class="om-close" id="orderModalClose" aria-label="Close">&times;</button>
+      <h2 id="omTitle">Order</h2>
+      <div id="omBody"></div>
+    </div>
+  </div>
 
   <section class="card panel" id="panel-fleet">
     <h2>Company documents</h2>

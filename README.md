@@ -10,7 +10,10 @@ GitHub repo, different Cloudflare Pages project, its own R2 bucket and its own d
 - `/login.html` — partner sign-in.
 - `/partner-dashboard.html` — partner's own view:
   - **Orders** tab, split into **New** (awaiting Accept/Decline) and **Accepted** (history —
-    accepted / declined / completed / cancelled, each showing its status)
+    accepted / declined / completed / cancelled, each showing its status). Click any order
+    card to open its full details (flight number, passenger name/phone with call & SMS
+    links, passengers/luggage, meet & greet, instructions) and optionally assign one of
+    your own registered drivers/vehicles to it.
   - **Fleet & Documents** tab — vehicles, drivers, documents with approval status; can add
     more vehicles/drivers and documents any time
   - **Account** tab
@@ -20,8 +23,12 @@ GitHub repo, different Cloudflare Pages project, its own R2 bucket and its own d
     the account to active — you click **Activate account** once you're satisfied; this is
     what lets that partner start receiving orders. **Block account** prevents sign-in
     entirely (for abuse/fraud cases).
-  - **Orders** tab — create an order and assign it to one specific partner (only active
-    partners are selectable), see all orders, mark **Completed** or **Cancel**.
+  - **Orders** tab — create an order with full trip details (flight number, passenger
+    name/phone, passengers/luggage, vehicle type from a dropdown, meet & greet, instructions)
+    and assign it to one specific partner (only active partners are selectable); you can
+    optionally also pre-assign one of that partner's own registered drivers/vehicles. Click
+    any order in **All orders** to see full details, reassign the driver/vehicle, or mark
+    it **Completed** / **Cancel**.
 
 Orders are never broadcast to a pool — each one is assigned to exactly one partner and only
 they see it.

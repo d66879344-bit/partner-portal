@@ -78,13 +78,20 @@
         <div class="field"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
         <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
         <div class="field"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
+        <div class="field"><label for="opFlight">Flight number <span class="hint">optional</span></label><input type="text" id="opFlight"></div>
         <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
         <div class="field"><label for="opTime">Time</label><input type="time" id="opTime"></div>
-        <div class="field"><label for="opVehicle">Vehicle type</label><input type="text" id="opVehicle" placeholder="e.g. Economy Sedan"></div>
+        <div class="field"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
         <div class="field"><label for="opPassengers">Passengers</label><input type="text" id="opPassengers" inputmode="numeric"></div>
+        <div class="field"><label for="opLuggage">Luggage <span class="hint">optional</span></label><input type="text" id="opLuggage" inputmode="numeric"></div>
+        <div class="field"><label for="opPassengerName">Passenger name</label><input type="text" id="opPassengerName"></div>
+        <div class="field"><label for="opPassengerPhone">Passenger phone</label><input type="text" id="opPassengerPhone"></div>
+        <div class="field"><label for="opDriver">Driver <span class="hint">optional</span></label><select id="opDriver"><option value="">Pick a partner first</option></select></div>
+        <div class="field"><label for="opVehicle">Vehicle <span class="hint">optional</span></label><select id="opVehicle"><option value="">Pick a partner first</option></select></div>
         <div class="field"><label for="opPrice">Price</label><input type="text" id="opPrice" inputmode="decimal"></div>
         <div class="field"><label for="opCurrency">Currency</label><input type="text" id="opCurrency" value="EUR"></div>
-        <div class="field" style="flex:2 1 260px;"><label for="opNotes">Notes</label><input type="text" id="opNotes"></div>
+        <div class="field" style="flex:2 1 260px;"><label for="opMeetGreet">Meet &amp; greet <span class="hint">optional</span></label><input type="text" id="opMeetGreet" placeholder="e.g. Meet at arrival hall with name sign"></div>
+        <div class="field" style="flex:2 1 260px;"><label for="opNotes">Additional instructions <span class="hint">optional</span></label><input type="text" id="opNotes"></div>
         <button type="button" class="minibtn good" id="createOrderBtn">Create &amp; assign</button>
       </div>
       <p class="status" id="createOrderStatus"></p>
@@ -107,6 +114,7 @@
   </div>
 </div>
 
+<script src="/assets/order-defs.js"></script>
 <script src="/assets/admin.js"></script>
 </body>
 </html>

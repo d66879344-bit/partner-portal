@@ -7,6 +7,7 @@
 
   var me = null;
   var lastOrders = [];
+  var myFleet = { vehicles: [], drivers: [] };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -102,30 +103,121 @@
           '<button type="button" class="minibtn decline" data-decline="' + o.id + '">Decline</button>' +
           "</div>"
         : "";
-      return '<div class="orow">' +
+      return '<div class="orow" data-order-open="' + o.id + '">' +
         '<div class="orow-top"><span class="orow-route">' + esc(o.pickup) + " → " + esc(o.dropoff) + "</span>" + badge(o.status) + "</div>" +
-        '<div class="orow-meta">' + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") +
+        '<div class="orow-meta">#' + o.id + " · " + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") +
         (o.vehicleType ? " · " + esc(o.vehicleType) : "") +
         (o.passengers ? " · " + esc(o.passengers) + " pax" : "") +
         (o.price ? " · " + esc(o.price) + " " + esc(o.currency || "") : "") + "</div>" +
-        (o.notes ? '<div class="orow-meta">' + esc(o.notes) + "</div>" : "") +
+        (o.passengerName ? '<div class="orow-meta">' + esc(o.passengerName) + "</div>" : "") +
         actions + "</div>";
     }).join("");
   }
   $("ordersList").addEventListener("click", async function (e) {
     var acc = e.target.closest("[data-accept]");
     var dec = e.target.closest("[data-decline]");
+    if (acc || dec) {
+      e.stopPropagation();
+      var id = (acc || dec).getAttribute(acc ? "data-accept" : "data-decline");
+      var btn = acc || dec;
+      btn.disabled = true;
+      try {
+        await api("/api/partner/respond", { method: "POST", json: true, body: JSON.stringify({ id: Number(id), action: acc ? "accept" : "decline" }) });
+        loadOrders();
+      } catch (err) {
+        btn.disabled = false;
+        $("ordersStatus").textContent = "Could not update the order. Try again.";
+        $("ordersStatus").className = "status err";
+      }
+      return;
+    }
+    var open = e.target.closest("[data-order-open]");
+    if (open) openOrderModal(Number(open.getAttribute("data-order-open")));
+  });
+
+  /* ---------- order detail modal ---------- */
+  function fleetOptionsHtml(list, labelFn, selectedId) {
+    var opts = '<option value="">— not assigned —</option>';
+    opts += list.map(function (x) {
+      return '<option value="' + x.id + '"' + (selectedId === x.id ? " selected" : "") + ">" + esc(labelFn(x)) + "</option>";
+    }).join("");
+    return opts;
+  }
+
+  function openOrderModal(id) {
+    var o = lastOrders.filter(function (x) { return x.id === id; })[0];
+    if (!o) return;
+    $("omTitle").textContent = "Order #" + o.id;
+
+    var contactHtml = o.passengerPhone
+      ? '<div class="om-row om-contact"><div><div class="om-label">Passenger</div>' + esc(o.passengerName || "—") + "</div>" +
+        '<div><a href="tel:' + esc(o.passengerPhone) + '" title="Call">☎</a>' +
+        '<a href="sms:' + esc(o.passengerPhone) + '" title="Message">✉</a></div></div>' +
+        '<div class="om-row">' + esc(o.passengerPhone) + "</div>"
+      : '<div class="om-row"><div class="om-label">Passenger</div>' + esc(o.passengerName || "—") + "</div>";
+
+    var body =
+      '<div class="om-row"><div class="om-label">Status</div>' + badge(o.status) + "</div>" +
+      '<div class="om-row"><div class="om-label">Pickup</div>' + esc(o.pickup) + (o.flightNumber ? " · Flight " + esc(o.flightNumber) : "") + "</div>" +
+      '<div class="om-row"><div class="om-label">Dropoff</div>' + esc(o.dropoff) + "</div>" +
+      '<div class="om-row"><div class="om-label">Date &amp; time</div>' + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</div>" +
+      '<div class="om-row"><div class="om-label">Vehicle type</div>' + esc(o.vehicleType || "—") + "</div>" +
+      '<div class="om-row"><div class="om-label">Passengers / luggage</div>' + esc(o.passengers != null ? o.passengers : "—") + " / " + esc(o.luggage != null ? o.luggage : "—") + "</div>" +
+      contactHtml +
+      (o.meetGreet ? '<div class="om-row"><div class="om-label">Meet &amp; greet</div>' + esc(o.meetGreet) + "</div>" : "") +
+      (o.notes ? '<div class="om-row"><div class="om-label">Additional instructions</div>' + esc(o.notes) + "</div>" : "") +
+      (o.price ? '<div class="om-row"><div class="om-label">Price</div>' + esc(o.price) + " " + esc(o.currency || "") + "</div>" : "") +
+      '<div class="om-row"><div class="om-label">Your driver &amp; vehicle</div>' +
+      '<div class="addrow" style="margin-top:6px;">' +
+      '<select id="omDriver">' + fleetOptionsHtml(myFleet.drivers, function (d) { return d.fullName || ("Driver #" + d.id); }, o.driverId) + "</select>" +
+      '<select id="omVehicle">' + fleetOptionsHtml(myFleet.vehicles, function (v) { return v.plate || ("Vehicle #" + v.id); }, o.vehicleId) + "</select>" +
+      '<button type="button" class="minibtn" id="omSaveAssign">Save</button>' +
+      "</div><p class=\"status\" id=\"omAssignStatus\"></p></div>" +
+      (o.status === "offered"
+        ? '<div class="om-row" style="display:flex;gap:8px;">' +
+          '<button type="button" class="minibtn accept" data-accept="' + o.id + '">Accept</button>' +
+          '<button type="button" class="minibtn decline" data-decline="' + o.id + '">Decline</button>' +
+          "</div>"
+        : "");
+
+    $("omBody").innerHTML = body;
+    $("orderModalBackdrop").hidden = false;
+
+    $("omSaveAssign").addEventListener("click", async function () {
+      this.disabled = true;
+      try {
+        await api("/api/partner/order-assign", {
+          method: "POST", json: true,
+          body: JSON.stringify({ id: o.id, driverId: $("omDriver").value || null, vehicleId: $("omVehicle").value || null })
+        });
+        $("omAssignStatus").textContent = "Saved.";
+        $("omAssignStatus").className = "status ok";
+        loadOrders();
+      } catch (e) {
+        $("omAssignStatus").textContent = "Could not save. Try again.";
+        $("omAssignStatus").className = "status err";
+      } finally {
+        this.disabled = false;
+      }
+    });
+  }
+
+  function closeOrderModal() { $("orderModalBackdrop").hidden = true; }
+  $("orderModalClose").addEventListener("click", closeOrderModal);
+  $("orderModalBackdrop").addEventListener("click", async function (e) {
+    if (e.target === $("orderModalBackdrop")) { closeOrderModal(); return; }
+    var acc = e.target.closest("[data-accept]");
+    var dec = e.target.closest("[data-decline]");
     if (!acc && !dec) return;
-    var id = (acc || dec).getAttribute(acc ? "data-accept" : "data-decline");
+    var id = Number((acc || dec).getAttribute(acc ? "data-accept" : "data-decline"));
     var btn = acc || dec;
     btn.disabled = true;
     try {
-      await api("/api/partner/respond", { method: "POST", json: true, body: JSON.stringify({ id: Number(id), action: acc ? "accept" : "decline" }) });
+      await api("/api/partner/respond", { method: "POST", json: true, body: JSON.stringify({ id: id, action: acc ? "accept" : "decline" }) });
+      closeOrderModal();
       loadOrders();
     } catch (err) {
       btn.disabled = false;
-      $("ordersStatus").textContent = "Could not update the order. Try again.";
-      $("ordersStatus").className = "status err";
     }
   });
 
@@ -154,6 +246,7 @@
   async function loadFleet() {
     var data = await api("/api/partner/fleet");
     var country = me ? me.country : null;
+    myFleet = { vehicles: data.vehicles || [], drivers: data.drivers || [] };
 
     $("companyDocs").innerHTML = docListHtml(data.company.documents) + addFormHtml("company", null, slotsFor(country, "company"));
     $("otherDocs").innerHTML = docListHtml(data.other.documents) + addFormHtml("other", null, [{ id: "document", label: "Document" }]);

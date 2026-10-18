@@ -6,9 +6,14 @@ export async function onRequestGet(context) {
   if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
 
   const { results } = await env.DB.prepare(
-    `SELECT o.id, o.partner_id, p.company_name, o.pickup, o.dropoff, o.order_date, o.order_time, o.vehicle_type,
-            o.passengers, o.price, o.currency, o.notes, o.status, o.created_at, o.responded_at
-     FROM orders o JOIN partners p ON p.id = o.partner_id
+    `SELECT o.id, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.order_date, o.order_time,
+            o.vehicle_type, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet,
+            o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
+            o.price, o.currency, o.notes, o.status, o.created_at, o.responded_at
+     FROM orders o
+     JOIN partners p ON p.id = o.partner_id
+     LEFT JOIN drivers dr ON dr.id = o.driver_id
+     LEFT JOIN vehicles v ON v.id = o.vehicle_id
      ORDER BY o.order_date DESC, o.order_time DESC`
   ).all();
 
@@ -18,10 +23,19 @@ export async function onRequestGet(context) {
     companyName: o.company_name,
     pickup: o.pickup,
     dropoff: o.dropoff,
+    flightNumber: o.flight_number,
     orderDate: o.order_date,
     orderTime: o.order_time,
     vehicleType: o.vehicle_type,
     passengers: o.passengers,
+    luggage: o.luggage,
+    passengerName: o.passenger_name,
+    passengerPhone: o.passenger_phone,
+    meetGreet: o.meet_greet,
+    driverId: o.driver_id,
+    driverName: o.driver_name,
+    vehicleId: o.vehicle_id,
+    vehiclePlate: o.vehicle_plate,
     price: o.price,
     currency: o.currency,
     notes: o.notes,
@@ -43,13 +57,20 @@ export async function onRequestPost(context) {
     const partnerId = Number(body.partnerId);
     const pickup = (body.pickup || "").toString().trim().slice(0, 200);
     const dropoff = (body.dropoff || "").toString().trim().slice(0, 200);
+    const flightNumber = (body.flightNumber || "").toString().trim().slice(0, 30);
     const orderDate = (body.orderDate || "").toString().trim().slice(0, 20);
     const orderTime = (body.orderTime || "").toString().trim().slice(0, 10);
     const vehicleType = (body.vehicleType || "").toString().trim().slice(0, 80);
     const passengers = body.passengers ? Number(body.passengers) : null;
+    const luggage = body.luggage ? Number(body.luggage) : null;
+    const passengerName = (body.passengerName || "").toString().trim().slice(0, 120);
+    const passengerPhone = (body.passengerPhone || "").toString().trim().slice(0, 40);
+    const meetGreet = (body.meetGreet || "").toString().trim().slice(0, 500);
     const price = (body.price || "").toString().trim().slice(0, 30);
     const currency = (body.currency || "EUR").toString().trim().slice(0, 10) || "EUR";
     const notes = (body.notes || "").toString().trim().slice(0, 1000);
+    let driverId = body.driverId ? Number(body.driverId) : null;
+    let vehicleId = body.vehicleId ? Number(body.vehicleId) : null;
 
     if (!partnerId || !pickup || !dropoff || !orderDate) {
       return Response.json({ error: "invalid_request" }, { status: 400 });
@@ -59,10 +80,26 @@ export async function onRequestPost(context) {
     if (!partner) return Response.json({ error: "partner_not_found" }, { status: 404 });
     if (partner.status !== "active") return Response.json({ error: "partner_not_active" }, { status: 409 });
 
+    // A driver/vehicle, if given, must belong to this same partner.
+    if (driverId) {
+      const d = await env.DB.prepare("SELECT id FROM drivers WHERE id = ? AND partner_id = ?").bind(driverId, partnerId).first();
+      if (!d) driverId = null;
+    }
+    if (vehicleId) {
+      const v = await env.DB.prepare("SELECT id FROM vehicles WHERE id = ? AND partner_id = ?").bind(vehicleId, partnerId).first();
+      if (!v) vehicleId = null;
+    }
+
     const r = await env.DB.prepare(
-      `INSERT INTO orders (partner_id, pickup, dropoff, order_date, order_time, vehicle_type, passengers, price, currency, notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
-    ).bind(partnerId, pickup, dropoff, orderDate, orderTime, vehicleType, passengers, price, currency, notes).run();
+      `INSERT INTO orders (partner_id, pickup, dropoff, flight_number, order_date, order_time, vehicle_type,
+                            passengers, luggage, passenger_name, passenger_phone, meet_greet, driver_id, vehicle_id,
+                            price, currency, notes, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
+    ).bind(
+      partnerId, pickup, dropoff, flightNumber, orderDate, orderTime, vehicleType,
+      passengers, luggage, passengerName, passengerPhone, meetGreet, driverId, vehicleId,
+      price, currency, notes
+    ).run();
 
     return Response.json({ ok: true, id: r.meta.last_row_id });
   } catch (e) {
