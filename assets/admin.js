@@ -135,10 +135,12 @@
     }
 
     var vehicleBlocks = d.vehicles.map(function (v, i) {
-      return '<div class="block"><div class="block-title">Vehicle ' + (i + 1) + (v.plate ? " — " + esc(v.plate) : "") + (v.category ? " (" + esc(v.category) + ")" : "") + "</div>" + docList(v.documents) + "</div>";
+      var sub = [v.make, v.category].filter(Boolean).join(", ");
+      return '<div class="block"><div class="block-title">Vehicle ' + (i + 1) + (v.plate ? " — " + esc(v.plate) : "") + (sub ? " (" + esc(sub) + ")" : "") + "</div>" + docList(v.documents) + "</div>";
     }).join("");
     var driverBlocks = d.drivers.map(function (dr, i) {
-      return '<div class="block"><div class="block-title">Driver ' + (i + 1) + (dr.fullName ? " — " + esc(dr.fullName) : "") + "</div>" + docList(dr.documents) + "</div>";
+      var sub = [dr.phone, dr.language].filter(Boolean).join(" · ");
+      return '<div class="block"><div class="block-title">Driver ' + (i + 1) + (dr.fullName ? " — " + esc(dr.fullName) : "") + (sub ? " (" + esc(sub) + ")" : "") + "</div>" + docList(dr.documents) + "</div>";
     }).join("");
 
     el.innerHTML =

@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   partner_id INTEGER NOT NULL REFERENCES partners(id),
   plate TEXT,
   category TEXT,
+  make TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -34,6 +35,8 @@ CREATE TABLE IF NOT EXISTS drivers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   partner_id INTEGER NOT NULL REFERENCES partners(id),
   full_name TEXT,
+  phone TEXT,
+  language TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

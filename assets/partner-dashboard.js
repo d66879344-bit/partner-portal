@@ -7,7 +7,7 @@
 
   var me = null;
   var lastOrders = [];
-  var myFleet = { vehicles: [], drivers: [] };
+  var myFleet = { company: { documents: [] }, other: { documents: [] }, vehicles: [], drivers: [] };
   var STAGES = [
     { key: "on_the_way", label: "On the way" },
     { key: "arrived", label: "Arrived at pickup" },
@@ -266,6 +266,12 @@
   /* ---------- fleet & documents ---------- */
   var UPLOAD_ICON = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13V4M6.5 7.5 10 4l3.5 3.5"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>';
   var FILE_ICON = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h7l4 4V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z"/><path d="M11 2.5V7h4"/></svg>';
+  var CAR_ICON = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16V11.5a1.5 1.5 0 0 1 .3-.9l1.9-2.5A2 2 0 0 1 7.8 7h8.4a2 2 0 0 1 1.6 1.1l1.9 2.5a1.5 1.5 0 0 1 .3.9V16"/><path d="M4 16a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1H4Zm16 0a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1h3Z"/><circle cx="7.5" cy="16" r="1.3"/><circle cx="16.5" cy="16" r="1.3"/></svg>';
+  var PERSON_ICON = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8.2" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
+
+  var fleetTab = "company";
+  // null, or { type: "vehicle"|"driver", id: Number|null } — id is null while adding, before "Create" is pressed.
+  var currentForm = null;
 
   // Latest document for each slot "field", keyed by field (docs already come back newest-first).
   function latestByField(docs) {
@@ -314,24 +320,223 @@
     return tiles;
   }
 
-  async function loadFleet() {
-    var data = await api("/api/partner/fleet");
+  function vehicleDocSlots(country) {
+    return [{ id: "photo", label: "Vehicle photo", required: true }].concat(slotsFor(country, "vehicle"));
+  }
+
+  function imageDocThumb(doc, placeholderIcon) {
+    if (doc) return '<img src="/api/partner/file?id=' + doc.id + '" alt="">';
+    return placeholderIcon;
+  }
+
+  function vehicleCardHtml(v) {
+    var byField = latestByField(v.documents);
+    var photo = byField["photo"];
+    var sub = [v.make, v.plate].filter(Boolean).join(" · ") || "Untitled vehicle";
+    return '<div class="fleet-card" data-vehicle-open="' + v.id + '">' +
+      '<div class="fleet-card-thumb">' + imageDocThumb(photo, CAR_ICON) + "</div>" +
+      '<div><div class="fleet-card-name">' + esc(v.plate || v.make || ("Vehicle #" + v.id)) + '</div>' +
+      '<div class="fleet-card-sub">' + esc(sub) + "</div></div>" +
+      '<div class="fleet-card-foot">' + badge(v.status) + "</div>" +
+      "</div>";
+  }
+
+  function driverCardHtml(d) {
+    var byField = latestByField(d.documents);
+    var license = byField["license_front"];
+    return '<div class="fleet-card" data-driver-open="' + d.id + '">' +
+      '<div class="fleet-card-avatar" style="align-self:flex-start;">' + imageDocThumb(license, PERSON_ICON) + "</div>" +
+      '<div><div class="fleet-card-name">' + esc(d.fullName || ("Driver #" + d.id)) + '</div>' +
+      '<div class="fleet-card-sub">' + esc(d.phone || "") + "</div></div>" +
+      '<div class="fleet-card-foot">' + badge(d.status) + "</div>" +
+      "</div>";
+  }
+
+  function renderFleetList() {
     var country = me ? me.country : null;
-    myFleet = { vehicles: data.vehicles || [], drivers: data.drivers || [] };
+    var data = myFleet;
 
     $("companyDocGrid").innerHTML = slotGridHtml("company", null, slotsFor(country, "company"), data.company.documents);
     $("otherDocGrid").innerHTML = otherGridHtml(data.other.documents);
 
-    $("vehiclesList").innerHTML = data.vehicles.map(function (v) {
-      return '<div class="block"><div class="block-title">' + esc(v.plate || ("Vehicle #" + v.id)) + (v.category ? " — " + esc(v.category) : "") + "</div>" +
-        '<div class="doc-grid">' + slotGridHtml("vehicle", v.id, slotsFor(country, "vehicle"), v.documents) + "</div></div>";
-    }).join("") || '<p style="color:var(--ink-2);font-size:13px;">No vehicles yet — add one below.</p>';
+    $("countVehicles").textContent = data.vehicles.length || "";
+    $("countDrivers").textContent = data.drivers.length || "";
 
-    $("driversList").innerHTML = data.drivers.map(function (d) {
-      return '<div class="block"><div class="block-title">' + esc(d.fullName || ("Driver #" + d.id)) + "</div>" +
-        '<div class="doc-grid">' + slotGridHtml("driver", d.id, slotsFor(country, "driver"), d.documents) + "</div></div>";
-    }).join("") || '<p style="color:var(--ink-2);font-size:13px;">No drivers yet — add one below.</p>';
+    $("vehicleCards").innerHTML = data.vehicles.map(vehicleCardHtml).join("") +
+      '<div class="fleet-card-add" data-vehicle-add="1"><span class="fleet-card-add-icon">+</span>Add vehicle</div>';
+
+    $("driverCards").innerHTML = data.drivers.map(driverCardHtml).join("") +
+      '<div class="fleet-card-add" data-driver-add="1"><span class="fleet-card-add-icon">+</span>Add driver</div>';
   }
+
+  async function loadFleet() {
+    var data = await api("/api/partner/fleet");
+    myFleet = { company: data.company, other: data.other, vehicles: data.vehicles || [], drivers: data.drivers || [] };
+    renderFleetList();
+    if (currentForm && currentForm.id) {
+      if (currentForm.type === "vehicle") renderVehicleForm();
+      else renderDriverForm();
+    }
+  }
+
+  /* ---------- fleet sub-tabs (Company / Vehicles / Drivers) ---------- */
+  $("fleetTabs").querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      $("fleetTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
+      fleetTab = tab.getAttribute("data-fleet-tab");
+      ["company", "vehicles", "drivers"].forEach(function (k) { $("fleetTab-" + k).hidden = k !== fleetTab; });
+    });
+  });
+
+  $("vehicleCards").addEventListener("click", function (e) {
+    var add = e.target.closest("[data-vehicle-add]");
+    if (add) { openVehicleForm(null); return; }
+    var open = e.target.closest("[data-vehicle-open]");
+    if (open) openVehicleForm(Number(open.getAttribute("data-vehicle-open")));
+  });
+  $("driverCards").addEventListener("click", function (e) {
+    var add = e.target.closest("[data-driver-add]");
+    if (add) { openDriverForm(null); return; }
+    var open = e.target.closest("[data-driver-open]");
+    if (open) openDriverForm(Number(open.getAttribute("data-driver-open")));
+  });
+
+  /* ---------- vehicle full-page view (add + view/edit) ---------- */
+  function openVehicleForm(id) {
+    currentForm = { type: "vehicle", id: id };
+    $("fleetListView").hidden = true;
+    $("driverFormView").hidden = true;
+    $("vehicleFormView").hidden = false;
+    $("vfStatus").textContent = "";
+    window.scrollTo(0, 0);
+    renderVehicleForm();
+  }
+  function renderVehicleForm() {
+    var country = me ? me.country : null;
+    var v = currentForm.id ? myFleet.vehicles.filter(function (x) { return x.id === currentForm.id; })[0] : null;
+
+    if (!v) {
+      $("vfTitle").textContent = "Add vehicle";
+      $("vfStatusBadge").innerHTML = "";
+      $("vfMake").value = ""; $("vfPlate").value = "";
+      $("vfMake").disabled = false; $("vfPlate").disabled = false;
+      $("vfCreateBtn").hidden = false;
+      $("vfSaveBtn").hidden = true;
+      $("vfDocsSection").hidden = true;
+      return;
+    }
+
+    $("vfTitle").textContent = v.plate || v.make || ("Vehicle #" + v.id);
+    $("vfStatusBadge").innerHTML = badge(v.status);
+    $("vfMake").value = v.make || ""; $("vfPlate").value = v.plate || "";
+    $("vfCreateBtn").hidden = true;
+    $("vfSaveBtn").hidden = false;
+    $("vfDocsSection").hidden = false;
+    $("vfDocGrid").innerHTML = slotGridHtml("vehicle", v.id, vehicleDocSlots(country), v.documents);
+  }
+  $("vfCreateBtn").addEventListener("click", async function () {
+    var make = $("vfMake").value.trim(), plate = $("vfPlate").value.trim();
+    if (!plate) { $("vfStatus").textContent = "Plate number is required."; $("vfStatus").className = "status err"; $("vfPlate").focus(); return; }
+    this.disabled = true;
+    try {
+      var r = await api("/api/partner/vehicles", { method: "POST", json: true, body: JSON.stringify({ make: make, plate: plate }) });
+      currentForm.id = r.id;
+      await loadFleet();
+      renderVehicleForm();
+    } catch (e) {
+      $("vfStatus").textContent = "Could not create the vehicle. Try again.";
+      $("vfStatus").className = "status err";
+    } finally { this.disabled = false; }
+  });
+  $("vfSaveBtn").addEventListener("click", async function () {
+    var make = $("vfMake").value.trim(), plate = $("vfPlate").value.trim();
+    if (!plate) { $("vfStatus").textContent = "Plate number is required."; $("vfStatus").className = "status err"; $("vfPlate").focus(); return; }
+    this.disabled = true;
+    try {
+      await api("/api/partner/vehicle-update", { method: "POST", json: true, body: JSON.stringify({ id: currentForm.id, make: make, plate: plate }) });
+      $("vfStatus").textContent = "Saved.";
+      $("vfStatus").className = "status";
+      await loadFleet();
+      renderVehicleForm();
+    } catch (e) {
+      $("vfStatus").textContent = "Could not save changes. Try again.";
+      $("vfStatus").className = "status err";
+    } finally { this.disabled = false; }
+  });
+  function closeVehicleForm() {
+    currentForm = null;
+    $("vehicleFormView").hidden = true;
+    $("fleetListView").hidden = false;
+  }
+  $("vehicleFormBack").addEventListener("click", closeVehicleForm);
+
+  /* ---------- driver full-page view (add + view/edit) ---------- */
+  function openDriverForm(id) {
+    currentForm = { type: "driver", id: id };
+    $("fleetListView").hidden = true;
+    $("vehicleFormView").hidden = true;
+    $("driverFormView").hidden = false;
+    $("dfStatus").textContent = "";
+    window.scrollTo(0, 0);
+    renderDriverForm();
+  }
+  function renderDriverForm() {
+    var country = me ? me.country : null;
+    var d = currentForm.id ? myFleet.drivers.filter(function (x) { return x.id === currentForm.id; })[0] : null;
+
+    if (!d) {
+      $("dfTitle").textContent = "Add driver";
+      $("dfStatusBadge").innerHTML = "";
+      $("dfName").value = ""; $("dfPhone").value = ""; $("dfLanguage").value = "";
+      $("dfCreateBtn").hidden = false;
+      $("dfSaveBtn").hidden = true;
+      $("dfDocsSection").hidden = true;
+      return;
+    }
+
+    $("dfTitle").textContent = d.fullName || ("Driver #" + d.id);
+    $("dfStatusBadge").innerHTML = badge(d.status);
+    $("dfName").value = d.fullName || ""; $("dfPhone").value = d.phone || ""; $("dfLanguage").value = d.language || "";
+    $("dfCreateBtn").hidden = true;
+    $("dfSaveBtn").hidden = false;
+    $("dfDocsSection").hidden = false;
+    $("dfDocGrid").innerHTML = slotGridHtml("driver", d.id, slotsFor(country, "driver"), d.documents);
+  }
+  $("dfCreateBtn").addEventListener("click", async function () {
+    var name = $("dfName").value.trim(), phone = $("dfPhone").value.trim(), language = $("dfLanguage").value.trim();
+    if (!name) { $("dfStatus").textContent = "Name is required."; $("dfStatus").className = "status err"; $("dfName").focus(); return; }
+    this.disabled = true;
+    try {
+      var r = await api("/api/partner/drivers", { method: "POST", json: true, body: JSON.stringify({ fullName: name, phone: phone, language: language }) });
+      currentForm.id = r.id;
+      await loadFleet();
+      renderDriverForm();
+    } catch (e) {
+      $("dfStatus").textContent = "Could not create the driver. Try again.";
+      $("dfStatus").className = "status err";
+    } finally { this.disabled = false; }
+  });
+  $("dfSaveBtn").addEventListener("click", async function () {
+    var name = $("dfName").value.trim(), phone = $("dfPhone").value.trim(), language = $("dfLanguage").value.trim();
+    if (!name) { $("dfStatus").textContent = "Name is required."; $("dfStatus").className = "status err"; $("dfName").focus(); return; }
+    this.disabled = true;
+    try {
+      await api("/api/partner/driver-update", { method: "POST", json: true, body: JSON.stringify({ id: currentForm.id, fullName: name, phone: phone, language: language }) });
+      $("dfStatus").textContent = "Saved.";
+      $("dfStatus").className = "status";
+      await loadFleet();
+      renderDriverForm();
+    } catch (e) {
+      $("dfStatus").textContent = "Could not save changes. Try again.";
+      $("dfStatus").className = "status err";
+    } finally { this.disabled = false; }
+  });
+  function closeDriverForm() {
+    currentForm = null;
+    $("driverFormView").hidden = true;
+    $("fleetListView").hidden = false;
+  }
+  $("driverFormBack").addEventListener("click", closeDriverForm);
 
   document.body.addEventListener("change", async function (e) {
     var input = e.target.closest("input[type=file][data-uid]");
@@ -372,53 +577,6 @@
       input.value = "";
       alert("Upload failed. Try again.");
     }
-  });
-
-  /* ---------- add vehicle / add driver (+ tiles) ---------- */
-  $("showAddVehicle").addEventListener("click", function () {
-    $("addVehicleForm").hidden = false;
-    this.hidden = true;
-    $("newPlate").focus();
-  });
-  $("cancelAddVehicle").addEventListener("click", function () {
-    $("addVehicleForm").hidden = true;
-    $("showAddVehicle").hidden = false;
-    $("newPlate").value = ""; $("newCategory").value = "";
-  });
-  $("addVehicleBtn").addEventListener("click", async function () {
-    var plate = $("newPlate").value.trim();
-    if (!plate) { $("newPlate").focus(); return; }
-    this.disabled = true;
-    try {
-      await api("/api/partner/vehicles", { method: "POST", json: true, body: JSON.stringify({ plate: plate, category: $("newCategory").value.trim() }) });
-      $("newPlate").value = ""; $("newCategory").value = "";
-      $("addVehicleForm").hidden = true;
-      $("showAddVehicle").hidden = false;
-      await loadFleet();
-    } finally { this.disabled = false; }
-  });
-
-  $("showAddDriver").addEventListener("click", function () {
-    $("addDriverForm").hidden = false;
-    this.hidden = true;
-    $("newDriver").focus();
-  });
-  $("cancelAddDriver").addEventListener("click", function () {
-    $("addDriverForm").hidden = true;
-    $("showAddDriver").hidden = false;
-    $("newDriver").value = "";
-  });
-  $("addDriverBtn").addEventListener("click", async function () {
-    var name = $("newDriver").value.trim();
-    if (!name) { $("newDriver").focus(); return; }
-    this.disabled = true;
-    try {
-      await api("/api/partner/drivers", { method: "POST", json: true, body: JSON.stringify({ fullName: name }) });
-      $("newDriver").value = "";
-      $("addDriverForm").hidden = true;
-      $("showAddDriver").hidden = false;
-      await loadFleet();
-    } finally { this.disabled = false; }
   });
 
   /* ---------- boot ---------- */

@@ -28,8 +28,8 @@ export async function onRequestGet(context) {
   if (!partner) return Response.json({ error: "not_found" }, { status: 404 });
 
   const [vehiclesRes, driversRes, documentsRes] = await Promise.all([
-    env.DB.prepare("SELECT id, plate, category FROM vehicles WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
-    env.DB.prepare("SELECT id, full_name FROM drivers WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
+    env.DB.prepare("SELECT id, plate, category, make FROM vehicles WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
+    env.DB.prepare("SELECT id, full_name, phone, language FROM drivers WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
     env.DB.prepare(
       "SELECT id, owner_type, owner_id, field, label, filename, status, review_note, uploaded_at FROM documents WHERE partner_id = ? ORDER BY uploaded_at DESC"
     ).bind(id).all(),
@@ -38,8 +38,8 @@ export async function onRequestGet(context) {
   const docs = documentsRes.results || [];
   const byOwner = (type, oid) => docs.filter((d) => d.owner_type === type && (oid == null ? d.owner_id == null : d.owner_id === oid)).map(docShape);
 
-  const vehicles = (vehiclesRes.results || []).map((v) => ({ id: v.id, plate: v.plate, category: v.category, documents: byOwner("vehicle", v.id) }));
-  const drivers = (driversRes.results || []).map((d) => ({ id: d.id, fullName: d.full_name, documents: byOwner("driver", d.id) }));
+  const vehicles = (vehiclesRes.results || []).map((v) => ({ id: v.id, plate: v.plate, category: v.category, make: v.make, documents: byOwner("vehicle", v.id) }));
+  const drivers = (driversRes.results || []).map((d) => ({ id: d.id, fullName: d.full_name, phone: d.phone, language: d.language, documents: byOwner("driver", d.id) }));
 
   return Response.json({
     ok: true,
