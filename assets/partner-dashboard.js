@@ -264,25 +264,54 @@
   });
 
   /* ---------- fleet & documents ---------- */
-  function docListHtml(docs) {
-    if (!docs.length) return '<p class="docrow" style="color:var(--ink-2);">No documents uploaded yet.</p>';
-    return docs.map(function (d) {
-      return '<div class="docrow"><div class="docrow-main">' + esc(d.label) +
-        (d.reviewNote ? " — " + esc(d.reviewNote) : "") +
-        ' · <a href="/api/partner/file?id=' + d.id + '" target="_blank" rel="noopener">' + esc(d.filename || "file") + "</a></div>" +
-        badge(d.status) + "</div>";
-    }).join("");
+  var UPLOAD_ICON = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13V4M6.5 7.5 10 4l3.5 3.5"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>';
+  var FILE_ICON = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h7l4 4V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z"/><path d="M11 2.5V7h4"/></svg>';
+
+  // Latest document for each slot "field", keyed by field (docs already come back newest-first).
+  function latestByField(docs) {
+    var map = {};
+    (docs || []).forEach(function (d) { if (!map[d.field]) map[d.field] = d; });
+    return map;
   }
-  function addFormHtml(ownerType, ownerId, defs) {
-    var uid = ownerType + "-" + (ownerId || "x");
-    var opts = defs.map(function (d) { return '<option value="' + esc(d.id) + '">' + esc(d.label) + "</option>"; }).join("");
-    return '<div class="addrow" data-owner-type="' + ownerType + '" data-owner-id="' + (ownerId || "") + '">' +
-      '<select id="field-' + uid + '">' + opts + '<option value="__custom__">Other / custom document…</option></select>' +
-      '<input type="text" id="custom-' + uid + '" placeholder="Document name" hidden>' +
-      '<label class="minibtn" for="file-' + uid + '">Choose file</label>' +
-      '<input type="file" id="file-' + uid + '" data-uid="' + uid + '" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/*">' +
-      '<span id="filename-' + uid + '" style="font-size:12px;color:var(--ink-2);"></span>' +
+
+  // One clickable upload tile for a single document slot. ownerId may be null (company/other).
+  function docTileHtml(ownerType, ownerId, field, label, required, doc) {
+    var uid = ownerType + "-" + (ownerId || "x") + "-" + field;
+    var hasFile = !!doc;
+    var inner = hasFile
+      ? FILE_ICON + '<div class="doc-tile-label">' + esc(label) + '</div>' +
+        '<div class="doc-tile-file">' + esc(doc.filename || "file") + '</div>' + badge(doc.status)
+      : UPLOAD_ICON + '<div class="doc-tile-label">' + esc(label) + '</div>' +
+        (required ? '<span class="doc-required">Required</span>' : '<span class="doc-optional">Optional</span>');
+    return '<div class="doc-item">' +
+      '<label class="doc-tile' + (hasFile ? " has-file" : "") + '" for="file-' + uid + '">' + inner + '</label>' +
+      '<input type="file" id="file-' + uid + '" data-uid="' + uid + '" data-owner-type="' + ownerType + '"' +
+      (ownerId ? ' data-owner-id="' + ownerId + '"' : "") +
+      ' data-field="' + esc(field) + '" data-label="' + esc(label) + '" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/*">' +
+      (hasFile ? '<a class="doc-view" href="/api/partner/file?id=' + doc.id + '" target="_blank" rel="noopener">View file</a>' +
+        (doc.reviewNote ? '<div class="doc-note">' + esc(doc.reviewNote) + "</div>" : "") : "") +
       "</div>";
+  }
+
+  // A grid of fixed required/optional slots for a given owner (company/vehicle/driver).
+  function slotGridHtml(ownerType, ownerId, defs, docs) {
+    var byField = latestByField(docs);
+    return defs.map(function (d) { return docTileHtml(ownerType, ownerId, d.id, d.label, d.required, byField[d.id]); }).join("");
+  }
+
+  // Free-form "other documents": one tile per already-uploaded custom doc, plus a trailing "+" tile to add a new one.
+  function otherGridHtml(docs) {
+    var tiles = (docs || []).map(function (d) {
+      return docTileHtml("other", null, d.field, d.label, false, d);
+    }).join("");
+    tiles += '<div class="doc-item">' +
+      '<label class="doc-tile doc-tile-add" for="file-other-x-__custom__">' +
+      '<span class="doc-tile-add-icon">+</span><div class="doc-tile-label">Add document</div>' +
+      "</label>" +
+      '<input type="file" id="file-other-x-__custom__" data-uid="other-x-__custom__" data-owner-type="other" data-field="__custom__" hidden ' +
+      'accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/*">' +
+      "</div>";
+    return tiles;
   }
 
   async function loadFleet() {
@@ -290,17 +319,17 @@
     var country = me ? me.country : null;
     myFleet = { vehicles: data.vehicles || [], drivers: data.drivers || [] };
 
-    $("companyDocs").innerHTML = docListHtml(data.company.documents) + addFormHtml("company", null, slotsFor(country, "company"));
-    $("otherDocs").innerHTML = docListHtml(data.other.documents) + addFormHtml("other", null, [{ id: "document", label: "Document" }]);
+    $("companyDocGrid").innerHTML = slotGridHtml("company", null, slotsFor(country, "company"), data.company.documents);
+    $("otherDocGrid").innerHTML = otherGridHtml(data.other.documents);
 
     $("vehiclesList").innerHTML = data.vehicles.map(function (v) {
       return '<div class="block"><div class="block-title">' + esc(v.plate || ("Vehicle #" + v.id)) + (v.category ? " — " + esc(v.category) : "") + "</div>" +
-        docListHtml(v.documents) + addFormHtml("vehicle", v.id, slotsFor(country, "vehicle")) + "</div>";
+        '<div class="doc-grid">' + slotGridHtml("vehicle", v.id, slotsFor(country, "vehicle"), v.documents) + "</div></div>";
     }).join("") || '<p style="color:var(--ink-2);font-size:13px;">No vehicles yet — add one below.</p>';
 
     $("driversList").innerHTML = data.drivers.map(function (d) {
       return '<div class="block"><div class="block-title">' + esc(d.fullName || ("Driver #" + d.id)) + "</div>" +
-        docListHtml(d.documents) + addFormHtml("driver", d.id, slotsFor(country, "driver")) + "</div>";
+        '<div class="doc-grid">' + slotGridHtml("driver", d.id, slotsFor(country, "driver"), d.documents) + "</div></div>";
     }).join("") || '<p style="color:var(--ink-2);font-size:13px;">No drivers yet — add one below.</p>';
   }
 
@@ -309,19 +338,25 @@
     if (!input) return;
     var file = input.files && input.files[0];
     if (!file) return;
-    var row = input.closest(".addrow");
-    var ownerType = row.getAttribute("data-owner-type");
-    var ownerId = row.getAttribute("data-owner-id") || null;
-    var uid = input.getAttribute("data-uid");
-    var select = $("field-" + uid);
-    var field = select.value;
-    var label = field === "__custom__" ? ($("custom-" + uid).value.trim() || "Document") : select.options[select.selectedIndex].text;
-    if (field === "__custom__") field = "custom_" + Date.now();
 
-    if (!typeFor(file)) { $("filename-" + uid).textContent = "Unsupported file type."; input.value = ""; return; }
-    if (file.size > MAX_BYTES) { $("filename-" + uid).textContent = "File larger than 20 MB."; input.value = ""; return; }
+    var ownerType = input.getAttribute("data-owner-type");
+    var ownerIdAttr = input.getAttribute("data-owner-id");
+    var ownerId = ownerIdAttr ? Number(ownerIdAttr) : null;
+    var field = input.getAttribute("data-field");
+    var label = input.getAttribute("data-label") || field;
+    var tile = input.previousElementSibling;
 
-    $("filename-" + uid).textContent = "Uploading…";
+    if (field === "__custom__") {
+      var customLabel = window.prompt("Document name:", "Document");
+      if (!customLabel || !customLabel.trim()) { input.value = ""; return; }
+      label = customLabel.trim().slice(0, 150);
+      field = "custom_" + Date.now();
+    }
+
+    if (!typeFor(file)) { alert("Unsupported file type. Use PDF, JPG, PNG, WEBP or GIF."); input.value = ""; return; }
+    if (file.size > MAX_BYTES) { alert("File larger than 20 MB."); input.value = ""; return; }
+
+    if (tile) tile.classList.add("uploading");
     try {
       var fd = new FormData();
       fd.append("ownerType", ownerType);
@@ -333,18 +368,23 @@
       if (!res.ok) throw new Error("upload_failed");
       await loadFleet();
     } catch (err) {
-      $("filename-" + uid).textContent = "Upload failed. Try again.";
+      if (tile) tile.classList.remove("uploading");
+      input.value = "";
+      alert("Upload failed. Try again.");
     }
   });
 
-  document.body.addEventListener("change", function (e) {
-    var select = e.target.closest("select[id^='field-']");
-    if (!select) return;
-    var uid = select.id.slice(6);
-    var customInput = $("custom-" + uid);
-    if (customInput) customInput.hidden = select.value !== "__custom__";
+  /* ---------- add vehicle / add driver (+ tiles) ---------- */
+  $("showAddVehicle").addEventListener("click", function () {
+    $("addVehicleForm").hidden = false;
+    this.hidden = true;
+    $("newPlate").focus();
   });
-
+  $("cancelAddVehicle").addEventListener("click", function () {
+    $("addVehicleForm").hidden = true;
+    $("showAddVehicle").hidden = false;
+    $("newPlate").value = ""; $("newCategory").value = "";
+  });
   $("addVehicleBtn").addEventListener("click", async function () {
     var plate = $("newPlate").value.trim();
     if (!plate) { $("newPlate").focus(); return; }
@@ -352,10 +392,22 @@
     try {
       await api("/api/partner/vehicles", { method: "POST", json: true, body: JSON.stringify({ plate: plate, category: $("newCategory").value.trim() }) });
       $("newPlate").value = ""; $("newCategory").value = "";
+      $("addVehicleForm").hidden = true;
+      $("showAddVehicle").hidden = false;
       await loadFleet();
     } finally { this.disabled = false; }
   });
 
+  $("showAddDriver").addEventListener("click", function () {
+    $("addDriverForm").hidden = false;
+    this.hidden = true;
+    $("newDriver").focus();
+  });
+  $("cancelAddDriver").addEventListener("click", function () {
+    $("addDriverForm").hidden = true;
+    $("showAddDriver").hidden = false;
+    $("newDriver").value = "";
+  });
   $("addDriverBtn").addEventListener("click", async function () {
     var name = $("newDriver").value.trim();
     if (!name) { $("newDriver").focus(); return; }
@@ -363,6 +415,8 @@
     try {
       await api("/api/partner/drivers", { method: "POST", json: true, body: JSON.stringify({ fullName: name }) });
       $("newDriver").value = "";
+      $("addDriverForm").hidden = true;
+      $("showAddDriver").hidden = false;
       await loadFleet();
     } finally { this.disabled = false; }
   });
