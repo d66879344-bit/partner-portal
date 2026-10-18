@@ -15,7 +15,7 @@ export async function onRequestGet(context) {
      FROM orders o
      LEFT JOIN drivers dr ON dr.id = o.driver_id
      LEFT JOIN vehicles v ON v.id = o.vehicle_id
-     WHERE o.partner_id = ?
+     WHERE o.partner_id = ? AND o.status NOT IN ('declined', 'cancelled')
      ORDER BY o.order_date ASC, o.order_time ASC`
   ).bind(partnerId).all();
 

@@ -55,7 +55,7 @@
     });
   });
 
-  /* ---------- order sub-tabs (New / Accepted) ---------- */
+  /* ---------- order sub-tabs (New / Accepted / Completed) ---------- */
   var orderTab = "new";
   $("orderTabs").querySelectorAll(".tab").forEach(function (tab) {
     tab.addEventListener("click", function () {
@@ -64,6 +64,9 @@
       renderOrders(lastOrders);
     });
   });
+  $("fDateFrom").addEventListener("change", function () { renderOrders(lastOrders); });
+  $("fDateTo").addEventListener("change", function () { renderOrders(lastOrders); });
+  $("fSort").addEventListener("change", function () { renderOrders(lastOrders); });
 
   /* ---------- account / nav ---------- */
   async function loadMe() {
@@ -96,11 +99,33 @@
       $("ordersStatus").className = "status err";
     }
   }
+  var STATUS_FOR_TAB = { new: "offered", accepted: "accepted", completed: "completed" };
+  var EMPTY_MESSAGE = { new: "No new orders right now.", accepted: "Nothing in progress right now.", completed: "No completed orders yet." };
+
+  function updateTabCounts(allOrders) {
+    var newCount = allOrders.filter(function (o) { return o.status === "offered"; }).length;
+    var acceptedCount = allOrders.filter(function (o) { return o.status === "accepted"; }).length;
+    $("countNew").textContent = newCount || "";
+    $("countAccepted").textContent = acceptedCount || "";
+  }
+
   function renderOrders(allOrders) {
-    var orders = allOrders.filter(function (o) {
-      return orderTab === "new" ? o.status === "offered" : o.status !== "offered";
+    updateTabCounts(allOrders);
+    var wantStatus = STATUS_FOR_TAB[orderTab];
+    var orders = allOrders.filter(function (o) { return o.status === wantStatus; });
+
+    var from = $("fDateFrom").value, to = $("fDateTo").value;
+    if (from) orders = orders.filter(function (o) { return o.orderDate >= from; });
+    if (to) orders = orders.filter(function (o) { return o.orderDate <= to; });
+
+    var dir = $("fSort").value === "desc" ? -1 : 1;
+    orders = orders.slice().sort(function (a, b) {
+      var ka = (a.orderDate || "") + " " + (a.orderTime || "");
+      var kb = (b.orderDate || "") + " " + (b.orderTime || "");
+      return ka < kb ? -dir : ka > kb ? dir : 0;
     });
-    $("ordersStatus").textContent = orders.length ? "" : (orderTab === "new" ? "No new orders right now." : "No accepted orders yet.");
+
+    $("ordersStatus").textContent = orders.length ? "" : EMPTY_MESSAGE[orderTab];
     $("ordersStatus").className = "status";
     $("ordersList").innerHTML = orders.map(function (o) {
       var actions = o.status === "offered"

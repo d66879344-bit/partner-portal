@@ -35,10 +35,20 @@
   }
 
   /* ---------- tabs ---------- */
-  document.querySelectorAll(".tab").forEach(function (tab) {
+  $("mainTabs").querySelectorAll(".tab").forEach(function (tab) {
     tab.addEventListener("click", function () {
-      document.querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
+      $("mainTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
       document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === "panel-" + tab.getAttribute("data-tab")); });
+    });
+  });
+
+  /* ---------- order sub-tabs (Not accepted / In progress / Completed / Declined-cancelled) ---------- */
+  var orderTab = "offered";
+  $("orderTabs").querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      $("orderTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
+      orderTab = tab.getAttribute("data-order-tab");
+      renderOrders();
     });
   });
 
@@ -137,6 +147,7 @@
       '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
       '<button type="button" class="minibtn good" data-partner-approve="' + p.id + '">Activate account</button>' +
       '<button type="button" class="minibtn crit" data-partner-reject="' + p.id + '">Block account</button>' +
+      '<button type="button" class="minibtn crit" data-partner-delete="' + p.id + '" data-partner-name="' + esc(p.companyName) + '" style="margin-left:auto;">Delete partner</button>' +
       "</div></div>" +
       '<div class="block"><div class="block-title">Company documents</div>' + docList(d.company.documents) + "</div>" +
       vehicleBlocks +
@@ -149,8 +160,35 @@
     var rejectDoc = e.target.closest("[data-doc-reject]");
     var approveP = e.target.closest("[data-partner-approve]");
     var rejectP = e.target.closest("[data-partner-reject]");
-    if (!approveDoc && !rejectDoc && !approveP && !rejectP) return;
+    var deleteP = e.target.closest("[data-partner-delete]");
+    if (!approveDoc && !rejectDoc && !approveP && !rejectP && !deleteP) return;
     e.stopPropagation();
+
+    if (deleteP) {
+      var delPid = Number(deleteP.getAttribute("data-partner-delete"));
+      var delPname = deleteP.getAttribute("data-partner-name") || "";
+      var typed = prompt(
+        "This permanently deletes \"" + delPname + "\" and all of their vehicles, drivers, documents and orders. " +
+        "This cannot be undone.\n\nType the company name exactly to confirm:"
+      );
+      if (typed === null) return;
+      if (typed.trim() !== delPname.trim()) {
+        alert("Name didn't match — nothing was deleted.");
+        return;
+      }
+      try {
+        await api("/api/admin/partner-delete", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: delPid })
+        });
+        delete detailCache[delPid];
+        openId = null;
+        await loadPartners();
+      } catch (err) {
+        alert("Could not delete the partner.");
+      }
+      return;
+    }
 
     try {
       if (approveDoc || rejectDoc) {
@@ -247,16 +285,42 @@
     }
   }
 
+  var CLOSED_STATUSES = ["declined", "cancelled"];
+  var EMPTY_ORDER_MESSAGE = {
+    offered: "No orders waiting on a partner right now.",
+    accepted: "Nothing in progress right now.",
+    completed: "No completed orders yet.",
+    closed: "No declined or cancelled orders.",
+  };
+
+  function updateOrderTabCounts() {
+    $("countOffered").textContent = orders.filter(function (o) { return o.status === "offered"; }).length || "";
+    $("countAccepted").textContent = orders.filter(function (o) { return o.status === "accepted"; }).length || "";
+    $("countCompleted").textContent = orders.filter(function (o) { return o.status === "completed"; }).length || "";
+    $("countClosed").textContent = orders.filter(function (o) { return CLOSED_STATUSES.indexOf(o.status) !== -1; }).length || "";
+  }
+
   function matchesOrderFilter(o) {
-    var fs = $("fOrderStatus").value, q = $("fOrderSearch").value.trim().toLowerCase();
-    if (fs && o.status !== fs) return false;
+    var q = $("fOrderSearch").value.trim().toLowerCase();
+    var inTab = orderTab === "closed" ? CLOSED_STATUSES.indexOf(o.status) !== -1 : o.status === orderTab;
+    if (!inTab) return false;
     if (q && (o.companyName + " " + o.pickup + " " + o.dropoff).toLowerCase().indexOf(q) === -1) return false;
+    var from = $("fDateFrom").value, to = $("fDateTo").value;
+    if (from && o.orderDate < from) return false;
+    if (to && o.orderDate > to) return false;
     return true;
   }
 
   function renderOrders() {
+    updateOrderTabCounts();
     var rows = orders.filter(matchesOrderFilter);
-    if (!rows.length) { $("ordersList").innerHTML = '<li class="row">No matching orders.</li>'; return; }
+    var dir = $("fSort").value === "desc" ? -1 : 1;
+    rows = rows.slice().sort(function (a, b) {
+      var ka = (a.orderDate || "") + " " + (a.orderTime || "");
+      var kb = (b.orderDate || "") + " " + (b.orderTime || "");
+      return ka < kb ? -dir : ka > kb ? dir : 0;
+    });
+    if (!rows.length) { $("ordersList").innerHTML = '<li class="row">' + EMPTY_ORDER_MESSAGE[orderTab] + "</li>"; return; }
     $("ordersList").innerHTML = rows.map(function (o) {
       var isOpen = openOrderId === o.id;
       return '<li class="row">' +
@@ -294,18 +358,37 @@
       (o.notes ? '<div class="row-meta">Instructions: ' + esc(o.notes) + "</div>" : "") +
       '<div class="row-meta">Created ' + esc(fmtDate(o.createdAt)) + (o.respondedAt ? " · responded " + esc(fmtDate(o.respondedAt)) : "") + "</div>" +
       "</div>" +
-      (actions ? '<div class="block" style="display:flex;gap:8px;">' + actions + "</div>" : "");
+      '<div class="block" style="display:flex;gap:8px;flex-wrap:wrap;">' + actions +
+      '<button type="button" class="minibtn crit" data-order-delete="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
+      "</div>";
   }
 
   $("ordersList").addEventListener("click", async function (e) {
     var toggle = e.target.closest("[data-order-toggle]");
     var complete = e.target.closest("[data-order-complete]");
     var cancel = e.target.closest("[data-order-cancel]");
+    var del = e.target.closest("[data-order-delete]");
 
-    if (toggle && !complete && !cancel) {
+    if (toggle && !complete && !cancel && !del) {
       var id = Number(toggle.getAttribute("data-order-toggle"));
       openOrderId = openOrderId === id ? null : id;
       renderOrders();
+      return;
+    }
+    if (del) {
+      e.stopPropagation();
+      var delId = Number(del.getAttribute("data-order-delete"));
+      if (!confirm("Delete this order permanently? This cannot be undone.")) return;
+      try {
+        await api("/api/admin/order-delete", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: delId })
+        });
+        openOrderId = null;
+        await loadOrders();
+      } catch (err) {
+        alert("Could not delete the order.");
+      }
       return;
     }
     if (!complete && !cancel) return;
@@ -323,8 +406,10 @@
     }
   });
 
-  $("fOrderStatus").addEventListener("change", renderOrders);
   $("fOrderSearch").addEventListener("input", renderOrders);
+  $("fDateFrom").addEventListener("change", renderOrders);
+  $("fDateTo").addEventListener("change", renderOrders);
+  $("fSort").addEventListener("change", renderOrders);
 
   /* ---------- gate ---------- */
   function showGate() {

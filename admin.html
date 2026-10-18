@@ -15,8 +15,13 @@
   .row-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; cursor: pointer; }
   .row-title { font-weight: 600; }
   .row-meta { font-size: 13px; color: var(--ink-2); }
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
   .toolbar select, .toolbar input { min-height: 38px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface-2); padding: 6px 10px; }
+  .toolbar-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
+  .toolbar-field input { min-height: 36px; }
+  .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.15); font-size: 11px; margin-left: 2px; }
+  .tab[aria-pressed="true"] .tab-count { background: rgba(255,255,255,.25); }
+  .tab-count:empty { display: none; }
   .detail { margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); display: none; }
   .detail.open { display: block; }
   .block { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
@@ -53,7 +58,7 @@
   </section>
 
   <div id="panelsWrap" hidden>
-    <div class="tabs" role="tablist">
+    <div class="tabs" role="tablist" id="mainTabs">
       <button type="button" class="tab" data-tab="partners" aria-pressed="true">Partners</button>
       <button type="button" class="tab" data-tab="orders" aria-pressed="false">Orders</button>
     </div>
@@ -104,16 +109,20 @@
       <p class="status" id="createOrderStatus"></p>
 
       <h2>All orders</h2>
+      <div class="tabs" role="tablist" id="orderTabs" style="margin-bottom:12px;">
+        <button type="button" class="tab" data-order-tab="offered" aria-pressed="true">Not accepted <span class="tab-count" id="countOffered"></span></button>
+        <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">In progress <span class="tab-count" id="countAccepted"></span></button>
+        <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed <span class="tab-count" id="countCompleted"></span></button>
+        <button type="button" class="tab" data-order-tab="closed" aria-pressed="false">Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
+      </div>
       <div class="toolbar">
-        <select id="fOrderStatus">
-          <option value="">All statuses</option>
-          <option value="offered">Offered</option>
-          <option value="accepted">Accepted</option>
-          <option value="declined">Declined</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
         <input type="text" id="fOrderSearch" placeholder="Search partner / route">
+        <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
+        <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
+        <select id="fSort">
+          <option value="asc">Date: soonest first</option>
+          <option value="desc">Date: latest first</option>
+        </select>
       </div>
       <p class="status" id="ordersStatus"></p>
       <ul class="list" id="ordersList"></ul>

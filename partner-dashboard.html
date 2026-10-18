@@ -43,6 +43,12 @@
   .addform .field { margin-bottom: 0; min-width: 160px; flex: 1 1 160px; }
   .panel { display: none; }
   .panel.active { display: block; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .toolbar-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
+  .toolbar input, .toolbar select { min-height: 36px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 8px; font-size: 13px; }
+  .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.15); font-size: 11px; margin-left: 2px; }
+  .tab[aria-pressed="true"] .tab-count { background: rgba(255,255,255,.25); }
+  .tab-count:empty { display: none; }
 </style>
 </head>
 <body>
@@ -73,8 +79,17 @@
     <h2>Your orders</h2>
     <p class="sub" style="color:var(--ink-2);font-size:13px;margin:4px 0 14px;">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
     <div class="tabs" role="tablist" id="orderTabs" style="margin-bottom:12px;">
-      <button type="button" class="tab" data-order-tab="new" aria-pressed="true">New</button>
-      <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">Accepted</button>
+      <button type="button" class="tab" data-order-tab="new" aria-pressed="true">New <span class="tab-count" id="countNew"></span></button>
+      <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">Accepted <span class="tab-count" id="countAccepted"></span></button>
+      <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed</button>
+    </div>
+    <div class="toolbar">
+      <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
+      <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
+      <select id="fSort">
+        <option value="asc">Date: soonest first</option>
+        <option value="desc">Date: latest first</option>
+      </select>
     </div>
     <p class="status" id="ordersStatus"></p>
     <div id="ordersList"></div>
