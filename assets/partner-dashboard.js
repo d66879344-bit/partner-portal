@@ -1,6 +1,7 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var slotsFor = (window.DOC_DEFS && window.DOC_DEFS.slotsFor) || function () { return []; };
+  var expandSlots = (window.DOC_DEFS && window.DOC_DEFS.expandSlots) || function (d) { return d; };
   var MAX_BYTES = 20 * 1024 * 1024;
   var OK_TYPES = { "application/pdf": 1, "image/jpeg": 1, "image/png": 1, "image/webp": 1, "image/gif": 1 };
   var EXT_TYPES = { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif" };
@@ -272,6 +273,9 @@
   var fleetTab = "company";
   // null, or { type: "vehicle"|"driver", id: Number|null } — id is null while adding, before "Create" is pressed.
   var currentForm = null;
+  // Files picked on the Add screen before the vehicle/driver record exists yet, keyed by field id.
+  // { [field]: { file: File, label: String } }
+  var pendingUploads = { vehicle: {}, driver: {} };
 
   // Latest document for each slot "field", keyed by field (docs already come back newest-first).
   function latestByField(docs) {
@@ -321,7 +325,29 @@
   }
 
   function vehicleDocSlots(country) {
-    return [{ id: "photo", label: "Vehicle photo", required: true }].concat(slotsFor(country, "vehicle"));
+    return [{ id: "photo", label: "Vehicle photo", required: true }].concat(expandSlots(slotsFor(country, "vehicle")));
+  }
+
+  // A tile for a document that hasn't been uploaded yet (used on the Add screen,
+  // before the vehicle/driver record — and therefore an owner id — exists).
+  // Picking a file just stores it in memory; it's actually uploaded once the
+  // record is created.
+  function pendingDocTileHtml(ownerType, field, label, required, pending) {
+    var uid = "pending-" + ownerType + "-" + field;
+    var hasFile = !!pending;
+    var inner = hasFile
+      ? FILE_ICON + '<div class="doc-tile-label">' + esc(label) + '</div>' +
+        '<div class="doc-tile-file">' + esc(pending.file.name) + "</div>"
+      : UPLOAD_ICON + '<div class="doc-tile-label">' + esc(label) + '</div>' +
+        (required ? '<span class="doc-required">Required</span>' : '<span class="doc-optional">Optional</span>');
+    return '<div class="doc-item">' +
+      '<label class="doc-tile' + (hasFile ? " has-file" : "") + '" for="file-' + uid + '">' + inner + '</label>' +
+      '<input type="file" id="file-' + uid + '" data-pending-uid="' + uid + '" data-pending-owner="' + ownerType + '"' +
+      ' data-field="' + esc(field) + '" data-label="' + esc(label) + '" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/*">' +
+      "</div>";
+  }
+  function pendingGridHtml(ownerType, defs, pendingMap) {
+    return defs.map(function (d) { return pendingDocTileHtml(ownerType, d.id, d.label, d.required, pendingMap[d.id]); }).join("");
   }
 
   function imageDocThumb(doc, placeholderIcon) {
@@ -404,6 +430,7 @@
   /* ---------- vehicle full-page view (add + view/edit) ---------- */
   function openVehicleForm(id) {
     currentForm = { type: "vehicle", id: id };
+    if (id == null) pendingUploads.vehicle = {};
     $("fleetListView").hidden = true;
     $("driverFormView").hidden = true;
     $("vehicleFormView").hidden = false;
@@ -422,7 +449,8 @@
       $("vfMake").disabled = false; $("vfPlate").disabled = false;
       $("vfCreateBtn").hidden = false;
       $("vfSaveBtn").hidden = true;
-      $("vfDocsSection").hidden = true;
+      $("vfDocsSection").hidden = false;
+      $("vfDocGrid").innerHTML = pendingGridHtml("vehicle", vehicleDocSlots(country), pendingUploads.vehicle);
       return;
     }
 
@@ -438,11 +466,39 @@
     var make = $("vfMake").value.trim(), plate = $("vfPlate").value.trim();
     if (!plate) { $("vfStatus").textContent = "Plate number is required."; $("vfStatus").className = "status err"; $("vfPlate").focus(); return; }
     this.disabled = true;
+    $("vfStatus").textContent = "Creating…";
+    $("vfStatus").className = "status";
     try {
       var r = await api("/api/partner/vehicles", { method: "POST", json: true, body: JSON.stringify({ make: make, plate: plate }) });
       currentForm.id = r.id;
+
+      var pending = pendingUploads.vehicle;
+      var fields = Object.keys(pending);
+      var failed = [];
+      for (var i = 0; i < fields.length; i++) {
+        var field = fields[i], entry = pending[field];
+        try {
+          var fd = new FormData();
+          fd.append("ownerType", "vehicle");
+          fd.append("ownerId", r.id);
+          fd.append("field", field);
+          fd.append("label", entry.label);
+          fd.append("file", entry.file, entry.file.name);
+          var res = await fetch("/api/partner/documents", { method: "POST", body: fd });
+          if (!res.ok) throw new Error("upload_failed");
+        } catch (err) { failed.push(entry.label); }
+      }
+      pendingUploads.vehicle = {};
+
       await loadFleet();
       renderVehicleForm();
+      if (failed.length) {
+        $("vfStatus").textContent = "Vehicle created. Could not upload: " + failed.join(", ") + " — try those again below.";
+        $("vfStatus").className = "status err";
+      } else {
+        $("vfStatus").textContent = "Vehicle created.";
+        $("vfStatus").className = "status";
+      }
     } catch (e) {
       $("vfStatus").textContent = "Could not create the vehicle. Try again.";
       $("vfStatus").className = "status err";
@@ -465,6 +521,7 @@
   });
   function closeVehicleForm() {
     currentForm = null;
+    pendingUploads.vehicle = {};
     $("vehicleFormView").hidden = true;
     $("fleetListView").hidden = false;
   }
@@ -473,6 +530,7 @@
   /* ---------- driver full-page view (add + view/edit) ---------- */
   function openDriverForm(id) {
     currentForm = { type: "driver", id: id };
+    if (id == null) pendingUploads.driver = {};
     $("fleetListView").hidden = true;
     $("vehicleFormView").hidden = true;
     $("driverFormView").hidden = false;
@@ -490,7 +548,8 @@
       $("dfName").value = ""; $("dfPhone").value = ""; $("dfLanguage").value = "";
       $("dfCreateBtn").hidden = false;
       $("dfSaveBtn").hidden = true;
-      $("dfDocsSection").hidden = true;
+      $("dfDocsSection").hidden = false;
+      $("dfDocGrid").innerHTML = pendingGridHtml("driver", slotsFor(country, "driver"), pendingUploads.driver);
       return;
     }
 
@@ -506,11 +565,39 @@
     var name = $("dfName").value.trim(), phone = $("dfPhone").value.trim(), language = $("dfLanguage").value.trim();
     if (!name) { $("dfStatus").textContent = "Name is required."; $("dfStatus").className = "status err"; $("dfName").focus(); return; }
     this.disabled = true;
+    $("dfStatus").textContent = "Creating…";
+    $("dfStatus").className = "status";
     try {
       var r = await api("/api/partner/drivers", { method: "POST", json: true, body: JSON.stringify({ fullName: name, phone: phone, language: language }) });
       currentForm.id = r.id;
+
+      var pending = pendingUploads.driver;
+      var fields = Object.keys(pending);
+      var failed = [];
+      for (var i = 0; i < fields.length; i++) {
+        var field = fields[i], entry = pending[field];
+        try {
+          var fd = new FormData();
+          fd.append("ownerType", "driver");
+          fd.append("ownerId", r.id);
+          fd.append("field", field);
+          fd.append("label", entry.label);
+          fd.append("file", entry.file, entry.file.name);
+          var res = await fetch("/api/partner/documents", { method: "POST", body: fd });
+          if (!res.ok) throw new Error("upload_failed");
+        } catch (err) { failed.push(entry.label); }
+      }
+      pendingUploads.driver = {};
+
       await loadFleet();
       renderDriverForm();
+      if (failed.length) {
+        $("dfStatus").textContent = "Driver created. Could not upload: " + failed.join(", ") + " — try those again below.";
+        $("dfStatus").className = "status err";
+      } else {
+        $("dfStatus").textContent = "Driver created.";
+        $("dfStatus").className = "status";
+      }
     } catch (e) {
       $("dfStatus").textContent = "Could not create the driver. Try again.";
       $("dfStatus").className = "status err";
@@ -533,6 +620,7 @@
   });
   function closeDriverForm() {
     currentForm = null;
+    pendingUploads.driver = {};
     $("driverFormView").hidden = true;
     $("fleetListView").hidden = false;
   }
@@ -577,6 +665,26 @@
       input.value = "";
       alert("Upload failed. Try again.");
     }
+  });
+
+  // Picking a file on the Add-vehicle/Add-driver screen, before the record exists:
+  // just hold onto it in memory and re-render that one tile — it's uploaded for
+  // real once "Create vehicle"/"Create driver" is pressed.
+  document.body.addEventListener("change", function (e) {
+    var input = e.target.closest("input[type=file][data-pending-uid]");
+    if (!input) return;
+    var file = input.files && input.files[0];
+    if (!file) return;
+
+    if (!typeFor(file)) { alert("Unsupported file type. Use PDF, JPG, PNG, WEBP or GIF."); input.value = ""; return; }
+    if (file.size > MAX_BYTES) { alert("File larger than 20 MB."); input.value = ""; return; }
+
+    var ownerType = input.getAttribute("data-pending-owner");
+    var field = input.getAttribute("data-field");
+    var label = input.getAttribute("data-label") || field;
+    pendingUploads[ownerType][field] = { file: file, label: label };
+
+    if (ownerType === "vehicle") renderVehicleForm(); else renderDriverForm();
   });
 
   /* ---------- boot ---------- */

@@ -11,8 +11,8 @@ window.DOC_DEFS = (function () {
         { id: "tlc_license", label: "TLC license", required: true }
       ],
       vehicle: [
-        { id: "registration", label: "Vehicle registration", required: true },
-        { id: "insurance", label: "Insurance policy", required: true }
+        { id: "registration", label: "Vehicle registration", required: true, pair: true },
+        { id: "insurance", label: "Insurance policy", required: true, pair: true }
       ],
       company: [
         { id: "cert", label: "Registration certificate", required: true },
@@ -27,9 +27,9 @@ window.DOC_DEFS = (function () {
         { id: "taxi_license", label: "Taxi / VTC license", required: true }
       ],
       vehicle: [
-        { id: "circulacion", label: "Permiso de circulación", required: true },
+        { id: "circulacion", label: "Permiso de circulación", required: true, pair: true },
         { id: "itv", label: "ITV certificate", required: true },
-        { id: "insurance", label: "Insurance policy", required: true }
+        { id: "insurance", label: "Insurance policy", required: true, pair: true }
       ],
       company: [
         { id: "cert", label: "Registration certificate (alta autónomo)", required: true },
@@ -44,9 +44,9 @@ window.DOC_DEFS = (function () {
         { id: "taxi_license", label: "Taxi / tourist-office license", required: true }
       ],
       vehicle: [
-        { id: "registration", label: "Vehicle registration", required: true },
+        { id: "registration", label: "Vehicle registration", required: true, pair: true },
         { id: "kteo", label: "ΚΤΕΟ (roadworthiness) certificate", required: true },
-        { id: "insurance", label: "Insurance policy", required: true }
+        { id: "insurance", label: "Insurance policy", required: true, pair: true }
       ],
       company: [
         { id: "cert", label: "Registration certificate", required: true },
@@ -60,9 +60,9 @@ window.DOC_DEFS = (function () {
         { id: "driving_license", label: "Driving licence", required: true }
       ],
       vehicle: [
-        { id: "pco_vehicle", label: "PCO vehicle licence", required: true },
+        { id: "pco_vehicle", label: "PCO vehicle licence", required: true, pair: true },
         { id: "mot", label: "MOT certificate", required: true },
-        { id: "insurance", label: "Insurance policy", required: true }
+        { id: "insurance", label: "Insurance policy", required: true, pair: true }
       ],
       company: [
         { id: "cert", label: "Registration certificate (Companies House)", required: true },
@@ -78,8 +78,8 @@ window.DOC_DEFS = (function () {
       { id: "professional_license", label: "Professional / taxi driver license", required: false }
     ],
     vehicle: [
-      { id: "registration", label: "Vehicle registration", required: true },
-      { id: "insurance", label: "Insurance policy", required: true }
+      { id: "registration", label: "Vehicle registration", required: true, pair: true },
+      { id: "insurance", label: "Insurance policy", required: true, pair: true }
     ],
     company: [
       { id: "cert", label: "Registration certificate", required: true },
@@ -91,5 +91,20 @@ window.DOC_DEFS = (function () {
     var set = DOCS[country] || GENERIC_DOCS;
     return set[type] || [];
   }
-  return { DOCS: DOCS, GENERIC_DOCS: GENERIC_DOCS, slotsFor: slotsFor };
+  // Expands any slot marked `pair: true` into two upload boxes — one required,
+  // one optional — so a partner can supply either a single combined file (front
+  // + back / all pages in one PDF, say) or two separate photos.
+  function expandSlots(defs) {
+    var out = [];
+    (defs || []).forEach(function (d) {
+      if (d.pair) {
+        out.push({ id: d.id + "_1", label: d.label, required: true });
+        out.push({ id: d.id + "_2", label: d.label + " — additional file", required: false });
+      } else {
+        out.push(d);
+      }
+    });
+    return out;
+  }
+  return { DOCS: DOCS, GENERIC_DOCS: GENERIC_DOCS, slotsFor: slotsFor, expandSlots: expandSlots };
 })();
