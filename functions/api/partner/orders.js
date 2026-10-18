@@ -7,7 +7,8 @@ export async function onRequestGet(context) {
   if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
 
   const { results } = await env.DB.prepare(
-    `SELECT o.id, o.order_number, o.pickup, o.dropoff, o.flight_number, o.order_date, o.order_time, o.vehicle_type,
+    `SELECT o.id, o.order_number, o.pickup, o.dropoff, o.flight_number, o.flight_time, o.buffer_minutes,
+            o.order_date, o.order_time, o.vehicle_type,
             o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet,
             o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
             o.price, o.currency, o.notes, o.status, o.trip_stage, o.created_at, o.responded_at
@@ -24,6 +25,8 @@ export async function onRequestGet(context) {
     pickup: o.pickup,
     dropoff: o.dropoff,
     flightNumber: o.flight_number,
+    flightTime: o.flight_time,
+    bufferMinutes: o.buffer_minutes,
     orderDate: o.order_date,
     orderTime: o.order_time,
     vehicleType: o.vehicle_type,

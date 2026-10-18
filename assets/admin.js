@@ -4,7 +4,6 @@
   var partners = [];
   var orders = [];
   var detailCache = {};
-  var fleetCache = {}; // partnerId -> { vehicles: [...], drivers: [...] }
   var openId = null;
   var openOrderId = null;
   var STAGE_LABELS = { on_the_way: "On the way", arrived: "Arrived at pickup", in_car: "Passenger on board", dropped_off: "Dropped off" };
@@ -33,14 +32,6 @@
     var data = await res.json().catch(function () { return {}; });
     if (!res.ok) throw new Error(data.error || "request_failed");
     return data;
-  }
-
-  async function loadPartnerFleet(partnerId) {
-    if (fleetCache[partnerId]) return fleetCache[partnerId];
-    var data = await api("/api/admin/partner-detail?id=" + partnerId);
-    var fleet = { vehicles: data.vehicles || [], drivers: data.drivers || [] };
-    fleetCache[partnerId] = fleet;
-    return fleet;
   }
 
   /* ---------- tabs ---------- */
@@ -195,34 +186,7 @@
     $("opPartner").innerHTML = active.length
       ? active.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
       : '<option value="">No active partners yet</option>';
-    onOpPartnerChange();
   }
-
-  function fleetSelectOptions(list, labelFn) {
-    var opts = '<option value="">— not assigned —</option>';
-    opts += list.map(function (x) { return '<option value="' + x.id + '">' + esc(labelFn(x)) + "</option>"; }).join("");
-    return opts;
-  }
-
-  async function onOpPartnerChange() {
-    var pid = Number($("opPartner").value);
-    if (!pid) {
-      $("opDriver").innerHTML = '<option value="">Pick a partner first</option>';
-      $("opVehicle").innerHTML = '<option value="">Pick a partner first</option>';
-      return;
-    }
-    $("opDriver").innerHTML = '<option value="">Loading…</option>';
-    $("opVehicle").innerHTML = '<option value="">Loading…</option>';
-    try {
-      var fleet = await loadPartnerFleet(pid);
-      $("opDriver").innerHTML = fleetSelectOptions(fleet.drivers, function (d) { return d.fullName || ("Driver #" + d.id); });
-      $("opVehicle").innerHTML = fleetSelectOptions(fleet.vehicles, function (v) { return v.plate || ("Vehicle #" + v.id); });
-    } catch (e) {
-      $("opDriver").innerHTML = '<option value="">Could not load</option>';
-      $("opVehicle").innerHTML = '<option value="">Could not load</option>';
-    }
-  }
-  $("opPartner").addEventListener("change", onOpPartnerChange);
 
   (function initVehicleTypes() {
     var types = (window.VEHICLE_TYPES || []);
@@ -246,20 +210,17 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderNumber: orderNumber, partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
-          flightNumber: $("opFlight").value.trim(),
+          flightNumber: $("opFlight").value.trim(), flightTime: $("opFlightTime").value, bufferMinutes: $("opBuffer").value.trim(),
           orderTime: $("opTime").value, vehicleType: $("opVehicleType").value,
           passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
           passengerName: $("opPassengerName").value.trim(), passengerPhone: $("opPassengerPhone").value.trim(),
-          driverId: $("opDriver").value || null, vehicleId: $("opVehicle").value || null,
           price: $("opPrice").value.trim(), currency: $("opCurrency").value || "EUR",
           meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim()
         })
       });
-      ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opDate", "opTime", "opPassengers", "opLuggage",
+      ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
         "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
       $("opCurrency").value = "EUR";
-      $("opDriver").value = "";
-      $("opVehicle").value = "";
       $("createOrderStatus").textContent = "Order created and assigned.";
       $("createOrderStatus").className = "status ok";
       loadOrders();
@@ -310,14 +271,11 @@
     if (openOrderId != null) renderOrderDetail(openOrderId);
   }
 
-  async function renderOrderDetail(id) {
+  function renderOrderDetail(id) {
     var el = $("orderdetail-" + id);
     if (!el) return;
     var o = orders.filter(function (x) { return x.id === id; })[0];
     if (!o) return;
-    el.innerHTML = "Loading…";
-    var fleet;
-    try { fleet = await loadPartnerFleet(o.partnerId); } catch (e) { fleet = { vehicles: [], drivers: [] }; }
 
     var actions = (o.status === "accepted" || o.status === "offered")
       ? '<button type="button" class="minibtn good" data-order-complete="' + o.id + '">Mark completed</button>' +
@@ -326,7 +284,7 @@
 
     el.innerHTML =
       '<div class="block" style="margin-top:0;padding-top:0;border-top:0;">' +
-      '<div class="row-meta">Flight: ' + esc(o.flightNumber || "—") + "</div>" +
+      '<div class="row-meta">Flight: ' + esc(o.flightNumber || "—") + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + (o.bufferMinutes != null ? " · buffer " + esc(o.bufferMinutes) + " min" : "") + " · pickup " + esc(o.orderTime || "—") + "</div>" +
       '<div class="row-meta">Passengers: ' + esc(o.passengers != null ? o.passengers : "—") + " · Luggage: " + esc(o.luggage != null ? o.luggage : "—") + "</div>" +
       '<div class="row-meta">Passenger: ' + esc(o.passengerName || "—") + (o.passengerPhone ? " · " + esc(o.passengerPhone) : "") + "</div>" +
       (o.status === "accepted" || o.status === "completed"
@@ -336,52 +294,30 @@
       (o.notes ? '<div class="row-meta">Instructions: ' + esc(o.notes) + "</div>" : "") +
       '<div class="row-meta">Created ' + esc(fmtDate(o.createdAt)) + (o.respondedAt ? " · responded " + esc(fmtDate(o.respondedAt)) : "") + "</div>" +
       "</div>" +
-      '<div class="block">' +
-      '<div class="block-title">Driver &amp; vehicle</div>' +
-      '<div class="addrow" style="margin-top:0;">' +
-      '<select id="odDriver-' + o.id + '">' + fleetSelectOptions(fleet.drivers, function (d) { return d.fullName || ("Driver #" + d.id); }) + "</select>" +
-      '<select id="odVehicle-' + o.id + '">' + fleetSelectOptions(fleet.vehicles, function (v) { return v.plate || ("Vehicle #" + v.id); }) + "</select>" +
-      '<button type="button" class="minibtn" data-order-save-assign="' + o.id + '">Save</button>' +
-      "</div></div>" +
       (actions ? '<div class="block" style="display:flex;gap:8px;">' + actions + "</div>" : "");
-
-    $("odDriver-" + o.id).value = o.driverId || "";
-    $("odVehicle-" + o.id).value = o.vehicleId || "";
   }
 
   $("ordersList").addEventListener("click", async function (e) {
     var toggle = e.target.closest("[data-order-toggle]");
     var complete = e.target.closest("[data-order-complete]");
     var cancel = e.target.closest("[data-order-cancel]");
-    var saveAssign = e.target.closest("[data-order-save-assign]");
 
-    if (toggle && !complete && !cancel && !saveAssign) {
+    if (toggle && !complete && !cancel) {
       var id = Number(toggle.getAttribute("data-order-toggle"));
       openOrderId = openOrderId === id ? null : id;
       renderOrders();
       return;
     }
-    if (!complete && !cancel && !saveAssign) return;
+    if (!complete && !cancel) return;
     e.stopPropagation();
 
     try {
-      if (complete || cancel) {
-        var oid = Number((complete || cancel).getAttribute(complete ? "data-order-complete" : "data-order-cancel"));
-        await api("/api/admin/order-status", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: oid, status: complete ? "completed" : "cancelled" })
-        });
-        await loadOrders();
-      } else if (saveAssign) {
-        var sid = Number(saveAssign.getAttribute("data-order-save-assign"));
-        var driverVal = $("odDriver-" + sid).value;
-        var vehicleVal = $("odVehicle-" + sid).value;
-        await api("/api/admin/order-status", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: sid, driverId: driverVal || null, vehicleId: vehicleVal || null })
-        });
-        await loadOrders();
-      }
+      var oid = Number((complete || cancel).getAttribute(complete ? "data-order-complete" : "data-order-cancel"));
+      await api("/api/admin/order-status", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: oid, status: complete ? "completed" : "cancelled" })
+      });
+      await loadOrders();
     } catch (err) {
       alert("Could not update the order.");
     }

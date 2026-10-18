@@ -6,7 +6,8 @@ export async function onRequestGet(context) {
   if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
 
   const { results } = await env.DB.prepare(
-    `SELECT o.id, o.order_number, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.order_date, o.order_time,
+    `SELECT o.id, o.order_number, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.flight_time,
+            o.buffer_minutes, o.order_date, o.order_time,
             o.vehicle_type, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet,
             o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
             o.price, o.currency, o.notes, o.status, o.trip_stage, o.created_at, o.responded_at
@@ -25,6 +26,8 @@ export async function onRequestGet(context) {
     pickup: o.pickup,
     dropoff: o.dropoff,
     flightNumber: o.flight_number,
+    flightTime: o.flight_time,
+    bufferMinutes: o.buffer_minutes,
     orderDate: o.order_date,
     orderTime: o.order_time,
     vehicleType: o.vehicle_type,
@@ -61,6 +64,8 @@ export async function onRequestPost(context) {
     const pickup = (body.pickup || "").toString().trim().slice(0, 200);
     const dropoff = (body.dropoff || "").toString().trim().slice(0, 200);
     const flightNumber = (body.flightNumber || "").toString().trim().slice(0, 30);
+    const flightTime = (body.flightTime || "").toString().trim().slice(0, 10);
+    const bufferMinutes = body.bufferMinutes ? Number(body.bufferMinutes) : null;
     const orderDate = (body.orderDate || "").toString().trim().slice(0, 20);
     const orderTime = (body.orderTime || "").toString().trim().slice(0, 10);
     const vehicleType = (body.vehicleType || "").toString().trim().slice(0, 80);
@@ -94,12 +99,14 @@ export async function onRequestPost(context) {
     }
 
     const r = await env.DB.prepare(
-      `INSERT INTO orders (order_number, partner_id, pickup, dropoff, flight_number, order_date, order_time, vehicle_type,
+      `INSERT INTO orders (order_number, partner_id, pickup, dropoff, flight_number, flight_time, buffer_minutes,
+                            order_date, order_time, vehicle_type,
                             passengers, luggage, passenger_name, passenger_phone, meet_greet, driver_id, vehicle_id,
                             price, currency, notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
     ).bind(
-      orderNumber, partnerId, pickup, dropoff, flightNumber, orderDate, orderTime, vehicleType,
+      orderNumber, partnerId, pickup, dropoff, flightNumber, flightTime, bufferMinutes,
+      orderDate, orderTime, vehicleType,
       passengers, luggage, passengerName, passengerPhone, meetGreet, driverId, vehicleId,
       price, currency, notes
     ).run();

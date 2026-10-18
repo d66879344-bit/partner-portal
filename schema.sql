@@ -63,8 +63,10 @@ CREATE TABLE IF NOT EXISTS orders (
   pickup TEXT NOT NULL,
   dropoff TEXT NOT NULL,
   flight_number TEXT,
+  flight_time TEXT,       -- flight arrival time
+  buffer_minutes INTEGER, -- cushion between flight arrival and pickup
   order_date TEXT NOT NULL,
-  order_time TEXT,
+  order_time TEXT,        -- pickup time
   vehicle_type TEXT,
   passengers INTEGER,
   luggage INTEGER,

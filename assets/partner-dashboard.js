@@ -142,14 +142,6 @@
   });
 
   /* ---------- order detail modal ---------- */
-  function fleetOptionsHtml(list, labelFn, selectedId) {
-    var opts = '<option value="">— not assigned —</option>';
-    opts += list.map(function (x) {
-      return '<option value="' + x.id + '"' + (selectedId === x.id ? " selected" : "") + ">" + esc(labelFn(x)) + "</option>";
-    }).join("");
-    return opts;
-  }
-
   function stageTrackerHtml(o) {
     if (o.status !== "accepted" && o.status !== "completed") return "";
     var keys = STAGES.map(function (s) { return s.key; });
@@ -174,31 +166,23 @@
     if (!o) return;
     $("omTitle").textContent = "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id);
 
-    var contactHtml = o.passengerPhone
-      ? '<div class="om-row om-contact"><div><div class="om-label">Passenger</div>' + esc(o.passengerName || "—") + "</div>" +
-        '<div><a href="tel:' + esc(o.passengerPhone) + '" title="Call">☎</a>' +
-        '<a href="sms:' + esc(o.passengerPhone) + '" title="Message">✉</a></div></div>' +
-        '<div class="om-row">' + esc(o.passengerPhone) + "</div>"
-      : '<div class="om-row"><div class="om-label">Passenger</div>' + esc(o.passengerName || "—") + "</div>";
-
     var body =
       '<div class="om-row"><div class="om-label">Status</div>' + badge(o.status) + "</div>" +
-      '<div class="om-row"><div class="om-label">Pickup</div>' + esc(o.pickup) + (o.flightNumber ? " · Flight " + esc(o.flightNumber) : "") + "</div>" +
+      '<div class="om-row"><div class="om-label">Pickup</div>' + esc(o.pickup) + "</div>" +
       '<div class="om-row"><div class="om-label">Dropoff</div>' + esc(o.dropoff) + "</div>" +
-      '<div class="om-row"><div class="om-label">Date &amp; time</div>' + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</div>" +
+      (o.flightNumber ? '<div class="om-row"><div class="om-label">Flight number</div>' + esc(o.flightNumber) + "</div>" : "") +
+      '<div class="om-row"><div class="om-label">Date</div>' + esc(fmtDay(o.orderDate)) + "</div>" +
+      (o.flightTime ? '<div class="om-row"><div class="om-label">Flight arrival time</div>' + esc(o.flightTime) + "</div>" : "") +
+      (o.bufferMinutes != null ? '<div class="om-row"><div class="om-label">Buffer time</div>' + esc(o.bufferMinutes) + " min</div>" : "") +
+      '<div class="om-row"><div class="om-label">Pickup time</div>' + esc(o.orderTime || "—") + "</div>" +
       '<div class="om-row"><div class="om-label">Vehicle type</div>' + esc(o.vehicleType || "—") + "</div>" +
       '<div class="om-row"><div class="om-label">Passengers / luggage</div>' + esc(o.passengers != null ? o.passengers : "—") + " / " + esc(o.luggage != null ? o.luggage : "—") + "</div>" +
-      contactHtml +
+      '<div class="om-row"><div class="om-label">Passenger name</div>' + esc(o.passengerName || "—") + "</div>" +
+      '<div class="om-row"><div class="om-label">Passenger phone</div>' + esc(o.passengerPhone || "—") + "</div>" +
       (o.meetGreet ? '<div class="om-row"><div class="om-label">Meet &amp; greet</div>' + esc(o.meetGreet) + "</div>" : "") +
       (o.notes ? '<div class="om-row"><div class="om-label">Additional instructions</div>' + esc(o.notes) + "</div>" : "") +
       (o.price ? '<div class="om-row"><div class="om-label">Price</div>' + esc(o.price) + " " + esc(o.currency || "") + "</div>" : "") +
       stageTrackerHtml(o) +
-      '<div class="om-row"><div class="om-label">Your driver &amp; vehicle</div>' +
-      '<div class="addrow" style="margin-top:6px;">' +
-      '<select id="omDriver">' + fleetOptionsHtml(myFleet.drivers, function (d) { return d.fullName || ("Driver #" + d.id); }, o.driverId) + "</select>" +
-      '<select id="omVehicle">' + fleetOptionsHtml(myFleet.vehicles, function (v) { return v.plate || ("Vehicle #" + v.id); }, o.vehicleId) + "</select>" +
-      '<button type="button" class="minibtn" id="omSaveAssign">Save</button>' +
-      "</div><p class=\"status\" id=\"omAssignStatus\"></p></div>" +
       (o.status === "offered"
         ? '<div class="om-row" style="display:flex;gap:8px;">' +
           '<button type="button" class="minibtn accept" data-accept="' + o.id + '">Accept</button>' +
@@ -208,24 +192,6 @@
 
     $("omBody").innerHTML = body;
     $("orderModalBackdrop").hidden = false;
-
-    $("omSaveAssign").addEventListener("click", async function () {
-      this.disabled = true;
-      try {
-        await api("/api/partner/order-assign", {
-          method: "POST", json: true,
-          body: JSON.stringify({ id: o.id, driverId: $("omDriver").value || null, vehicleId: $("omVehicle").value || null })
-        });
-        $("omAssignStatus").textContent = "Saved.";
-        $("omAssignStatus").className = "status ok";
-        loadOrders();
-      } catch (e) {
-        $("omAssignStatus").textContent = "Could not save. Try again.";
-        $("omAssignStatus").className = "status err";
-      } finally {
-        this.disabled = false;
-      }
-    });
 
     var stageBtn = $("omBody").querySelector("[data-stage-next]");
     if (stageBtn) {
