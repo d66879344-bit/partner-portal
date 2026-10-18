@@ -9,46 +9,107 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="/assets/style.css">
 <style>
-  .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-  .row { padding: 12px 0; border-top: 1px solid var(--line); }
-  .row:first-child { border-top: 0; }
-  .row-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; cursor: pointer; }
-  .row-title { font-weight: 600; }
-  .row-meta { font-size: 13px; color: var(--ink-2); }
+  body { background: var(--bg); }
+
+  /* ---------- dashboard shell ---------- */
+  .dash-shell { display: flex; flex-wrap: wrap; align-items: flex-start; min-height: 100vh; }
+  .dash-sidebar {
+    width: 240px; flex: 0 0 240px; background: var(--surface); border-right: 1px solid var(--line);
+    padding: 24px 14px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 100vh;
+  }
+  .dash-brand { padding: 2px 10px 24px; }
+  .dash-brand-name { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.12; text-transform: none; color: var(--ink); }
+  .dash-brand-sub { font-size: 11px; color: var(--ink-2); margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
+  .dash-nav { display: flex; flex-direction: column; gap: 3px; }
+  .dash-nav .tab {
+    border: 0; background: transparent; border-radius: 8px; min-height: auto;
+    padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 11px;
+    font-size: 14px; font-weight: 500; color: var(--ink-2);
+  }
+  .dash-nav .tab:hover { background: var(--surface-2); }
+  .dash-nav .tab[aria-pressed="true"] { background: #E7F0FA; color: var(--focus); font-weight: 600; }
+  .dash-nav svg { flex: none; }
+  .dash-sidebar-foot {
+    margin-top: auto; padding: 14px 10px 2px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2);
+  }
+  .dash-avatar {
+    width: 28px; height: 28px; border-radius: 999px; background: #E7F0FA; color: var(--focus);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
+    font-family: var(--font-display);
+  }
+  .dash-main { flex: 999 1 560px; min-width: 0; padding: 28px 32px 56px; box-sizing: border-box; }
+  .dash-pagehead { margin-bottom: 20px; }
+  .dash-pagehead h1 { font-size: 28px; text-transform: none; color: var(--ink); }
+  .dash-pagehead .sub { color: var(--ink-2); font-size: 14px; margin-top: 4px; max-width: 70ch; }
+
+  /* ---------- stat cards ---------- */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 22px; }
+  .stat-card { padding: 16px 18px; }
+  .stat-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+  .stat-value { font-size: 26px; font-weight: 600; margin-top: 6px; }
+  @media (max-width: 760px) { .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+  /* ---------- toolbar ---------- */
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
-  .toolbar select, .toolbar input { min-height: 38px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface-2); padding: 6px 10px; }
+  .toolbar select, .toolbar input { min-height: 38px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 10px; }
   .toolbar-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
   .toolbar-field input { min-height: 36px; }
-  .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.15); font-size: 11px; margin-left: 2px; }
-  .tab[aria-pressed="true"] .tab-count { background: rgba(255,255,255,.25); }
-  .tab-count:empty { display: none; }
-  .detail { margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); display: none; }
+  .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.08); font-size: 11px; margin-left: 2px; font-family: var(--font-mono); }
+  .tab[aria-pressed="true"] .tab-count { background: rgba(0,0,0,.08); }
+
+  /* ---------- data table ---------- */
+  .table-card { padding: 4px 0 2px; overflow-x: auto; }
+  .data-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  .data-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); font-weight: 600; padding: 0 14px 10px; white-space: nowrap; }
+  .data-table th:first-child, .data-table td:first-child { padding-left: 18px; }
+  .data-table td { padding: 13px 14px; font-size: 14px; border-top: 1px solid var(--line); vertical-align: middle; }
+  .data-row { cursor: pointer; }
+  .data-row:hover td { background: var(--surface-2); }
+  .mono { font-family: var(--font-mono); }
+  .col-main { font-weight: 600; }
+  .col-chev { color: var(--line-strong); text-align: right; padding-right: 18px !important; width: 20px; }
+  .empty-cell { padding: 18px; color: var(--ink-2); border-top: 1px solid var(--line); }
+  .detail-cell { padding: 0 !important; border-top: 0 !important; }
+
+  .detail { margin: 0 14px 12px; padding: 16px 18px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); display: none; }
   .detail.open { display: block; }
   .block { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
   .block:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
-  .block-title { font-weight: 600; margin-bottom: 6px; }
-  .docrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .block-title { font-weight: 600; margin-bottom: 6px; font-size: 13px; }
+  .docrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); flex-wrap: wrap; font-size: 13px; }
   .docrow:first-child { border-top: 0; }
   .docrow-main a { color: var(--focus); }
   .docrow-actions { display: flex; gap: 6px; }
   .minibtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 6px 10px; min-height: 32px; cursor: pointer; font-weight: 600; font-size: 12px; }
   .minibtn.good { background: var(--good); color: #fff; border-color: var(--good); }
   .minibtn.crit { background: var(--crit); color: #fff; border-color: var(--crit); }
+  .minibtn.ghost-crit { background: var(--surface); color: var(--crit); border-color: var(--crit-bg); }
+
   .panel { display: none; }
   .panel.active { display: block; }
-  .addform { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px; }
+  .addform { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 4px; }
   .addform .field { margin-bottom: 0; min-width: 140px; flex: 1 1 140px; }
+
+  @media (max-width: 860px) {
+    .dash-sidebar { width: 100%; flex: 1 1 100%; min-height: auto; flex-direction: row; overflow-x: auto; align-items: center; }
+    .dash-brand { padding: 2px 12px; }
+    .dash-nav { flex-direction: row; }
+    .dash-sidebar-foot { display: none; }
+    .dash-main { padding: 22px 16px 48px; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<div class="wrap" id="gate">
   <header class="head">
     <span class="eyebrow">Admin</span>
     <h1>Partner CRM</h1>
     <p class="lede">Review partner documents and activate accounts, and create &amp; assign orders to a specific partner.</p>
   </header>
 
-  <section class="card" id="gate">
+  <section class="card" id="gateCard">
     <div class="field">
       <label for="secret">Admin password</label>
       <input type="text" id="secret" autocomplete="off">
@@ -56,14 +117,40 @@
     <button type="button" class="btn" id="unlock">Sign in</button>
     <p class="status err" id="gateStatus"></p>
   </section>
+</div>
 
-  <div id="panelsWrap" hidden>
-    <div class="tabs" role="tablist" id="mainTabs">
-      <button type="button" class="tab" data-tab="partners" aria-pressed="true">Partners</button>
-      <button type="button" class="tab" data-tab="orders" aria-pressed="false">Orders</button>
+<div class="dash-shell" id="panelsWrap" hidden>
+  <aside class="dash-sidebar">
+    <div class="dash-brand">
+      <div class="dash-brand-name">Admin</div>
+      <div class="dash-brand-sub">Partner Portal</div>
     </div>
 
-    <section class="card panel active" id="panel-partners">
+    <nav class="dash-nav" id="mainTabs">
+      <button type="button" class="tab" data-tab="partners" aria-pressed="true">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
+        Partners
+      </button>
+      <button type="button" class="tab" data-tab="orders" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
+        Orders
+      </button>
+    </nav>
+
+    <div class="dash-sidebar-foot">
+      <div class="dash-avatar">A</div>
+      <div>Admin</div>
+    </div>
+  </aside>
+
+  <main class="dash-main">
+
+    <section class="panel active" id="panel-partners">
+      <div class="dash-pagehead">
+        <h1>Partners</h1>
+        <p class="sub">Review documents and manage partner accounts</p>
+      </div>
+
       <div class="toolbar">
         <select id="fStatus">
           <option value="">All statuses</option>
@@ -74,42 +161,63 @@
         <input type="text" id="fSearch" placeholder="Search company / email">
       </div>
       <p class="status" id="partnersStatus"></p>
-      <ul class="list" id="partnersList"></ul>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr><th>Company</th><th>Email</th><th>Country</th><th>Registered</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="partnersList"></tbody>
+        </table>
+      </div>
     </section>
 
-    <section class="card panel" id="panel-orders">
-      <h2>Create order</h2>
-      <div class="addform">
-        <div class="field"><label for="opOrderNumber">Order number</label><input type="text" id="opOrderNumber" placeholder="e.g. 17082563-1"></div>
-        <div class="field"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
-        <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
-        <div class="field"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
-        <div class="field"><label for="opFlight">Flight number <span class="hint">optional</span></label><input type="text" id="opFlight"></div>
-        <div class="field"><label for="opFlightTime">Flight arrival time <span class="hint">optional</span></label><input type="time" id="opFlightTime"></div>
-        <div class="field"><label for="opBuffer">Buffer (minutes) <span class="hint">optional</span></label><input type="text" id="opBuffer" inputmode="numeric" placeholder="e.g. 60"></div>
-        <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
-        <div class="field"><label for="opTime">Pickup time</label><input type="time" id="opTime"></div>
-        <div class="field"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
-        <div class="field"><label for="opPassengers">Passengers</label><input type="text" id="opPassengers" inputmode="numeric"></div>
-        <div class="field"><label for="opLuggage">Luggage <span class="hint">optional</span></label><input type="text" id="opLuggage" inputmode="numeric"></div>
-        <div class="field"><label for="opPassengerName">Passenger name</label><input type="text" id="opPassengerName"></div>
-        <div class="field"><label for="opPassengerPhone">Passenger phone</label><input type="text" id="opPassengerPhone"></div>
-        <div class="field"><label for="opPrice">Price</label><input type="text" id="opPrice" inputmode="decimal"></div>
-        <div class="field"><label for="opCurrency">Currency</label>
-          <select id="opCurrency">
-            <option value="EUR">EUR — Euro (€)</option>
-            <option value="USD">USD — Dollar ($)</option>
-            <option value="GBP">GBP — Pound (£)</option>
-          </select>
-        </div>
-        <div class="field" style="flex:2 1 260px;"><label for="opMeetGreet">Meet &amp; greet <span class="hint">optional</span></label><input type="text" id="opMeetGreet" placeholder="e.g. Meet at arrival hall with name sign"></div>
-        <div class="field" style="flex:2 1 260px;"><label for="opNotes">Additional instructions <span class="hint">optional</span></label><input type="text" id="opNotes"></div>
-        <button type="button" class="minibtn good" id="createOrderBtn">Create &amp; assign</button>
+    <section class="panel" id="panel-orders">
+      <div class="dash-pagehead">
+        <h1>Orders</h1>
+        <p class="sub">All orders across all partners</p>
       </div>
-      <p class="status" id="createOrderStatus"></p>
 
-      <h2>All orders</h2>
-      <div class="tabs" role="tablist" id="orderTabs" style="margin-bottom:12px;">
+      <div class="stat-grid">
+        <div class="card stat-card"><div class="stat-label">Not accepted</div><div class="stat-value mono" id="statOffered">0</div></div>
+        <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
+        <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
+        <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <h2>Create order</h2>
+        <div class="addform">
+          <div class="field"><label for="opOrderNumber">Order number</label><input type="text" id="opOrderNumber" placeholder="e.g. 17082563-1"></div>
+          <div class="field"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
+          <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
+          <div class="field"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
+          <div class="field"><label for="opFlight">Flight number <span class="hint">optional</span></label><input type="text" id="opFlight"></div>
+          <div class="field"><label for="opFlightTime">Flight arrival time <span class="hint">optional</span></label><input type="time" id="opFlightTime"></div>
+          <div class="field"><label for="opBuffer">Buffer (minutes) <span class="hint">optional</span></label><input type="text" id="opBuffer" inputmode="numeric" placeholder="e.g. 60"></div>
+          <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
+          <div class="field"><label for="opTime">Pickup time</label><input type="time" id="opTime"></div>
+          <div class="field"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
+          <div class="field"><label for="opPassengers">Passengers</label><input type="text" id="opPassengers" inputmode="numeric"></div>
+          <div class="field"><label for="opLuggage">Luggage <span class="hint">optional</span></label><input type="text" id="opLuggage" inputmode="numeric"></div>
+          <div class="field"><label for="opPassengerName">Passenger name</label><input type="text" id="opPassengerName"></div>
+          <div class="field"><label for="opPassengerPhone">Passenger phone</label><input type="text" id="opPassengerPhone"></div>
+          <div class="field"><label for="opPrice">Price</label><input type="text" id="opPrice" inputmode="decimal"></div>
+          <div class="field"><label for="opCurrency">Currency</label>
+            <select id="opCurrency">
+              <option value="EUR">EUR — Euro (€)</option>
+              <option value="USD">USD — Dollar ($)</option>
+              <option value="GBP">GBP — Pound (£)</option>
+            </select>
+          </div>
+          <div class="field" style="flex:2 1 260px;"><label for="opMeetGreet">Meet &amp; greet <span class="hint">optional</span></label><input type="text" id="opMeetGreet" placeholder="e.g. Meet at arrival hall with name sign"></div>
+          <div class="field" style="flex:2 1 260px;"><label for="opNotes">Additional instructions <span class="hint">optional</span></label><input type="text" id="opNotes"></div>
+          <button type="button" class="minibtn good" id="createOrderBtn">Create &amp; assign</button>
+        </div>
+        <p class="status" id="createOrderStatus"></p>
+      </div>
+
+      <div class="tabs" role="tablist" id="orderTabs">
         <button type="button" class="tab" data-order-tab="offered" aria-pressed="true">Not accepted <span class="tab-count" id="countOffered"></span></button>
         <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">In progress <span class="tab-count" id="countAccepted"></span></button>
         <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed <span class="tab-count" id="countCompleted"></span></button>
@@ -125,9 +233,17 @@
         </select>
       </div>
       <p class="status" id="ordersStatus"></p>
-      <ul class="list" id="ordersList"></ul>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr><th>Order #</th><th>Partner</th><th>Route</th><th>Date &amp; time</th><th>Price</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="ordersList"></tbody>
+        </table>
+      </div>
     </section>
-  </div>
+  </main>
 </div>
 
 <script src="/assets/order-defs.js"></script>

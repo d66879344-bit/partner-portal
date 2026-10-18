@@ -9,19 +9,50 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="/assets/style.css">
 <style>
-  .orow { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface-2); margin-bottom: 10px; cursor: pointer; }
+  body { background: var(--bg); }
+
+  /* ---------- dashboard shell ---------- */
+  .dash-shell { display: flex; flex-wrap: wrap; align-items: flex-start; min-height: 100vh; }
+  .dash-sidebar {
+    width: 240px; flex: 0 0 240px; background: var(--surface); border-right: 1px solid var(--line);
+    padding: 24px 14px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 100vh;
+  }
+  .dash-brand { padding: 2px 10px 24px; }
+  .dash-brand-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; line-height: 1.18; text-transform: uppercase; color: var(--ink); overflow-wrap: anywhere; }
+  .dash-brand-sub { font-size: 11px; color: var(--ink-2); margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
+  .dash-nav { display: flex; flex-direction: column; gap: 3px; }
+  .dash-nav .tab {
+    border: 0; background: transparent; border-radius: 8px; min-height: auto;
+    padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 11px;
+    font-size: 14px; font-weight: 500; color: var(--ink-2);
+  }
+  .dash-nav .tab:hover { background: var(--surface-2); }
+  .dash-nav .tab[aria-pressed="true"] { background: #E7F0FA; color: var(--focus); font-weight: 600; }
+  .dash-nav svg { flex: none; }
+  .dash-sidebar-foot {
+    margin-top: auto; padding: 14px 10px 2px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2);
+  }
+  .dash-main { flex: 999 1 560px; min-width: 0; padding: 28px 32px 56px; box-sizing: border-box; }
+  .dash-pagehead { margin-bottom: 18px; }
+  .dash-pagehead h1 { font-size: 28px; text-transform: none; color: var(--ink); }
+  .dash-pagehead .sub { color: var(--ink-2); font-size: 14px; margin-top: 4px; max-width: 70ch; }
+
+  .pending-banner { border-color: #E8C65A; background: #FDF6E0; margin-bottom: 18px; padding: 14px 18px; }
+
+  /* ---------- order cards ---------- */
+  .orow { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--surface); margin-bottom: 10px; cursor: pointer; }
   .orow:hover { border-color: var(--line-strong); }
   .orow-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
   .orow-route { font-weight: 600; }
   .orow-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
-  .orow-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .orow-actions { display: flex; gap: 8px; margin-top: 12px; }
+
   .modal-wide { max-width: 520px; max-height: 86vh; overflow-y: auto; }
   .modal-wide h2 { margin-bottom: 14px; }
   .om-row { padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
   .om-row:first-of-type { border-top: 0; }
   .om-label { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
-  .om-contact { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .om-contact a { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 999px; background: var(--accent); color: var(--on-accent); text-decoration: none; font-size: 15px; margin-left: 6px; }
   .om-close { position: absolute; top: 14px; right: 16px; background: none; border: 0; font-size: 22px; line-height: 1; cursor: pointer; color: var(--ink-2); }
   .modal { position: relative; }
   .stage-chip { font: 600 12px/1 var(--font-body); padding: 5px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink-2); }
@@ -30,110 +61,163 @@
   .minibtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 8px 14px; min-height: 38px; cursor: pointer; font-weight: 600; font-size: 13px; }
   .minibtn.accept { background: var(--good); color: #fff; border-color: var(--good); }
   .minibtn.decline { background: var(--crit); color: #fff; border-color: var(--crit); }
+
+  /* ---------- fleet & documents ---------- */
   .docrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
   .docrow:first-child { border-top: 0; }
   .docrow-main { font-size: 13px; }
   .docrow-main a { color: var(--focus); }
+  .section-card { margin-bottom: 18px; }
   .block { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
   .block:first-of-type { margin-top: 10px; }
-  .block-title { font-weight: 600; margin-bottom: 6px; }
+  .block-title { font-weight: 600; margin-bottom: 6px; font-size: 14px; }
   .addrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
   .addrow select, .addrow input[type=text] { min-height: 36px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 8px; }
   .addform { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-top: 14px; }
   .addform .field { margin-bottom: 0; min-width: 160px; flex: 1 1 160px; }
+
+  /* ---------- account ---------- */
+  .va-field { padding: 13px 0; border-top: 1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:14px; }
+  .va-field:first-of-type { border-top: 0; padding-top: 2px; }
+  .va-fieldlabel { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+
   .panel { display: none; }
   .panel.active { display: block; }
+
+  /* ---------- toolbar / tabs ---------- */
   .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
   .toolbar-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
   .toolbar input, .toolbar select { min-height: 36px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 8px; font-size: 13px; }
-  .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.15); font-size: 11px; margin-left: 2px; }
-  .tab[aria-pressed="true"] .tab-count { background: rgba(255,255,255,.25); }
-  .tab-count:empty { display: none; }
+  .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.08); font-size: 11px; margin-left: 2px; font-family: var(--font-mono); }
+  .tab[aria-pressed="true"] .tab-count { background: rgba(0,0,0,.08); }
+
+  @media (max-width: 860px) {
+    .dash-sidebar { width: 100%; flex: 1 1 100%; min-height: auto; flex-direction: row; overflow-x: auto; align-items: center; }
+    .dash-brand { padding: 2px 12px; }
+    .dash-nav { flex-direction: row; }
+    .dash-sidebar-foot { display: none; }
+    .dash-main { padding: 22px 16px 48px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="wrap">
-  <header class="head">
-    <span class="eyebrow">Partner portal</span>
-    <h1>Dashboard</h1>
-  </header>
-
-  <div class="navbar">
-    <span class="who">Signed in as <b id="whoCompany">…</b></span>
-    <button type="button" class="minibtn" id="logoutBtn">Log out</button>
-  </div>
-
-  <div class="card" id="pendingBanner" hidden style="border-color:#E8C65A;background:#FDF6E0;margin-bottom:18px;padding:14px 18px;">
-    <strong>Your documents are still under review.</strong>
-    <span style="color:var(--ink-2);">You can use your dashboard, but you won't receive orders until an admin activates your account.</span>
-  </div>
-
-  <div class="tabs" role="tablist" id="mainTabs">
-    <button type="button" class="tab" data-tab="orders" aria-pressed="true">Orders</button>
-    <button type="button" class="tab" data-tab="fleet" aria-pressed="false">Fleet &amp; Documents</button>
-    <button type="button" class="tab" data-tab="account" aria-pressed="false">Account</button>
-  </div>
-
-  <section class="card panel active" id="panel-orders">
-    <h2>Your orders</h2>
-    <p class="sub" style="color:var(--ink-2);font-size:13px;margin:4px 0 14px;">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
-    <div class="tabs" role="tablist" id="orderTabs" style="margin-bottom:12px;">
-      <button type="button" class="tab" data-order-tab="new" aria-pressed="true">New <span class="tab-count" id="countNew"></span></button>
-      <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">Accepted <span class="tab-count" id="countAccepted"></span></button>
-      <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed</button>
-    </div>
-    <div class="toolbar">
-      <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
-      <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
-      <select id="fSort">
-        <option value="asc">Date: soonest first</option>
-        <option value="desc">Date: latest first</option>
-      </select>
-    </div>
-    <p class="status" id="ordersStatus"></p>
-    <div id="ordersList"></div>
-  </section>
-
-  <div class="modal-backdrop" id="orderModalBackdrop" hidden>
-    <div class="modal modal-wide">
-      <button type="button" class="om-close" id="orderModalClose" aria-label="Close">&times;</button>
-      <h2 id="omTitle">Order</h2>
-      <div id="omBody"></div>
-    </div>
-  </div>
-
-  <section class="card panel" id="panel-fleet">
-    <h2>Company documents</h2>
-    <div id="companyDocs"></div>
-
-    <h2 style="margin-top:28px;">Vehicles</h2>
-    <div id="vehiclesList"></div>
-    <div class="addform">
-      <div class="field"><label for="newPlate">Plate number</label><input type="text" id="newPlate"></div>
-      <div class="field"><label for="newCategory">Category <span class="hint">optional</span></label><input type="text" id="newCategory" placeholder="e.g. Economy Sedan"></div>
-      <button type="button" class="minibtn" id="addVehicleBtn">Add vehicle</button>
+<div class="dash-shell">
+  <aside class="dash-sidebar">
+    <div class="dash-brand">
+      <div class="dash-brand-name" id="whoCompany">…</div>
+      <div class="dash-brand-sub">Partner Portal</div>
     </div>
 
-    <h2 style="margin-top:28px;">Drivers</h2>
-    <div id="driversList"></div>
-    <div class="addform">
-      <div class="field"><label for="newDriver">Driver name</label><input type="text" id="newDriver"></div>
-      <button type="button" class="minibtn" id="addDriverBtn">Add driver</button>
+    <nav class="dash-nav" id="mainTabs">
+      <button type="button" class="tab" data-tab="orders" aria-pressed="true">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
+        Orders
+      </button>
+      <button type="button" class="tab" data-tab="fleet" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3h11l3 4v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M6.5 9h7M6.5 12.5h7" stroke-linecap="round"/></svg>
+        Fleet &amp; Documents
+      </button>
+      <button type="button" class="tab" data-tab="account" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
+        Account
+      </button>
+    </nav>
+
+    <div class="dash-sidebar-foot">
+      <span>Signed in</span>
+      <button type="button" class="minibtn" id="logoutBtn" style="color:var(--crit); min-height:30px; padding:5px 10px; font-size:12px;">Log out</button>
+    </div>
+  </aside>
+
+  <main class="dash-main">
+
+    <div class="card pending-banner" id="pendingBanner" hidden>
+      <strong>Your documents are still under review.</strong>
+      <span style="color:var(--ink-2);">You can use your dashboard, but you won't receive orders until an admin activates your account.</span>
     </div>
 
-    <h2 style="margin-top:28px;">Other documents</h2>
-    <div id="otherDocs"></div>
-  </section>
+    <section class="panel active" id="panel-orders">
+      <div class="dash-pagehead">
+        <h1>Orders</h1>
+        <p class="sub">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
+      </div>
 
-  <section class="card panel" id="panel-account">
-    <h2>Account</h2>
-    <div class="field"><label>Email</label><div id="acctEmail"></div></div>
-    <div class="field"><label>Company</label><div id="acctCompany"></div></div>
-    <div class="field"><label>Country</label><div id="acctCountry"></div></div>
-    <div class="field"><label>Status</label><div id="acctStatus"></div></div>
-    <div class="field"><label>Member since</label><div id="acctSince"></div></div>
-  </section>
+      <div class="tabs" role="tablist" id="orderTabs">
+        <button type="button" class="tab" data-order-tab="new" aria-pressed="true">New <span class="tab-count" id="countNew"></span></button>
+        <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">Accepted <span class="tab-count" id="countAccepted"></span></button>
+        <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed</button>
+      </div>
+      <div class="toolbar">
+        <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
+        <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
+        <select id="fSort">
+          <option value="asc">Date: soonest first</option>
+          <option value="desc">Date: latest first</option>
+        </select>
+      </div>
+      <p class="status" id="ordersStatus"></p>
+      <div id="ordersList"></div>
+    </section>
+
+    <div class="modal-backdrop" id="orderModalBackdrop" hidden>
+      <div class="modal modal-wide">
+        <button type="button" class="om-close" id="orderModalClose" aria-label="Close">&times;</button>
+        <h2 id="omTitle">Order</h2>
+        <div id="omBody"></div>
+      </div>
+    </div>
+
+    <section class="panel" id="panel-fleet">
+      <div class="dash-pagehead">
+        <h1>Fleet &amp; Documents</h1>
+        <p class="sub">Keep your company, vehicle and driver documents up to date</p>
+      </div>
+
+      <div class="card section-card">
+        <h2>Company documents</h2>
+        <div id="companyDocs"></div>
+      </div>
+
+      <div class="card section-card">
+        <h2>Vehicles</h2>
+        <div id="vehiclesList"></div>
+        <div class="addform">
+          <div class="field"><label for="newPlate">Plate number</label><input type="text" id="newPlate"></div>
+          <div class="field"><label for="newCategory">Category <span class="hint">optional</span></label><input type="text" id="newCategory" placeholder="e.g. Economy Sedan"></div>
+          <button type="button" class="minibtn" id="addVehicleBtn">Add vehicle</button>
+        </div>
+      </div>
+
+      <div class="card section-card">
+        <h2>Drivers</h2>
+        <div id="driversList"></div>
+        <div class="addform">
+          <div class="field"><label for="newDriver">Driver name</label><input type="text" id="newDriver"></div>
+          <button type="button" class="minibtn" id="addDriverBtn">Add driver</button>
+        </div>
+      </div>
+
+      <div class="card section-card" style="margin-bottom:0;">
+        <h2>Other documents</h2>
+        <div id="otherDocs"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-account">
+      <div class="dash-pagehead">
+        <h1>Account</h1>
+        <p class="sub">Your company's details on file</p>
+      </div>
+      <div class="card" style="max-width:640px;">
+        <div class="va-field"><span class="va-fieldlabel">Email</span><div id="acctEmail"></div></div>
+        <div class="va-field"><span class="va-fieldlabel">Company</span><div id="acctCompany"></div></div>
+        <div class="va-field"><span class="va-fieldlabel">Country</span><div id="acctCountry"></div></div>
+        <div class="va-field"><span class="va-fieldlabel">Status</span><div id="acctStatus"></div></div>
+        <div class="va-field"><span class="va-fieldlabel">Member since</span><div id="acctSince"></div></div>
+      </div>
+    </section>
+  </main>
 </div>
 
 <script src="/assets/doc-defs.js"></script>

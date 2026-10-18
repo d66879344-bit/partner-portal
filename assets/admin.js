@@ -82,16 +82,18 @@
 
   function renderPartners() {
     var rows = partners.filter(matchesPartnerFilter);
-    if (!rows.length) { $("partnersList").innerHTML = '<li class="row">No matching partners.</li>'; return; }
+    if (!rows.length) { $("partnersList").innerHTML = '<tr><td colspan="6" class="empty-cell">No matching partners.</td></tr>'; return; }
     $("partnersList").innerHTML = rows.map(function (p) {
       var isOpen = openId === p.id;
-      return '<li class="row">' +
-        '<div class="row-top" data-toggle="' + p.id + '">' +
-        '<span class="row-title">' + esc(p.companyName) + "</span>" +
-        '<span class="row-meta">' + esc(p.email) + " · " + esc(p.countryName || p.country) + " · " + esc(fmtDate(p.createdAt)) + "</span>" +
-        badge(p.status) + "</div>" +
-        '<div class="detail' + (isOpen ? " open" : "") + '" id="detail-' + p.id + '"></div>' +
-        "</li>";
+      return '<tr class="data-row" data-toggle="' + p.id + '">' +
+        '<td class="col-main">' + esc(p.companyName) + "</td>" +
+        "<td>" + esc(p.email) + "</td>" +
+        "<td>" + esc(p.countryName || p.country) + "</td>" +
+        '<td class="mono">' + esc(fmtDate(p.createdAt)) + "</td>" +
+        "<td>" + badge(p.status) + "</td>" +
+        '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
+        "</tr>" +
+        '<tr><td colspan="6" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="detail-' + p.id + '"></div></td></tr>';
     }).join("");
     if (openId != null) renderDetail(openId);
   }
@@ -147,7 +149,7 @@
       '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
       '<button type="button" class="minibtn good" data-partner-approve="' + p.id + '">Activate account</button>' +
       '<button type="button" class="minibtn crit" data-partner-reject="' + p.id + '">Block account</button>' +
-      '<button type="button" class="minibtn crit" data-partner-delete="' + p.id + '" data-partner-name="' + esc(p.companyName) + '" style="margin-left:auto;">Delete partner</button>' +
+      '<button type="button" class="minibtn ghost-crit" data-partner-delete="' + p.id + '" data-partner-name="' + esc(p.companyName) + '" style="margin-left:auto;">Delete partner</button>' +
       "</div></div>" +
       '<div class="block"><div class="block-title">Company documents</div>' + docList(d.company.documents) + "</div>" +
       vehicleBlocks +
@@ -294,10 +296,18 @@
   };
 
   function updateOrderTabCounts() {
-    $("countOffered").textContent = orders.filter(function (o) { return o.status === "offered"; }).length || "";
-    $("countAccepted").textContent = orders.filter(function (o) { return o.status === "accepted"; }).length || "";
-    $("countCompleted").textContent = orders.filter(function (o) { return o.status === "completed"; }).length || "";
-    $("countClosed").textContent = orders.filter(function (o) { return CLOSED_STATUSES.indexOf(o.status) !== -1; }).length || "";
+    var cOffered = orders.filter(function (o) { return o.status === "offered"; }).length;
+    var cAccepted = orders.filter(function (o) { return o.status === "accepted"; }).length;
+    var cCompleted = orders.filter(function (o) { return o.status === "completed"; }).length;
+    var cClosed = orders.filter(function (o) { return CLOSED_STATUSES.indexOf(o.status) !== -1; }).length;
+    $("countOffered").textContent = cOffered || "";
+    $("countAccepted").textContent = cAccepted || "";
+    $("countCompleted").textContent = cCompleted || "";
+    $("countClosed").textContent = cClosed || "";
+    $("statOffered").textContent = cOffered;
+    $("statAccepted").textContent = cAccepted;
+    $("statCompleted").textContent = cCompleted;
+    $("statClosed").textContent = cClosed;
   }
 
   function matchesOrderFilter(o) {
@@ -320,17 +330,19 @@
       var kb = (b.orderDate || "") + " " + (b.orderTime || "");
       return ka < kb ? -dir : ka > kb ? dir : 0;
     });
-    if (!rows.length) { $("ordersList").innerHTML = '<li class="row">' + EMPTY_ORDER_MESSAGE[orderTab] + "</li>"; return; }
+    if (!rows.length) { $("ordersList").innerHTML = '<tr><td colspan="7" class="empty-cell">' + EMPTY_ORDER_MESSAGE[orderTab] + "</td></tr>"; return; }
     $("ordersList").innerHTML = rows.map(function (o) {
       var isOpen = openOrderId === o.id;
-      return '<li class="row">' +
-        '<div class="row-top" data-order-toggle="' + o.id + '">' +
-        '<span class="row-title">' + (o.orderNumber ? "#" + esc(o.orderNumber) + " · " : "") + esc(o.companyName) + " — " + esc(o.pickup) + " → " + esc(o.dropoff) + "</span>" +
-        '<span class="row-meta">' + esc(o.orderDate) + (o.orderTime ? " " + esc(o.orderTime) : "") +
-        (o.vehicleType ? " · " + esc(o.vehicleType) : "") + (o.price ? " · " + esc(o.price) + " " + esc(o.currency) : "") + "</span>" +
-        badge(o.status) + "</div>" +
-        '<div class="detail' + (isOpen ? " open" : "") + '" id="orderdetail-' + o.id + '"></div>' +
-        "</li>";
+      return '<tr class="data-row" data-order-toggle="' + o.id + '">' +
+        '<td class="mono col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
+        "<td>" + esc(o.companyName) + "</td>" +
+        "<td>" + esc(o.pickup) + " → " + esc(o.dropoff) + "</td>" +
+        '<td class="mono">' + esc(o.orderDate) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</td>" +
+        '<td class="mono">' + (o.price ? esc(o.price) + " " + esc(o.currency) : "—") + "</td>" +
+        "<td>" + badge(o.status) + "</td>" +
+        '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
+        "</tr>" +
+        '<tr><td colspan="7" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="orderdetail-' + o.id + '"></div></td></tr>';
     }).join("");
     if (openOrderId != null) renderOrderDetail(openOrderId);
   }
@@ -359,7 +371,7 @@
       '<div class="row-meta">Created ' + esc(fmtDate(o.createdAt)) + (o.respondedAt ? " · responded " + esc(fmtDate(o.respondedAt)) : "") + "</div>" +
       "</div>" +
       '<div class="block" style="display:flex;gap:8px;flex-wrap:wrap;">' + actions +
-      '<button type="button" class="minibtn crit" data-order-delete="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
+      '<button type="button" class="minibtn ghost-crit" data-order-delete="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
       "</div>";
   }
 
