@@ -51,9 +51,13 @@
       populatePartnerSelect();
       $("partnersStatus").textContent = partners.length + " partner(s)";
     } catch (e) {
-      $("partnersStatus").textContent = e.message === "unauthorized" ? "Wrong password." : "Could not load partners.";
-      $("partnersStatus").className = "status err";
-      if (e.message === "unauthorized") showGate();
+      if (e.message === "unauthorized") {
+        $("gateStatus").textContent = "Wrong password.";
+        showGate();
+      } else {
+        $("partnersStatus").textContent = "Could not load partners.";
+        $("partnersStatus").className = "status err";
+      }
     }
   }
 
@@ -282,7 +286,7 @@
     $("panelsWrap").hidden = true;
   }
 
-  $("unlock").addEventListener("click", function () {
+  function tryUnlock() {
     secret = $("secret").value.trim();
     if (!secret) { $("gateStatus").textContent = "Enter the password."; return; }
     try { sessionStorage.setItem("fdi_secret", secret); } catch (e) {}
@@ -291,6 +295,10 @@
     $("panelsWrap").hidden = false;
     loadPartners();
     loadOrders();
+  }
+  $("unlock").addEventListener("click", tryUnlock);
+  $("secret").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") tryUnlock();
   });
 
   try {
