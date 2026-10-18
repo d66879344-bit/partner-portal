@@ -6,10 +6,10 @@ export async function onRequestGet(context) {
   if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
 
   const { results } = await env.DB.prepare(
-    `SELECT o.id, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.order_date, o.order_time,
+    `SELECT o.id, o.order_number, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.order_date, o.order_time,
             o.vehicle_type, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet,
             o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
-            o.price, o.currency, o.notes, o.status, o.created_at, o.responded_at
+            o.price, o.currency, o.notes, o.status, o.trip_stage, o.created_at, o.responded_at
      FROM orders o
      JOIN partners p ON p.id = o.partner_id
      LEFT JOIN drivers dr ON dr.id = o.driver_id
@@ -19,6 +19,7 @@ export async function onRequestGet(context) {
 
   const orders = (results || []).map((o) => ({
     id: o.id,
+    orderNumber: o.order_number,
     partnerId: o.partner_id,
     companyName: o.company_name,
     pickup: o.pickup,
@@ -40,6 +41,7 @@ export async function onRequestGet(context) {
     currency: o.currency,
     notes: o.notes,
     status: o.status,
+    tripStage: o.trip_stage,
     createdAt: o.created_at,
     respondedAt: o.responded_at,
   }));
@@ -55,6 +57,7 @@ export async function onRequestPost(context) {
   try {
     const body = await request.json().catch(() => ({}));
     const partnerId = Number(body.partnerId);
+    const orderNumber = (body.orderNumber || "").toString().trim().slice(0, 40);
     const pickup = (body.pickup || "").toString().trim().slice(0, 200);
     const dropoff = (body.dropoff || "").toString().trim().slice(0, 200);
     const flightNumber = (body.flightNumber || "").toString().trim().slice(0, 30);
@@ -72,7 +75,7 @@ export async function onRequestPost(context) {
     let driverId = body.driverId ? Number(body.driverId) : null;
     let vehicleId = body.vehicleId ? Number(body.vehicleId) : null;
 
-    if (!partnerId || !pickup || !dropoff || !orderDate) {
+    if (!partnerId || !orderNumber || !pickup || !dropoff || !orderDate) {
       return Response.json({ error: "invalid_request" }, { status: 400 });
     }
 
@@ -91,12 +94,12 @@ export async function onRequestPost(context) {
     }
 
     const r = await env.DB.prepare(
-      `INSERT INTO orders (partner_id, pickup, dropoff, flight_number, order_date, order_time, vehicle_type,
+      `INSERT INTO orders (order_number, partner_id, pickup, dropoff, flight_number, order_date, order_time, vehicle_type,
                             passengers, luggage, passenger_name, passenger_phone, meet_greet, driver_id, vehicle_id,
                             price, currency, notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
     ).bind(
-      partnerId, pickup, dropoff, flightNumber, orderDate, orderTime, vehicleType,
+      orderNumber, partnerId, pickup, dropoff, flightNumber, orderDate, orderTime, vehicleType,
       passengers, luggage, passengerName, passengerPhone, meetGreet, driverId, vehicleId,
       price, currency, notes
     ).run();

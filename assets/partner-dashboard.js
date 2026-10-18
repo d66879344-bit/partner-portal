@@ -8,6 +8,12 @@
   var me = null;
   var lastOrders = [];
   var myFleet = { vehicles: [], drivers: [] };
+  var STAGES = [
+    { key: "on_the_way", label: "On the way" },
+    { key: "arrived", label: "Arrived at pickup" },
+    { key: "in_car", label: "Passenger on board" },
+    { key: "dropped_off", label: "Dropped off" },
+  ];
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -105,7 +111,7 @@
         : "";
       return '<div class="orow" data-order-open="' + o.id + '">' +
         '<div class="orow-top"><span class="orow-route">' + esc(o.pickup) + " → " + esc(o.dropoff) + "</span>" + badge(o.status) + "</div>" +
-        '<div class="orow-meta">#' + o.id + " · " + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") +
+        '<div class="orow-meta">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + " · " + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") +
         (o.vehicleType ? " · " + esc(o.vehicleType) : "") +
         (o.passengers ? " · " + esc(o.passengers) + " pax" : "") +
         (o.price ? " · " + esc(o.price) + " " + esc(o.currency || "") : "") + "</div>" +
@@ -144,10 +150,29 @@
     return opts;
   }
 
+  function stageTrackerHtml(o) {
+    if (o.status !== "accepted" && o.status !== "completed") return "";
+    var keys = STAGES.map(function (s) { return s.key; });
+    var currentIndex = o.tripStage ? keys.indexOf(o.tripStage) : -1;
+    var items = STAGES.map(function (s, i) {
+      var state = i <= currentIndex ? "done" : (i === currentIndex + 1 && o.status === "accepted" ? "next" : "upcoming");
+      return '<span class="stage-chip stage-' + state + '">' + (i <= currentIndex ? "✓ " : "") + esc(s.label) + "</span>";
+    }).join("");
+    var actionBtn = "";
+    if (o.status === "accepted" && currentIndex < STAGES.length - 1) {
+      var next = STAGES[currentIndex + 1];
+      var btnLabel = next.key === "dropped_off" ? "Mark dropped off (completes the trip)" : "Mark: " + next.label;
+      actionBtn = '<button type="button" class="minibtn good" style="margin-top:8px;" data-stage-next="' + next.key + '" data-stage-order="' + o.id + '">' + esc(btnLabel) + "</button>";
+    }
+    return '<div class="om-row"><div class="om-label">Trip progress</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">' + items + "</div>" +
+      actionBtn + '<p class="status" id="omStageStatus"></p></div>';
+  }
+
   function openOrderModal(id) {
     var o = lastOrders.filter(function (x) { return x.id === id; })[0];
     if (!o) return;
-    $("omTitle").textContent = "Order #" + o.id;
+    $("omTitle").textContent = "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id);
 
     var contactHtml = o.passengerPhone
       ? '<div class="om-row om-contact"><div><div class="om-label">Passenger</div>' + esc(o.passengerName || "—") + "</div>" +
@@ -167,6 +192,7 @@
       (o.meetGreet ? '<div class="om-row"><div class="om-label">Meet &amp; greet</div>' + esc(o.meetGreet) + "</div>" : "") +
       (o.notes ? '<div class="om-row"><div class="om-label">Additional instructions</div>' + esc(o.notes) + "</div>" : "") +
       (o.price ? '<div class="om-row"><div class="om-label">Price</div>' + esc(o.price) + " " + esc(o.currency || "") + "</div>" : "") +
+      stageTrackerHtml(o) +
       '<div class="om-row"><div class="om-label">Your driver &amp; vehicle</div>' +
       '<div class="addrow" style="margin-top:6px;">' +
       '<select id="omDriver">' + fleetOptionsHtml(myFleet.drivers, function (d) { return d.fullName || ("Driver #" + d.id); }, o.driverId) + "</select>" +
@@ -200,6 +226,24 @@
         this.disabled = false;
       }
     });
+
+    var stageBtn = $("omBody").querySelector("[data-stage-next]");
+    if (stageBtn) {
+      stageBtn.addEventListener("click", async function () {
+        var stage = this.getAttribute("data-stage-next");
+        var orderId = Number(this.getAttribute("data-stage-order"));
+        this.disabled = true;
+        try {
+          await api("/api/partner/order-stage", { method: "POST", json: true, body: JSON.stringify({ id: orderId, stage: stage }) });
+          await loadOrders();
+          openOrderModal(orderId);
+        } catch (e) {
+          $("omStageStatus").textContent = "Could not update. Try again.";
+          $("omStageStatus").className = "status err";
+          this.disabled = false;
+        }
+      });
+    }
   }
 
   function closeOrderModal() { $("orderModalBackdrop").hidden = true; }

@@ -7,6 +7,7 @@
   var fleetCache = {}; // partnerId -> { vehicles: [...], drivers: [...] }
   var openId = null;
   var openOrderId = null;
+  var STAGE_LABELS = { on_the_way: "On the way", arrived: "Arrived at pickup", in_car: "Passenger on board", dropped_off: "Dropped off" };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -230,11 +231,12 @@
 
   $("createOrderBtn").addEventListener("click", async function () {
     var partnerId = Number($("opPartner").value);
+    var orderNumber = $("opOrderNumber").value.trim();
     var pickup = $("opPickup").value.trim();
     var dropoff = $("opDropoff").value.trim();
     var orderDate = $("opDate").value;
-    if (!partnerId || !pickup || !dropoff || !orderDate) {
-      $("createOrderStatus").textContent = "Partner, pickup, dropoff and date are required.";
+    if (!orderNumber || !partnerId || !pickup || !dropoff || !orderDate) {
+      $("createOrderStatus").textContent = "Order number, partner, pickup, dropoff and date are required.";
       $("createOrderStatus").className = "status err";
       return;
     }
@@ -243,17 +245,17 @@
       await api("/api/admin/orders", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
+          orderNumber: orderNumber, partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
           flightNumber: $("opFlight").value.trim(),
           orderTime: $("opTime").value, vehicleType: $("opVehicleType").value,
           passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
           passengerName: $("opPassengerName").value.trim(), passengerPhone: $("opPassengerPhone").value.trim(),
           driverId: $("opDriver").value || null, vehicleId: $("opVehicle").value || null,
-          price: $("opPrice").value.trim(), currency: $("opCurrency").value.trim() || "EUR",
+          price: $("opPrice").value.trim(), currency: $("opCurrency").value || "EUR",
           meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim()
         })
       });
-      ["opPickup", "opDropoff", "opFlight", "opDate", "opTime", "opPassengers", "opLuggage",
+      ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opDate", "opTime", "opPassengers", "opLuggage",
         "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
       $("opCurrency").value = "EUR";
       $("opDriver").value = "";
@@ -298,7 +300,7 @@
       var isOpen = openOrderId === o.id;
       return '<li class="row">' +
         '<div class="row-top" data-order-toggle="' + o.id + '">' +
-        '<span class="row-title">' + esc(o.companyName) + " — " + esc(o.pickup) + " → " + esc(o.dropoff) + "</span>" +
+        '<span class="row-title">' + (o.orderNumber ? "#" + esc(o.orderNumber) + " · " : "") + esc(o.companyName) + " — " + esc(o.pickup) + " → " + esc(o.dropoff) + "</span>" +
         '<span class="row-meta">' + esc(o.orderDate) + (o.orderTime ? " " + esc(o.orderTime) : "") +
         (o.vehicleType ? " · " + esc(o.vehicleType) : "") + (o.price ? " · " + esc(o.price) + " " + esc(o.currency) : "") + "</span>" +
         badge(o.status) + "</div>" +
@@ -327,6 +329,9 @@
       '<div class="row-meta">Flight: ' + esc(o.flightNumber || "—") + "</div>" +
       '<div class="row-meta">Passengers: ' + esc(o.passengers != null ? o.passengers : "—") + " · Luggage: " + esc(o.luggage != null ? o.luggage : "—") + "</div>" +
       '<div class="row-meta">Passenger: ' + esc(o.passengerName || "—") + (o.passengerPhone ? " · " + esc(o.passengerPhone) : "") + "</div>" +
+      (o.status === "accepted" || o.status === "completed"
+        ? '<div class="row-meta">Trip stage: ' + esc(o.tripStage ? STAGE_LABELS[o.tripStage] : "Accepted, not started yet") + "</div>"
+        : "") +
       (o.meetGreet ? '<div class="row-meta">Meet &amp; greet: ' + esc(o.meetGreet) + "</div>" : "") +
       (o.notes ? '<div class="row-meta">Instructions: ' + esc(o.notes) + "</div>" : "") +
       '<div class="row-meta">Created ' + esc(fmtDate(o.createdAt)) + (o.respondedAt ? " · responded " + esc(fmtDate(o.respondedAt)) : "") + "</div>" +

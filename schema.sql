@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS documents (
 
 CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_number TEXT,                             -- entered by admin, never auto-generated
   partner_id INTEGER NOT NULL REFERENCES partners(id),
   pickup TEXT NOT NULL,
   dropoff TEXT NOT NULL,
@@ -76,6 +77,9 @@ CREATE TABLE IF NOT EXISTS orders (
   currency TEXT NOT NULL DEFAULT 'EUR',
   notes TEXT,
   status TEXT NOT NULL DEFAULT 'offered',        -- offered | accepted | declined | completed | cancelled
+  -- trip_stage only progresses while status = 'accepted':
+  -- on_the_way -> arrived -> in_car -> dropped_off (reaching dropped_off also sets status = completed)
+  trip_stage TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   responded_at TEXT
 );

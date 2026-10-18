@@ -75,6 +75,7 @@
     <section class="card panel" id="panel-orders">
       <h2>Create order</h2>
       <div class="addform">
+        <div class="field"><label for="opOrderNumber">Order number</label><input type="text" id="opOrderNumber" placeholder="e.g. 17082563-1"></div>
         <div class="field"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
         <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
         <div class="field"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
@@ -89,7 +90,13 @@
         <div class="field"><label for="opDriver">Driver <span class="hint">optional</span></label><select id="opDriver"><option value="">Pick a partner first</option></select></div>
         <div class="field"><label for="opVehicle">Vehicle <span class="hint">optional</span></label><select id="opVehicle"><option value="">Pick a partner first</option></select></div>
         <div class="field"><label for="opPrice">Price</label><input type="text" id="opPrice" inputmode="decimal"></div>
-        <div class="field"><label for="opCurrency">Currency</label><input type="text" id="opCurrency" value="EUR"></div>
+        <div class="field"><label for="opCurrency">Currency</label>
+          <select id="opCurrency">
+            <option value="EUR">EUR — Euro (€)</option>
+            <option value="USD">USD — Dollar ($)</option>
+            <option value="GBP">GBP — Pound (£)</option>
+          </select>
+        </div>
         <div class="field" style="flex:2 1 260px;"><label for="opMeetGreet">Meet &amp; greet <span class="hint">optional</span></label><input type="text" id="opMeetGreet" placeholder="e.g. Meet at arrival hall with name sign"></div>
         <div class="field" style="flex:2 1 260px;"><label for="opNotes">Additional instructions <span class="hint">optional</span></label><input type="text" id="opNotes"></div>
         <button type="button" class="minibtn good" id="createOrderBtn">Create &amp; assign</button>
