@@ -61,6 +61,7 @@
       partners = data.partners || [];
       renderPartners();
       populatePartnerSelect();
+      populateOrderPartnerFilter();
       $("partnersStatus").textContent = partners.length + " partner(s)";
     } catch (e) {
       if (e.message === "unauthorized") {
@@ -228,6 +229,14 @@
       : '<option value="">No active partners yet</option>';
   }
 
+  function populateOrderPartnerFilter() {
+    var prev = $("fOrderPartner").value;
+    var sorted = partners.slice().sort(function (a, b) { return a.companyName.localeCompare(b.companyName); });
+    $("fOrderPartner").innerHTML = '<option value="">All partners</option>' +
+      sorted.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("");
+    $("fOrderPartner").value = prev;
+  }
+
   (function initVehicleTypes() {
     var types = (window.VEHICLE_TYPES || []);
     $("opVehicleType").innerHTML = types.map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + "</option>"; }).join("");
@@ -314,11 +323,20 @@
     var q = $("fOrderSearch").value.trim().toLowerCase();
     var inTab = orderTab === "closed" ? CLOSED_STATUSES.indexOf(o.status) !== -1 : o.status === orderTab;
     if (!inTab) return false;
+    var partnerFilter = $("fOrderPartner").value;
+    if (partnerFilter && String(o.partnerId) !== partnerFilter) return false;
     if (q && (o.companyName + " " + o.pickup + " " + o.dropoff).toLowerCase().indexOf(q) === -1) return false;
     var from = $("fDateFrom").value, to = $("fDateTo").value;
     if (from && o.orderDate < from) return false;
     if (to && o.orderDate > to) return false;
     return true;
+  }
+
+  function statusBadge(o) {
+    if (o.status === "accepted" && o.tripStage && STAGE_LABELS[o.tripStage]) {
+      return '<span class="badge badge-accepted">' + esc(STAGE_LABELS[o.tripStage]) + "</span>";
+    }
+    return badge(o.status);
   }
 
   function renderOrders() {
@@ -339,7 +357,7 @@
         "<td>" + esc(o.pickup) + " → " + esc(o.dropoff) + "</td>" +
         '<td class="mono">' + esc(o.orderDate) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</td>" +
         '<td class="mono">' + (o.price ? esc(o.price) + " " + esc(o.currency) : "—") + "</td>" +
-        "<td>" + badge(o.status) + "</td>" +
+        "<td>" + statusBadge(o) + "</td>" +
         '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
         "</tr>" +
         '<tr><td colspan="7" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="orderdetail-' + o.id + '"></div></td></tr>';
@@ -358,6 +376,31 @@
         '<button type="button" class="minibtn crit" data-order-cancel="' + o.id + '">Cancel</button>'
       : "";
 
+    var reassignBlock = "";
+    if (CLOSED_STATUSES.indexOf(o.status) !== -1) {
+      var activePartners = partners.filter(function (p) { return p.status === "active"; });
+      var partnerOpts = activePartners.length
+        ? activePartners.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
+        : '<option value="">No active partners</option>';
+      reassignBlock =
+        '<details class="block">' +
+        '<summary class="minibtn" style="display:inline-block;">Reassign to another partner</summary>' +
+        '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">' +
+        '<div class="field" style="min-width:170px;flex:1 1 170px;margin-bottom:0;"><label>New partner</label><select data-reassign-field="partnerId">' + partnerOpts + "</select></div>" +
+        '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Pickup</label><input type="text" data-reassign-field="pickup" value="' + esc(o.pickup) + '"></div>' +
+        '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Dropoff</label><input type="text" data-reassign-field="dropoff" value="' + esc(o.dropoff) + '"></div>' +
+        '<div class="field" style="min-width:130px;flex:1 1 130px;margin-bottom:0;"><label>Date</label><input type="date" data-reassign-field="orderDate" value="' + esc(o.orderDate) + '"></div>' +
+        '<div class="field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Pickup time</label><input type="time" data-reassign-field="orderTime" value="' + esc(o.orderTime || "") + '"></div>' +
+        '<div class="field" style="min-width:100px;flex:1 1 100px;margin-bottom:0;"><label>Price</label><input type="text" data-reassign-field="price" value="' + esc(o.price || "") + '"></div>' +
+        '<div class="field" style="min-width:140px;flex:1 1 140px;margin-bottom:0;"><label>Currency</label><select data-reassign-field="currency">' +
+        ["EUR", "USD", "GBP"].map(function (c) { return '<option value="' + c + '"' + (c === o.currency ? " selected" : "") + '>' + c + "</option>"; }).join("") +
+        "</select></div>" +
+        '<div style="flex:1 1 100%;display:flex;align-items:center;gap:10px;">' +
+        '<button type="button" class="minibtn good" data-order-reassign="' + o.id + '">Reassign &amp; offer to new partner</button>' +
+        '<span class="status" id="reassignStatus-' + o.id + '" style="margin:0;"></span>' +
+        "</div></div></details>";
+    }
+
     el.innerHTML =
       '<div class="block" style="margin-top:0;padding-top:0;border-top:0;">' +
       '<div class="row-meta">Flight: ' + esc(o.flightNumber || "—") + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + (o.bufferMinutes != null ? " · buffer " + esc(o.bufferMinutes) + " min" : "") + " · pickup " + esc(o.orderTime || "—") + "</div>" +
@@ -372,7 +415,8 @@
       "</div>" +
       '<div class="block" style="display:flex;gap:8px;flex-wrap:wrap;">' + actions +
       '<button type="button" class="minibtn ghost-crit" data-order-delete="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
-      "</div>";
+      "</div>" +
+      reassignBlock;
   }
 
   $("ordersList").addEventListener("click", async function (e) {
@@ -380,8 +424,9 @@
     var complete = e.target.closest("[data-order-complete]");
     var cancel = e.target.closest("[data-order-cancel]");
     var del = e.target.closest("[data-order-delete]");
+    var reassign = e.target.closest("[data-order-reassign]");
 
-    if (toggle && !complete && !cancel && !del) {
+    if (toggle && !complete && !cancel && !del && !reassign) {
       var id = Number(toggle.getAttribute("data-order-toggle"));
       openOrderId = openOrderId === id ? null : id;
       renderOrders();
@@ -403,6 +448,35 @@
       }
       return;
     }
+    if (reassign) {
+      e.stopPropagation();
+      var reId = Number(reassign.getAttribute("data-order-reassign"));
+      var form = reassign.closest("details");
+      var statusEl = $("reassignStatus-" + reId);
+      var fields = {};
+      form.querySelectorAll("[data-reassign-field]").forEach(function (f) { fields[f.getAttribute("data-reassign-field")] = f.value; });
+      if (!fields.partnerId) {
+        if (statusEl) { statusEl.textContent = "Pick a partner first."; statusEl.className = "status err"; }
+        return;
+      }
+      reassign.disabled = true;
+      if (statusEl) { statusEl.textContent = "Reassigning…"; statusEl.className = "status"; }
+      try {
+        await api("/api/admin/order-reassign", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: reId, partnerId: Number(fields.partnerId), pickup: fields.pickup, dropoff: fields.dropoff,
+            orderDate: fields.orderDate, orderTime: fields.orderTime, price: fields.price, currency: fields.currency
+          })
+        });
+        openOrderId = null;
+        await loadOrders();
+      } catch (err) {
+        if (statusEl) { statusEl.textContent = "Could not reassign. Try again."; statusEl.className = "status err"; }
+        reassign.disabled = false;
+      }
+      return;
+    }
     if (!complete && !cancel) return;
     e.stopPropagation();
 
@@ -419,6 +493,7 @@
   });
 
   $("fOrderSearch").addEventListener("input", renderOrders);
+  $("fOrderPartner").addEventListener("change", renderOrders);
   $("fDateFrom").addEventListener("change", renderOrders);
   $("fDateTo").addEventListener("change", renderOrders);
   $("fSort").addEventListener("change", renderOrders);

@@ -192,10 +192,10 @@
           <div class="field"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
           <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
           <div class="field"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
+          <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
           <div class="field"><label for="opFlight">Flight number <span class="hint">optional</span></label><input type="text" id="opFlight"></div>
           <div class="field"><label for="opFlightTime">Flight arrival time <span class="hint">optional</span></label><input type="time" id="opFlightTime"></div>
           <div class="field"><label for="opBuffer">Buffer (minutes) <span class="hint">optional</span></label><input type="text" id="opBuffer" inputmode="numeric" placeholder="e.g. 60"></div>
-          <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
           <div class="field"><label for="opTime">Pickup time</label><input type="time" id="opTime"></div>
           <div class="field"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
           <div class="field"><label for="opPassengers">Passengers</label><input type="text" id="opPassengers" inputmode="numeric"></div>
@@ -224,6 +224,7 @@
         <button type="button" class="tab" data-order-tab="closed" aria-pressed="false">Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
       </div>
       <div class="toolbar">
+        <select id="fOrderPartner"><option value="">All partners</option></select>
         <input type="text" id="fOrderSearch" placeholder="Search partner / route">
         <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
         <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
