@@ -83,7 +83,8 @@ CREATE TABLE IF NOT EXISTS orders (
   -- on_the_way -> arrived -> in_car -> dropped_off (reaching dropped_off also sets status = completed)
   trip_stage TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  responded_at TEXT
+  responded_at TEXT,
+  hidden_from_admin INTEGER NOT NULL DEFAULT 0 -- hides the order from the admin view only; the partner still sees it
 );
 
 CREATE INDEX IF NOT EXISTS idx_vehicles_partner ON vehicles(partner_id);

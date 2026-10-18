@@ -282,15 +282,19 @@
   });
 
   /* ---------- orders: list ---------- */
-  async function loadOrders() {
-    $("ordersStatus").textContent = "Loading…";
-    $("ordersStatus").className = "status";
+  async function loadOrders(silent) {
+    if (!silent) {
+      $("ordersStatus").textContent = "Loading…";
+      $("ordersStatus").className = "status";
+    }
     try {
       var data = await api("/api/admin/orders");
       orders = data.orders || [];
       renderOrders();
       $("ordersStatus").textContent = orders.length + " order(s)";
+      $("ordersStatus").className = "status";
     } catch (e) {
+      if (silent) return;
       $("ordersStatus").textContent = "Could not load orders.";
       $("ordersStatus").className = "status err";
     }
@@ -321,11 +325,16 @@
 
   function matchesOrderFilter(o) {
     var q = $("fOrderSearch").value.trim().toLowerCase();
-    var inTab = orderTab === "closed" ? CLOSED_STATUSES.indexOf(o.status) !== -1 : o.status === orderTab;
-    if (!inTab) return false;
+    if (q) {
+      // Searching by order # looks across every status, not just the open tab.
+      var orderNum = (o.orderNumber || String(o.id)).toLowerCase();
+      if (orderNum.indexOf(q) === -1) return false;
+    } else {
+      var inTab = orderTab === "closed" ? CLOSED_STATUSES.indexOf(o.status) !== -1 : o.status === orderTab;
+      if (!inTab) return false;
+    }
     var partnerFilter = $("fOrderPartner").value;
     if (partnerFilter && String(o.partnerId) !== partnerFilter) return false;
-    if (q && (o.companyName + " " + o.pickup + " " + o.dropoff).toLowerCase().indexOf(q) === -1) return false;
     var from = $("fDateFrom").value, to = $("fDateTo").value;
     if (from && o.orderDate < from) return false;
     if (to && o.orderDate > to) return false;
@@ -413,8 +422,9 @@
       (o.notes ? '<div class="row-meta">Instructions: ' + esc(o.notes) + "</div>" : "") +
       '<div class="row-meta">Created ' + esc(fmtDate(o.createdAt)) + (o.respondedAt ? " · responded " + esc(fmtDate(o.respondedAt)) : "") + "</div>" +
       "</div>" +
-      '<div class="block" style="display:flex;gap:8px;flex-wrap:wrap;">' + actions +
-      '<button type="button" class="minibtn ghost-crit" data-order-delete="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
+      '<div class="block" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' + actions +
+      '<button type="button" class="minibtn ghost-crit" data-order-hide="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
+      '<button type="button" class="linkbtn-crit" data-order-delete="' + o.id + '" title="Permanently deletes this order from the database. Use only for cleaning up test data.">Delete permanently</button>' +
       "</div>" +
       reassignBlock;
   }
@@ -423,19 +433,36 @@
     var toggle = e.target.closest("[data-order-toggle]");
     var complete = e.target.closest("[data-order-complete]");
     var cancel = e.target.closest("[data-order-cancel]");
+    var hide = e.target.closest("[data-order-hide]");
     var del = e.target.closest("[data-order-delete]");
     var reassign = e.target.closest("[data-order-reassign]");
 
-    if (toggle && !complete && !cancel && !del && !reassign) {
+    if (toggle && !complete && !cancel && !hide && !del && !reassign) {
       var id = Number(toggle.getAttribute("data-order-toggle"));
       openOrderId = openOrderId === id ? null : id;
       renderOrders();
       return;
     }
+    if (hide) {
+      e.stopPropagation();
+      var hideId = Number(hide.getAttribute("data-order-hide"));
+      if (!confirm("Delete this order from your admin view? It stays untouched and visible to the partner.")) return;
+      try {
+        await api("/api/admin/order-hide", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: hideId })
+        });
+        openOrderId = null;
+        await loadOrders();
+      } catch (err) {
+        alert("Could not delete the order.");
+      }
+      return;
+    }
     if (del) {
       e.stopPropagation();
       var delId = Number(del.getAttribute("data-order-delete"));
-      if (!confirm("Delete this order permanently? This cannot be undone.")) return;
+      if (!confirm("Permanently delete this order from the database? This removes it for the partner too and cannot be undone. Use this only to clean up test data.")) return;
       try {
         await api("/api/admin/order-delete", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -530,4 +557,14 @@
       loadOrders();
     }
   } catch (e) {}
+
+  /* ---------- live updates: poll orders every 5s, pause while the tab is hidden ---------- */
+  var POLL_MS = 5000;
+  var pollTimer = setInterval(function () {
+    if ($("panelsWrap").hidden || document.hidden) return;
+    loadOrders(true);
+  }, POLL_MS);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && !$("panelsWrap").hidden) loadOrders(true);
+  });
 })();

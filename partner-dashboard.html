@@ -48,13 +48,9 @@
   .orow-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
   .orow-actions { display: flex; gap: 8px; margin-top: 12px; }
 
-  .modal-wide { max-width: 520px; max-height: 86vh; overflow-y: auto; }
-  .modal-wide h2 { margin-bottom: 14px; }
-  .om-row { padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .om-row { padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
   .om-row:first-of-type { border-top: 0; }
   .om-label { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
-  .om-close { position: absolute; top: 14px; right: 16px; background: none; border: 0; font-size: 22px; line-height: 1; cursor: pointer; color: var(--ink-2); }
-  .modal { position: relative; }
   .stage-chip { font: 600 12px/1 var(--font-body); padding: 5px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink-2); }
   .stage-chip.stage-done { background: var(--good-bg); color: var(--good); border-color: var(--good); }
   .stage-chip.stage-next { background: #FDF0CC; color: #7A5B00; border-color: #D8B23C; }
@@ -138,35 +134,37 @@
     </div>
 
     <section class="panel active" id="panel-orders">
-      <div class="dash-pagehead">
-        <h1>Orders</h1>
-        <p class="sub">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
+      <div id="ordersListView">
+        <div class="dash-pagehead">
+          <h1>Orders</h1>
+          <p class="sub">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
+        </div>
+
+        <div class="tabs" role="tablist" id="orderTabs">
+          <button type="button" class="tab" data-order-tab="new" aria-pressed="true">New <span class="tab-count" id="countNew"></span></button>
+          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">Accepted <span class="tab-count" id="countAccepted"></span></button>
+          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed</button>
+        </div>
+        <div class="toolbar">
+          <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
+          <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
+          <select id="fSort">
+            <option value="asc">Date: soonest first</option>
+            <option value="desc">Date: latest first</option>
+          </select>
+        </div>
+        <p class="status" id="ordersStatus"></p>
+        <div id="ordersList"></div>
       </div>
 
-      <div class="tabs" role="tablist" id="orderTabs">
-        <button type="button" class="tab" data-order-tab="new" aria-pressed="true">New <span class="tab-count" id="countNew"></span></button>
-        <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">Accepted <span class="tab-count" id="countAccepted"></span></button>
-        <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed</button>
+      <div id="orderDetailView" hidden>
+        <button type="button" class="minibtn" id="orderDetailBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead">
+          <h1 id="odTitle">Order</h1>
+        </div>
+        <div class="card" id="odBody" style="max-width:640px;"></div>
       </div>
-      <div class="toolbar">
-        <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
-        <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
-        <select id="fSort">
-          <option value="asc">Date: soonest first</option>
-          <option value="desc">Date: latest first</option>
-        </select>
-      </div>
-      <p class="status" id="ordersStatus"></p>
-      <div id="ordersList"></div>
     </section>
-
-    <div class="modal-backdrop" id="orderModalBackdrop" hidden>
-      <div class="modal modal-wide">
-        <button type="button" class="om-close" id="orderModalClose" aria-label="Close">&times;</button>
-        <h2 id="omTitle">Order</h2>
-        <div id="omBody"></div>
-      </div>
-    </div>
 
     <section class="panel" id="panel-fleet">
       <div class="dash-pagehead">

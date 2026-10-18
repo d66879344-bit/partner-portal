@@ -87,14 +87,17 @@
   });
 
   /* ---------- orders ---------- */
-  async function loadOrders() {
-    $("ordersStatus").textContent = "Loading…";
-    $("ordersStatus").className = "status";
+  async function loadOrders(silent) {
+    if (!silent) {
+      $("ordersStatus").textContent = "Loading…";
+      $("ordersStatus").className = "status";
+    }
     try {
       var data = await api("/api/partner/orders");
       lastOrders = data.orders || [];
       renderOrders(lastOrders);
     } catch (e) {
+      if (silent) return;
       $("ordersStatus").textContent = "Could not load orders.";
       $("ordersStatus").className = "status err";
     }
@@ -163,10 +166,10 @@
       return;
     }
     var open = e.target.closest("[data-order-open]");
-    if (open) openOrderModal(Number(open.getAttribute("data-order-open")));
+    if (open) openOrderDetail(Number(open.getAttribute("data-order-open")));
   });
 
-  /* ---------- order detail modal ---------- */
+  /* ---------- order detail (full-page view) ---------- */
   function stageTrackerHtml(o) {
     if (o.status !== "accepted" && o.status !== "completed") return "";
     var keys = STAGES.map(function (s) { return s.key; });
@@ -186,10 +189,10 @@
       actionBtn + '<p class="status" id="omStageStatus"></p></div>';
   }
 
-  function openOrderModal(id) {
+  function openOrderDetail(id) {
     var o = lastOrders.filter(function (x) { return x.id === id; })[0];
     if (!o) return;
-    $("omTitle").textContent = "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id);
+    $("odTitle").textContent = "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id);
 
     var body =
       '<div class="om-row"><div class="om-label">Status</div>' + badge(o.status) + "</div>" +
@@ -215,10 +218,12 @@
           "</div>"
         : "");
 
-    $("omBody").innerHTML = body;
-    $("orderModalBackdrop").hidden = false;
+    $("odBody").innerHTML = body;
+    $("ordersListView").hidden = true;
+    $("orderDetailView").hidden = false;
+    window.scrollTo(0, 0);
 
-    var stageBtn = $("omBody").querySelector("[data-stage-next]");
+    var stageBtn = $("odBody").querySelector("[data-stage-next]");
     if (stageBtn) {
       stageBtn.addEventListener("click", async function () {
         var stage = this.getAttribute("data-stage-next");
@@ -227,7 +232,7 @@
         try {
           await api("/api/partner/order-stage", { method: "POST", json: true, body: JSON.stringify({ id: orderId, stage: stage }) });
           await loadOrders();
-          openOrderModal(orderId);
+          openOrderDetail(orderId);
         } catch (e) {
           $("omStageStatus").textContent = "Could not update. Try again.";
           $("omStageStatus").className = "status err";
@@ -237,10 +242,12 @@
     }
   }
 
-  function closeOrderModal() { $("orderModalBackdrop").hidden = true; }
-  $("orderModalClose").addEventListener("click", closeOrderModal);
-  $("orderModalBackdrop").addEventListener("click", async function (e) {
-    if (e.target === $("orderModalBackdrop")) { closeOrderModal(); return; }
+  function closeOrderDetail() {
+    $("orderDetailView").hidden = true;
+    $("ordersListView").hidden = false;
+  }
+  $("orderDetailBack").addEventListener("click", closeOrderDetail);
+  $("orderDetailView").addEventListener("click", async function (e) {
     var acc = e.target.closest("[data-accept]");
     var dec = e.target.closest("[data-decline]");
     if (!acc && !dec) return;
@@ -249,7 +256,7 @@
     btn.disabled = true;
     try {
       await api("/api/partner/respond", { method: "POST", json: true, body: JSON.stringify({ id: id, action: acc ? "accept" : "decline" }) });
-      closeOrderModal();
+      closeOrderDetail();
       loadOrders();
     } catch (err) {
       btn.disabled = false;
@@ -369,4 +376,14 @@
       // loadMe already redirects to /login.html on 401
     }
   })();
+
+  /* ---------- live updates: poll orders every 5s, pause while the tab is hidden ---------- */
+  var POLL_MS = 5000;
+  var pollTimer = setInterval(function () {
+    if (document.hidden) return;
+    loadOrders(true);
+  }, POLL_MS);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) loadOrders(true);
+  });
 })();

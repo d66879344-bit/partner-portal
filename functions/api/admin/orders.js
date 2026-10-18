@@ -15,6 +15,7 @@ export async function onRequestGet(context) {
      JOIN partners p ON p.id = o.partner_id
      LEFT JOIN drivers dr ON dr.id = o.driver_id
      LEFT JOIN vehicles v ON v.id = o.vehicle_id
+     WHERE o.hidden_from_admin = 0
      ORDER BY o.order_date DESC, o.order_time DESC`
   ).all();
 

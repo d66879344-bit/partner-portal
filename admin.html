@@ -85,6 +85,8 @@
   .minibtn.good { background: var(--good); color: #fff; border-color: var(--good); }
   .minibtn.crit { background: var(--crit); color: #fff; border-color: var(--crit); }
   .minibtn.ghost-crit { background: var(--surface); color: var(--crit); border-color: var(--crit-bg); }
+  .linkbtn-crit { background: none; border: 0; padding: 4px 2px; cursor: pointer; font-size: 11px; color: var(--ink-2); text-decoration: underline; }
+  .linkbtn-crit:hover { color: var(--crit); }
 
   .panel { display: none; }
   .panel.active { display: block; }
@@ -127,13 +129,13 @@
     </div>
 
     <nav class="dash-nav" id="mainTabs">
-      <button type="button" class="tab" data-tab="partners" aria-pressed="true">
-        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
-        Partners
-      </button>
-      <button type="button" class="tab" data-tab="orders" aria-pressed="false">
+      <button type="button" class="tab" data-tab="orders" aria-pressed="true">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
         Orders
+      </button>
+      <button type="button" class="tab" data-tab="partners" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
+        Partners
       </button>
     </nav>
 
@@ -145,7 +147,7 @@
 
   <main class="dash-main">
 
-    <section class="panel active" id="panel-partners">
+    <section class="panel" id="panel-partners">
       <div class="dash-pagehead">
         <h1>Partners</h1>
         <p class="sub">Review documents and manage partner accounts</p>
@@ -172,7 +174,7 @@
       </div>
     </section>
 
-    <section class="panel" id="panel-orders">
+    <section class="panel active" id="panel-orders">
       <div class="dash-pagehead">
         <h1>Orders</h1>
         <p class="sub">All orders across all partners</p>
@@ -188,20 +190,23 @@
       <div class="card" style="margin-bottom:18px;">
         <h2>Create order</h2>
         <div class="addform">
-          <div class="field"><label for="opOrderNumber">Order number</label><input type="text" id="opOrderNumber" placeholder="e.g. 17082563-1"></div>
           <div class="field"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
+          <div class="field"><label for="opOrderNumber">Order number</label><input type="text" id="opOrderNumber" placeholder="e.g. 17082563-1"></div>
           <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
           <div class="field"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
-          <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
           <div class="field"><label for="opFlight">Flight number <span class="hint">optional</span></label><input type="text" id="opFlight"></div>
+
+          <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
           <div class="field"><label for="opFlightTime">Flight arrival time <span class="hint">optional</span></label><input type="time" id="opFlightTime"></div>
           <div class="field"><label for="opBuffer">Buffer (minutes) <span class="hint">optional</span></label><input type="text" id="opBuffer" inputmode="numeric" placeholder="e.g. 60"></div>
           <div class="field"><label for="opTime">Pickup time</label><input type="time" id="opTime"></div>
+
           <div class="field"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
           <div class="field"><label for="opPassengers">Passengers</label><input type="text" id="opPassengers" inputmode="numeric"></div>
           <div class="field"><label for="opLuggage">Luggage <span class="hint">optional</span></label><input type="text" id="opLuggage" inputmode="numeric"></div>
           <div class="field"><label for="opPassengerName">Passenger name</label><input type="text" id="opPassengerName"></div>
           <div class="field"><label for="opPassengerPhone">Passenger phone</label><input type="text" id="opPassengerPhone"></div>
+
           <div class="field"><label for="opPrice">Price</label><input type="text" id="opPrice" inputmode="decimal"></div>
           <div class="field"><label for="opCurrency">Currency</label>
             <select id="opCurrency">
@@ -225,7 +230,7 @@
       </div>
       <div class="toolbar">
         <select id="fOrderPartner"><option value="">All partners</option></select>
-        <input type="text" id="fOrderSearch" placeholder="Search partner / route">
+        <input type="text" id="fOrderSearch" placeholder="Search order #">
         <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
         <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
         <select id="fSort">
