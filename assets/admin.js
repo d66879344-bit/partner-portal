@@ -325,6 +325,7 @@
     accepted: "Nothing in progress right now.",
     completed: "No completed orders yet.",
     closed: "No declined or cancelled orders.",
+    no_show: "No customer no-show reports right now.",
   };
 
   function updateOrderTabCounts() {
@@ -332,14 +333,17 @@
     var cAccepted = orders.filter(function (o) { return o.status === "accepted"; }).length;
     var cCompleted = orders.filter(function (o) { return o.status === "completed"; }).length;
     var cClosed = orders.filter(function (o) { return CLOSED_STATUSES.indexOf(o.status) !== -1; }).length;
+    var cNoShow = orders.filter(function (o) { return o.status === "no_show"; }).length;
     $("countOffered").textContent = cOffered || "";
     $("countAccepted").textContent = cAccepted || "";
     $("countCompleted").textContent = cCompleted || "";
     $("countClosed").textContent = cClosed || "";
+    $("countNoShow").textContent = cNoShow || "";
     $("statOffered").textContent = cOffered;
     $("statAccepted").textContent = cAccepted;
     $("statCompleted").textContent = cCompleted;
     $("statClosed").textContent = cClosed;
+    $("statNoShow").textContent = cNoShow;
   }
 
   function matchesOrderFilter(o) {
@@ -358,6 +362,17 @@
     if (from && o.orderDate < from) return false;
     if (to && o.orderDate > to) return false;
     return true;
+  }
+
+  var evidenceCache = {};
+  async function loadOrderEvidence(id) {
+    try {
+      var data = await api("/api/admin/order-evidence?id=" + id);
+      evidenceCache[id] = data.documents || [];
+    } catch (e) {
+      evidenceCache[id] = [];
+    }
+    if (openOrderId === id) renderOrderDetail(id);
   }
 
   function statusBadge(o) {
@@ -404,6 +419,27 @@
         '<button type="button" class="minibtn crit" data-order-cancel="' + o.id + '">Cancel</button>'
       : "";
 
+    var evidenceBlock = "";
+    if (o.status === "no_show") {
+      var evidenceDocs = evidenceCache[id];
+      if (!evidenceDocs) {
+        evidenceBlock = '<div class="block"><div class="row-meta">Loading evidence…</div></div>';
+      } else if (!evidenceDocs.length) {
+        evidenceBlock = '<div class="block"><div class="row-meta">No evidence was uploaded for this report.</div></div>';
+      } else {
+        evidenceBlock = '<div class="block"><h3 style="font-family:inherit;text-transform:none;font-size:15px;font-weight:700;margin-bottom:10px;">Customer no-show evidence</h3>' +
+          evidenceDocs.map(function (d) {
+            var fileLink = d.hasFile
+              ? '<div><a href="' + fileUrl(d.id) + '" target="_blank" rel="noopener">View upload' + (d.filename ? ": " + esc(d.filename) : "") + "</a></div>"
+              : "";
+            var noteText = d.note ? '<div class="row-meta" style="margin-top:2px;">' + esc(d.note) + "</div>" : "";
+            if (!d.hasFile && !d.note) noteText = '<div class="row-meta" style="margin-top:2px;">No file or note provided.</div>';
+            return '<div class="row-meta" style="margin-bottom:10px;"><b>' + esc(d.label || d.field) + "</b>" + fileLink + noteText + "</div>";
+          }).join("") +
+          "</div>";
+      }
+    }
+
     var reassignBlock = "";
     if (CLOSED_STATUSES.indexOf(o.status) !== -1) {
       var activePartners = partners.filter(function (p) { return p.status === "active"; });
@@ -441,6 +477,7 @@
       (o.notes ? '<div class="row-meta">Instructions: ' + esc(o.notes) + "</div>" : "") +
       '<div class="row-meta">Created ' + esc(fmtDate(o.createdAt)) + (o.respondedAt ? " · responded " + esc(fmtDate(o.respondedAt)) : "") + "</div>" +
       "</div>" +
+      evidenceBlock +
       '<div class="block" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' + actions +
       '<button type="button" class="minibtn ghost-crit" data-order-hide="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
       '<button type="button" class="linkbtn-crit" data-order-delete="' + o.id + '" title="Permanently deletes this order from the database. Use only for cleaning up test data.">Delete permanently</button>' +
@@ -460,6 +497,12 @@
       var id = Number(toggle.getAttribute("data-order-toggle"));
       openOrderId = openOrderId === id ? null : id;
       renderOrders();
+      if (openOrderId != null) {
+        var openedOrder = orders.filter(function (x) { return x.id === openOrderId; })[0];
+        if (openedOrder && openedOrder.status === "no_show" && !evidenceCache[openOrderId]) {
+          loadOrderEvidence(openOrderId);
+        }
+      }
       return;
     }
     if (hide) {

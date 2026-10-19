@@ -44,11 +44,12 @@
   .dash-pagehead .sub { color: var(--ink-2); font-size: 14px; margin-top: 4px; max-width: 70ch; }
 
   /* ---------- stat cards ---------- */
-  .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 22px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; margin-bottom: 22px; }
   .stat-card { padding: 16px 18px; }
   .stat-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
   .stat-value { font-size: 26px; font-weight: 600; margin-top: 6px; }
-  @media (max-width: 760px) { .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+  @media (max-width: 560px) { .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 
   /* ---------- toolbar ---------- */
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
@@ -187,6 +188,7 @@
         <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
         <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
         <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
+        <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
       </div>
 
       <div class="card" style="margin-bottom:18px;">
@@ -229,6 +231,7 @@
         <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">In progress <span class="tab-count" id="countAccepted"></span></button>
         <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed <span class="tab-count" id="countCompleted"></span></button>
         <button type="button" class="tab" data-order-tab="closed" aria-pressed="false">Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
+        <button type="button" class="tab" data-order-tab="no_show" aria-pressed="false">Customer no-show <span class="tab-count" id="countNoShow"></span></button>
       </div>
       <div class="toolbar">
         <select id="fOrderPartner"><option value="">All partners</option></select>
