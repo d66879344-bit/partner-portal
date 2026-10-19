@@ -46,6 +46,30 @@
 
   .pending-banner { border-color: #E8C65A; background: #FDF6E0; margin-bottom: 18px; padding: 14px 18px; }
 
+  /* ---------- order detail: assignment warning + "More" menu ---------- */
+  .warn-chip { display: flex; align-items: center; gap: 8px; background: #FDF6E0; border: 1px solid #E8C65A; color: #7A5B00; font-size: 12.5px; font-weight: 700; border-radius: 8px; padding: 9px 12px; margin: 10px 0; }
+  .more-wrap { position: relative; flex: none; }
+  .more-menu { position: absolute; bottom: calc(100% + 6px); right: 0; min-width: 230px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(16,24,40,.18); overflow: hidden; z-index: 5; }
+  .more-menu-item { display: block; width: 100%; text-align: left; padding: 12px 14px; font-size: 13.5px; font-weight: 700; background: none; border: 0; cursor: pointer; color: var(--ink); font-family: inherit; }
+  .more-menu-item:hover { background: var(--surface-2); }
+  .more-menu-item.danger { color: var(--crit); }
+
+  /* ---------- customer no-show report ---------- */
+  .ns-steps { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .ns-step-dot { width: 26px; height: 26px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink-2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .ns-step-dot.done { background: var(--good); border-color: var(--good); color: #fff; }
+  .ns-cat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-card); padding: 20px 22px; margin-bottom: 14px; }
+  .ns-cat.done { border-left: 3px solid var(--good); }
+  .ns-cat-eyebrow { font-size: 11px; font-weight: 800; color: var(--ink-2); letter-spacing: .04em; text-transform: uppercase; }
+  .ns-cat h3 { margin: 2px 0 4px; font-size: 15px; font-weight: 700; text-transform: none; }
+  .ns-cat-desc { margin: 0; font-size: 12.5px; color: var(--ink-2); max-width: 56ch; }
+  .ns-cat-body { display: flex; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+  .ns-upload-tile { width: 110px; height: 86px; flex: none; border-radius: 10px; border: 1.5px dashed var(--line-strong); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--ink-2); cursor: pointer; }
+  .ns-upload-tile.has-file { border-style: solid; border-color: var(--focus); color: var(--focus); }
+  .ns-cat-fields { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 8px; }
+  .ns-pill { font: 700 10px/1 ui-monospace, monospace; letter-spacing: .04em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; white-space: nowrap; }
+  .ns-pill.ok { background: var(--good-bg); color: var(--good); }
+
   /* ---------- stat cards ---------- */
   .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 22px; }
   .stat-card { padding: 16px 18px; }
@@ -255,6 +279,16 @@
           <h1 id="odTitle">Order</h1>
         </div>
         <div class="card" id="odBody" style="max-width:640px;"></div>
+      </div>
+
+      <div id="noShowView" hidden>
+        <button type="button" class="minibtn" id="noShowBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead">
+          <h1>Report a customer no-show</h1>
+          <p class="sub" id="noShowSub"></p>
+          <p class="sub">Fill in evidence for each category below &mdash; upload a photo where you have one, or leave a note explaining why you don't. Each category is submitted on its own.</p>
+        </div>
+        <div id="noShowBody" style="max-width:720px;"></div>
       </div>
     </section>
 

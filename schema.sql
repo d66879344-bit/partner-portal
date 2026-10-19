@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS drivers (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- owner_type: 'company' | 'vehicle' | 'driver' | 'other'
--- owner_id: NULL for company/other, vehicles.id or drivers.id otherwise
+-- owner_type: 'company' | 'vehicle' | 'driver' | 'other' | 'order'
+-- owner_id: NULL for company/other, vehicles.id / drivers.id / orders.id otherwise
 CREATE TABLE IF NOT EXISTS documents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   partner_id INTEGER NOT NULL REFERENCES partners(id),
@@ -53,9 +53,10 @@ CREATE TABLE IF NOT EXISTS documents (
   field TEXT NOT NULL,
   label TEXT,
   filename TEXT,
-  file_key TEXT NOT NULL,
+  file_key TEXT NOT NULL,        -- '' when there is no file — see `note` below
   content_type TEXT,
   size INTEGER,
+  note TEXT,                     -- optional written note; stands in for a file (e.g. no-show evidence)
   status TEXT NOT NULL DEFAULT 'pending',       -- pending | approved | rejected
   review_note TEXT,
   uploaded_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -84,10 +85,13 @@ CREATE TABLE IF NOT EXISTS orders (
   price TEXT,
   currency TEXT NOT NULL DEFAULT 'EUR',
   notes TEXT,
-  status TEXT NOT NULL DEFAULT 'offered',        -- offered | accepted | declined | completed | cancelled
+  status TEXT NOT NULL DEFAULT 'offered',        -- offered | accepted | declined | completed | cancelled | no_show
   -- trip_stage only progresses while status = 'accepted':
   -- on_the_way -> arrived -> in_car -> dropped_off (reaching dropped_off also sets status = completed)
   trip_stage TEXT,
+  -- set together with status = 'no_show'. 'customer' = passenger no-show, 'driver' = driver no-show.
+  no_show_type TEXT,
+  no_show_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   responded_at TEXT,
   hidden_from_admin INTEGER NOT NULL DEFAULT 0 -- hides the order from the admin view only; the partner still sees it

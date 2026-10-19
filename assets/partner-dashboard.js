@@ -268,23 +268,65 @@
   });
 
   /* ---------- order detail (full-page view) ---------- */
+  function fleetOptionsHtml(list, selectedId, kind) {
+    var opts = '<option value="">' + (kind === "vehicle" ? "Select a vehicle…" : "Select a driver…") + "</option>";
+    opts += (list || []).map(function (x) {
+      var label = kind === "vehicle"
+        ? ([x.make, x.plate].filter(Boolean).join(" · ") || ("Vehicle #" + x.id))
+        : (x.fullName || ("Driver #" + x.id));
+      var sel = selectedId && Number(selectedId) === Number(x.id) ? " selected" : "";
+      return '<option value="' + x.id + '"' + sel + ">" + esc(label) + "</option>";
+    }).join("");
+    return opts;
+  }
+
+  function assignBlockHtml(o) {
+    if (o.status !== "accepted" && o.status !== "completed" && o.status !== "no_show") return "";
+    var missing = !o.driverId || !o.vehicleId;
+    var warning = missing && o.status === "accepted"
+      ? '<div class="warn-chip">Please assign a vehicle and driver before the pickup time</div>'
+      : "";
+    return '<div class="om-row"><div class="om-label">Vehicle &amp; driver</div>' +
+      warning +
+      '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:8px;">' +
+      '<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Vehicle</label>' +
+      '<select id="assignVehicle">' + fleetOptionsHtml(myFleet.vehicles, o.vehicleId, "vehicle") + "</select></div>" +
+      '<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Driver</label>' +
+      '<select id="assignDriver">' + fleetOptionsHtml(myFleet.drivers, o.driverId, "driver") + "</select></div>" +
+      "</div>" +
+      '<button type="button" class="minibtn good" style="margin-top:10px;" data-assign-order="' + o.id + '">Save assignment</button>' +
+      '<p class="status" id="assignStatus"></p></div>';
+  }
+
   function stageTrackerHtml(o) {
-    if (o.status !== "accepted" && o.status !== "completed") return "";
+    if (o.status !== "accepted" && o.status !== "completed" && o.status !== "no_show") return "";
     var keys = STAGES.map(function (s) { return s.key; });
     var currentIndex = o.tripStage ? keys.indexOf(o.tripStage) : -1;
     var items = STAGES.map(function (s, i) {
       var state = i <= currentIndex ? "done" : (i === currentIndex + 1 && o.status === "accepted" ? "next" : "upcoming");
       return '<span class="stage-chip stage-' + state + '">' + (i <= currentIndex ? "✓ " : "") + esc(s.label) + "</span>";
     }).join("");
-    var actionBtn = "";
-    if (o.status === "accepted" && currentIndex < STAGES.length - 1) {
+
+    var controls = "";
+    if (o.status === "no_show") {
+      controls = '<p class="status" style="margin-top:8px;">Reported as a customer no-show — pending review.</p>';
+    } else if (o.status === "accepted" && currentIndex < STAGES.length - 1) {
       var next = STAGES[currentIndex + 1];
-      var btnLabel = next.key === "dropped_off" ? "Mark dropped off (completes the trip)" : "Mark: " + next.label;
-      actionBtn = '<button type="button" class="minibtn good" style="margin-top:8px;" data-stage-next="' + next.key + '" data-stage-order="' + o.id + '">' + esc(btnLabel) + "</button>";
+      var canReportNoShow = currentIndex >= keys.indexOf("arrived");
+      controls = '<div style="display:flex;gap:8px;margin-top:10px;">' +
+        '<button type="button" class="minibtn good" style="flex:1;" data-stage-next="' + next.key + '" data-stage-order="' + o.id + '">' + esc(next.label) + "</button>" +
+        (canReportNoShow
+          ? '<div class="more-wrap">' +
+            '<button type="button" class="minibtn" id="moreBtn">More &#9662;</button>' +
+            '<div class="more-menu" id="moreMenu" hidden>' +
+            '<button type="button" class="more-menu-item danger" id="reportNoShowBtn" data-order="' + o.id + '">Report customer no-show</button>' +
+            "</div></div>"
+          : "") +
+        "</div>";
     }
     return '<div class="om-row"><div class="om-label">Trip progress</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">' + items + "</div>" +
-      actionBtn + '<p class="status" id="omStageStatus"></p></div>';
+      controls + '<p class="status" id="omStageStatus"></p></div>';
   }
 
   function openOrderDetail(id) {
@@ -308,6 +350,7 @@
       (o.meetGreet ? '<div class="om-row"><div class="om-label">Meet &amp; greet</div>' + esc(o.meetGreet) + "</div>" : "") +
       (o.notes ? '<div class="om-row"><div class="om-label">Additional instructions</div>' + esc(o.notes) + "</div>" : "") +
       (o.price ? '<div class="om-row"><div class="om-label">Price</div>' + esc(o.price) + " " + esc(o.currency || "") + "</div>" : "") +
+      assignBlockHtml(o) +
       stageTrackerHtml(o) +
       (o.status === "offered"
         ? '<div class="om-row" style="display:flex;gap:8px;">' +
@@ -338,10 +381,45 @@
         }
       });
     }
+
+    var assignBtn = $("odBody").querySelector("[data-assign-order]");
+    if (assignBtn) {
+      assignBtn.addEventListener("click", async function () {
+        var orderId = Number(this.getAttribute("data-assign-order"));
+        var vehicleId = $("assignVehicle").value || null;
+        var driverId = $("assignDriver").value || null;
+        this.disabled = true;
+        $("assignStatus").textContent = "";
+        $("assignStatus").className = "status";
+        try {
+          await api("/api/partner/order-assign", { method: "POST", json: true, body: JSON.stringify({ id: orderId, vehicleId: vehicleId, driverId: driverId }) });
+          await loadOrders();
+          openOrderDetail(orderId);
+        } catch (e) {
+          $("assignStatus").textContent = "Could not save. Try again.";
+          $("assignStatus").className = "status err";
+          this.disabled = false;
+        }
+      });
+    }
+
+    var moreBtn = $("odBody").querySelector("#moreBtn");
+    if (moreBtn) {
+      moreBtn.addEventListener("click", function () {
+        $("moreMenu").hidden = !$("moreMenu").hidden;
+      });
+    }
+    var reportNoShowBtn = $("odBody").querySelector("#reportNoShowBtn");
+    if (reportNoShowBtn) {
+      reportNoShowBtn.addEventListener("click", function () {
+        openNoShowView(Number(this.getAttribute("data-order")));
+      });
+    }
   }
 
   function closeOrderDetail() {
     $("orderDetailView").hidden = true;
+    $("noShowView").hidden = true;
     $("ordersListView").hidden = false;
   }
   $("orderDetailBack").addEventListener("click", closeOrderDetail);
@@ -359,6 +437,147 @@
     } catch (err) {
       btn.disabled = false;
     }
+  });
+
+  /* ---------- customer no-show report ---------- */
+  var NO_SHOW_CATEGORIES = [
+    { field: "arrive_on_time", label: "Arrive on time", desc: "Proof that you arrived before the pick-up time — a parking ticket, GPS log, or a timestamped photo." },
+    { field: "leave_after_wait", label: "Leave after waiting enough time", desc: "Proof that you left only after the free waiting period had passed." },
+    { field: "chat_logs", label: "Chat logs", desc: "Contact the passenger during the waiting time — WhatsApp, SMS or WeChat. The passenger's phone number must be visible, not just a saved contact name." },
+    { field: "call_logs", label: "Call logs", desc: "Call the passenger at least 3 times during the waiting time. The passenger's phone number must be visible." },
+    { field: "meet_greet", label: "Meet & greet", desc: "A picture of your name/meet sign once you arrived and again before you left, with the time and date visible." },
+    { field: "other", label: "Other", desc: "Any other evidence that supports the no-show — a flight-cancellation screenshot, a wrong pick-up location, and so on." },
+  ];
+  var currentNoShowOrderId = null;
+
+  function noShowCategoryHtml(cat, index, doc) {
+    var done = !!doc;
+    var pill = done ? '<span class="ns-pill ok">Submitted</span>' : "";
+    var body;
+    if (done) {
+      var icon = doc.hasFile ? FILE_ICON : UPLOAD_ICON;
+      var detail = doc.hasFile ? esc(doc.filename || "file") : esc(doc.note || "");
+      body = '<div class="ns-cat-body">' +
+        '<div class="ns-upload-tile has-file">' + icon + "</div>" +
+        '<div class="ns-cat-fields"><div style="font-size:12.5px;color:var(--ink-2);">' + detail + "</div></div>" +
+        "</div>";
+    } else {
+      body = '<div class="ns-cat-body">' +
+        '<label class="ns-upload-tile" for="ns-file-' + cat.field + '">' + UPLOAD_ICON +
+        '<span style="font-size:10.5px;font-weight:700;">Upload photo</span></label>' +
+        '<input type="file" id="ns-file-' + cat.field + '" data-ns-field="' + cat.field + '" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/*">' +
+        '<div class="ns-cat-fields">' +
+        '<textarea rows="2" id="ns-note-' + cat.field + '" placeholder="You can enter a note if there is no evidence"></textarea>' +
+        '<button type="button" class="minibtn good" style="align-self:flex-start;" data-ns-submit="' + cat.field + '">Submit</button>' +
+        '<p class="status" id="ns-status-' + cat.field + '"></p>' +
+        "</div></div>";
+    }
+    return '<div class="ns-cat' + (done ? " done" : "") + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+      '<div><div class="ns-cat-eyebrow">Step ' + (index + 1) + '</div>' +
+      "<h3>" + esc(cat.label) + "</h3>" +
+      '<p class="ns-cat-desc">' + esc(cat.desc) + "</p></div>" +
+      pill +
+      "</div>" + body + "</div>";
+  }
+
+  async function renderNoShowCategories() {
+    var orderId = currentNoShowOrderId;
+    try {
+      var data = await api("/api/partner/order-evidence?id=" + orderId);
+      var byField = {};
+      (data.documents || []).forEach(function (d) { if (!byField[d.field]) byField[d.field] = d; });
+      var submittedCount = NO_SHOW_CATEGORIES.filter(function (c) { return byField[c.field]; }).length;
+
+      var html = '<div class="ns-steps">' +
+        NO_SHOW_CATEGORIES.map(function (c, i) {
+          return '<span class="ns-step-dot' + (byField[c.field] ? " done" : "") + '">' + (byField[c.field] ? "&#10003;" : (i + 1)) + "</span>";
+        }).join("") +
+        '<span style="margin-left:6px;font-size:12px;color:var(--ink-2);font-weight:700;">' + submittedCount + " of " + NO_SHOW_CATEGORIES.length + " submitted</span>" +
+        "</div>";
+      html += NO_SHOW_CATEGORIES.map(function (c, i) { return noShowCategoryHtml(c, i, byField[c.field]); }).join("");
+      html += '<div style="display:flex;justify-content:flex-end;margin-top:6px;">' +
+        '<button type="button" class="minibtn decline" id="nsSendBtn"' + (submittedCount ? "" : " disabled") + '>Send no-show report to admin</button>' +
+        "</div>" +
+        '<p class="status" id="nsSendStatus" style="text-align:right;"></p>';
+      $("noShowBody").innerHTML = html;
+      wireNoShowBody();
+    } catch (e) {
+      $("noShowBody").innerHTML = '<p class="status err">Could not load evidence. Try again.</p>';
+    }
+  }
+
+  function wireNoShowBody() {
+    $("noShowBody").querySelectorAll("[data-ns-submit]").forEach(function (btn) {
+      btn.addEventListener("click", async function () {
+        var field = this.getAttribute("data-ns-submit");
+        var fileInput = $("ns-file-" + field);
+        var note = $("ns-note-" + field).value.trim();
+        var statusEl = $("ns-status-" + field);
+        var file = fileInput && fileInput.files && fileInput.files[0];
+        if (!file && !note) {
+          statusEl.textContent = "Add a photo or a note.";
+          statusEl.className = "status err";
+          return;
+        }
+        this.disabled = true;
+        statusEl.textContent = "";
+        statusEl.className = "status";
+        try {
+          var cat = NO_SHOW_CATEGORIES.filter(function (c) { return c.field === field; })[0];
+          var fd = new FormData();
+          fd.append("ownerType", "order");
+          fd.append("ownerId", String(currentNoShowOrderId));
+          fd.append("field", field);
+          fd.append("label", cat ? cat.label : field);
+          if (file) fd.append("file", file, file.name);
+          if (note) fd.append("note", note);
+          var res = await fetch("/api/partner/documents", { method: "POST", body: fd });
+          if (!res.ok) throw new Error("upload_failed");
+          await renderNoShowCategories();
+        } catch (e) {
+          statusEl.textContent = "Could not submit. Try again.";
+          statusEl.className = "status err";
+          this.disabled = false;
+        }
+      });
+    });
+
+    var sendBtn = $("nsSendBtn");
+    if (sendBtn) {
+      sendBtn.addEventListener("click", async function () {
+        this.disabled = true;
+        $("nsSendStatus").textContent = "";
+        $("nsSendStatus").className = "status";
+        try {
+          await api("/api/partner/order-no-show", { method: "POST", json: true, body: JSON.stringify({ id: currentNoShowOrderId }) });
+          await loadOrders();
+          closeOrderDetail();
+        } catch (e) {
+          $("nsSendStatus").textContent = "Could not send the report. Try again.";
+          $("nsSendStatus").className = "status err";
+          this.disabled = false;
+        }
+      });
+    }
+  }
+
+  async function openNoShowView(orderId) {
+    currentNoShowOrderId = orderId;
+    var o = lastOrders.filter(function (x) { return x.id === orderId; })[0];
+    $("noShowSub").textContent = o ? ((o.orderNumber ? "Order #" + o.orderNumber + " · " : "") + o.pickup + " → " + o.dropoff) : "";
+    $("noShowBody").innerHTML = '<p class="status">Loading…</p>';
+    $("ordersListView").hidden = true;
+    $("orderDetailView").hidden = true;
+    $("noShowView").hidden = false;
+    window.scrollTo(0, 0);
+    await renderNoShowCategories();
+  }
+
+  $("noShowBack").addEventListener("click", function () {
+    $("noShowView").hidden = true;
+    if (currentNoShowOrderId) openOrderDetail(currentNoShowOrderId);
+    else closeOrderDetail();
   });
 
   /* ---------- fleet & documents ---------- */
