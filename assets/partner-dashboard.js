@@ -82,6 +82,7 @@
     $("acctEmail").textContent = me.email;
     $("acctCompany").textContent = me.companyName;
     $("acctCountry").textContent = me.countryName || me.country;
+    if ($("coCompanyName")) $("coCompanyName").value = me.companyName || "";
     $("acctStatus").innerHTML = badge(me.status);
     $("acctSince").textContent = fmtDate(me.createdAt);
     $("pendingBanner").hidden = me.status === "active";
@@ -145,6 +146,32 @@
       statusEl.className = "status err";
     } finally {
       $("acctSaveBtn").disabled = false;
+    }
+  });
+
+  $("coSaveBtn").addEventListener("click", async function () {
+    var name = $("coCompanyName").value.trim();
+    var statusEl = $("coStatus");
+    if (!name) {
+      statusEl.textContent = "Enter a company name.";
+      statusEl.className = "status err";
+      return;
+    }
+    $("coSaveBtn").disabled = true;
+    statusEl.textContent = "";
+    statusEl.className = "status";
+    try {
+      await api("/api/partner/account-update", { method: "POST", json: true, body: JSON.stringify({ companyName: name }) });
+      me.companyName = name;
+      $("whoCompany").textContent = name;
+      $("acctCompany").textContent = name;
+      statusEl.textContent = "Saved.";
+      statusEl.className = "status ok";
+    } catch (e) {
+      statusEl.textContent = "Something went wrong. Please try again.";
+      statusEl.className = "status err";
+    } finally {
+      $("coSaveBtn").disabled = false;
     }
   });
 
@@ -330,8 +357,25 @@
   var FILE_ICON = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h7l4 4V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z"/><path d="M11 2.5V7h4"/></svg>';
   var CAR_ICON = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16V11.5a1.5 1.5 0 0 1 .3-.9l1.9-2.5A2 2 0 0 1 7.8 7h8.4a2 2 0 0 1 1.6 1.1l1.9 2.5a1.5 1.5 0 0 1 .3.9V16"/><path d="M4 16a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1H4Zm16 0a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1h3Z"/><circle cx="7.5" cy="16" r="1.3"/><circle cx="16.5" cy="16" r="1.3"/></svg>';
   var PERSON_ICON = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8.2" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
+  var PLUS_ICON = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>';
 
-  var fleetTab = "company";
+  function statusBarClass(status) {
+    if (status === "approved") return "ok";
+    if (status === "rejected") return "rejected";
+    return "pending";
+  }
+  function statusTextClass(status) {
+    if (status === "approved") return "doc-status-ok";
+    if (status === "rejected") return "doc-status-rejected";
+    return "doc-status-pending";
+  }
+  function statusLabel(status) {
+    if (status === "approved") return "Approved";
+    if (status === "rejected") return "Rejected";
+    return "Pending review";
+  }
+
+  var fleetTab = "vehicles";
   // null, or { type: "vehicle"|"driver", id: Number|null } — id is null while adding, before "Create" is pressed.
   var currentForm = null;
   // Files picked on the Add screen before the vehicle/driver record exists yet, keyed by field id.
@@ -349,13 +393,19 @@
   function docTileHtml(ownerType, ownerId, field, label, required, doc) {
     var uid = ownerType + "-" + (ownerId || "x") + "-" + field;
     var hasFile = !!doc;
-    var inner = hasFile
-      ? FILE_ICON + '<div class="doc-tile-label">' + esc(label) + '</div>' +
-        '<div class="doc-tile-file">' + esc(doc.filename || "file") + '</div>' + badge(doc.status)
-      : UPLOAD_ICON + '<div class="doc-tile-label">' + esc(label) + '</div>' +
+    var icon = hasFile ? FILE_ICON : UPLOAD_ICON;
+    var body = hasFile
+      ? '<div class="doc-tile-label">' + esc(label) + '</div>' +
+        '<div class="doc-tile-file">' + esc(doc.filename || "file") + '</div>' +
+        '<span class="doc-tile-status ' + statusTextClass(doc.status) + '">' + esc(statusLabel(doc.status)) + '</span>'
+      : '<div class="doc-tile-label">' + esc(label) + '</div>' +
         (required ? '<span class="doc-required">Required</span>' : '<span class="doc-optional">Optional</span>');
     return '<div class="doc-item">' +
-      '<label class="doc-tile' + (hasFile ? " has-file" : "") + '" for="file-' + uid + '">' + inner + '</label>' +
+      '<label class="doc-tile' + (hasFile ? " has-file" : "") + '" for="file-' + uid + '">' +
+      '<div class="doc-tile-icon">' + icon + '</div>' +
+      '<div class="doc-tile-body">' + body + '</div>' +
+      '<div class="doc-tile-bar' + (hasFile ? " " + statusBarClass(doc.status) : "") + '"></div>' +
+      '</label>' +
       '<input type="file" id="file-' + uid + '" data-uid="' + uid + '" data-owner-type="' + ownerType + '"' +
       (ownerId ? ' data-owner-id="' + ownerId + '"' : "") +
       ' data-field="' + esc(field) + '" data-label="' + esc(label) + '" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/*">' +
@@ -377,7 +427,9 @@
     }).join("");
     tiles += '<div class="doc-item">' +
       '<label class="doc-tile doc-tile-add" for="file-other-x-__custom__">' +
-      '<span class="doc-tile-add-icon">+</span><div class="doc-tile-label">Add document</div>' +
+      '<div class="doc-tile-icon">' + PLUS_ICON + '</div>' +
+      '<div class="doc-tile-body"><div class="doc-tile-label">Add document</div></div>' +
+      '<div class="doc-tile-bar"></div>' +
       "</label>" +
       '<input type="file" id="file-other-x-__custom__" data-uid="other-x-__custom__" data-owner-type="other" data-field="__custom__" hidden ' +
       'accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/*">' +
@@ -396,13 +448,18 @@
   function pendingDocTileHtml(ownerType, field, label, required, pending) {
     var uid = "pending-" + ownerType + "-" + field;
     var hasFile = !!pending;
-    var inner = hasFile
-      ? FILE_ICON + '<div class="doc-tile-label">' + esc(label) + '</div>' +
+    var icon = hasFile ? FILE_ICON : UPLOAD_ICON;
+    var body = hasFile
+      ? '<div class="doc-tile-label">' + esc(label) + '</div>' +
         '<div class="doc-tile-file">' + esc(pending.file.name) + "</div>"
-      : UPLOAD_ICON + '<div class="doc-tile-label">' + esc(label) + '</div>' +
+      : '<div class="doc-tile-label">' + esc(label) + '</div>' +
         (required ? '<span class="doc-required">Required</span>' : '<span class="doc-optional">Optional</span>');
     return '<div class="doc-item">' +
-      '<label class="doc-tile' + (hasFile ? " has-file" : "") + '" for="file-' + uid + '">' + inner + '</label>' +
+      '<label class="doc-tile' + (hasFile ? " has-file" : "") + '" for="file-' + uid + '">' +
+      '<div class="doc-tile-icon">' + icon + '</div>' +
+      '<div class="doc-tile-body">' + body + '</div>' +
+      '<div class="doc-tile-bar' + (hasFile ? " selected" : "") + '"></div>' +
+      '</label>' +
       '<input type="file" id="file-' + uid + '" data-pending-uid="' + uid + '" data-pending-owner="' + ownerType + '"' +
       ' data-field="' + esc(field) + '" data-label="' + esc(label) + '" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,application/pdf,image/*">' +
       "</div>";
@@ -471,7 +528,7 @@
     tab.addEventListener("click", function () {
       $("fleetTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
       fleetTab = tab.getAttribute("data-fleet-tab");
-      ["company", "vehicles", "drivers"].forEach(function (k) { $("fleetTab-" + k).hidden = k !== fleetTab; });
+      ["vehicles", "drivers"].forEach(function (k) { $("fleetTab-" + k).hidden = k !== fleetTab; });
     });
   });
 

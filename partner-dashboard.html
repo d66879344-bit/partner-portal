@@ -15,24 +15,24 @@
   /* ---------- dashboard shell ---------- */
   .dash-shell { display: flex; flex-wrap: wrap; align-items: flex-start; min-height: 100vh; }
   .dash-sidebar {
-    width: 240px; flex: 0 0 240px; background: var(--surface); border-right: 1px solid var(--line);
+    width: 240px; flex: 0 0 240px; background: linear-gradient(180deg, #0B1E35 0%, #081627 100%);
     padding: 24px 14px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 100vh;
   }
   .dash-brand { padding: 2px 10px 24px; }
-  .dash-brand-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; line-height: 1.18; text-transform: uppercase; color: var(--ink); overflow-wrap: anywhere; }
-  .dash-brand-sub { font-size: 11px; color: var(--ink-2); margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
+  .dash-brand-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; line-height: 1.18; text-transform: uppercase; color: #fff; overflow-wrap: anywhere; }
+  .dash-brand-sub { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
   .dash-nav { display: flex; flex-direction: column; gap: 3px; }
   .dash-nav .tab {
     border: 0; background: transparent; border-radius: 8px; min-height: auto;
     padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 11px;
-    font-size: 14px; font-weight: 500; color: var(--ink-2);
+    font-size: 14px; font-weight: 500; color: rgba(255,255,255,.65);
   }
-  .dash-nav .tab:hover { background: var(--surface-2); }
-  .dash-nav .tab[aria-pressed="true"] { background: #E7F0FA; color: var(--focus); font-weight: 600; }
+  .dash-nav .tab:hover { background: rgba(255,255,255,.08); }
+  .dash-nav .tab[aria-pressed="true"] { background: rgba(255,255,255,.1); color: #fff; font-weight: 700; }
   .dash-nav svg { flex: none; }
   .dash-sidebar-foot {
-    margin-top: auto; padding: 14px 10px 2px; border-top: 1px solid var(--line);
-    display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2);
+    margin-top: auto; padding: 14px 10px 2px; border-top: 1px solid rgba(255,255,255,.14);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: rgba(255,255,255,.6);
   }
   .dash-main { flex: 999 1 560px; min-width: 0; padding: 28px 32px 56px; box-sizing: border-box; }
   .dash-pagehead { margin-bottom: 18px; }
@@ -60,8 +60,8 @@
   .minibtn:disabled { opacity: .55; cursor: not-allowed; }
   .minibtn.accept { background: var(--good); color: #fff; border-color: var(--good); }
   .minibtn.accept:hover:not(:disabled) { background: var(--good); filter: brightness(1.08); border-color: var(--good); }
-  .minibtn.decline { background: var(--crit); color: #fff; border-color: var(--crit); }
-  .minibtn.decline:hover:not(:disabled) { background: var(--crit); filter: brightness(1.08); border-color: var(--crit); }
+  .minibtn.decline { background: var(--accent-warm); color: #3B2B00; border-color: var(--accent-warm); }
+  .minibtn.decline:hover:not(:disabled) { background: var(--accent-warm); filter: brightness(1.06); border-color: var(--accent-warm); }
   .minibtn.good { background: var(--good); color: #fff; border-color: var(--good); }
   .minibtn.good:hover:not(:disabled) { background: var(--good); filter: brightness(1.08); border-color: var(--good); }
 
@@ -76,23 +76,32 @@
   .doc-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
   .doc-item { width: 132px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
   .doc-tile {
-    width: 132px; height: 104px; box-sizing: border-box; border: 1.5px dashed var(--line-strong); border-radius: 10px;
-    background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 6px; cursor: pointer; text-align: center; padding: 8px; color: var(--ink-2); transition: border-color .12s, background .12s, color .12s;
+    display: block; width: 132px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden; background: var(--surface); cursor: pointer; transition: border-color .12s;
   }
-  .doc-tile:hover { border-color: var(--focus); background: #F3F8FD; color: var(--focus); }
-  .doc-tile.has-file { border-style: solid; border-color: var(--line-strong); color: var(--ink); }
-  .doc-tile.has-file:hover { border-color: var(--focus); }
+  .doc-tile:hover { border-color: var(--focus); }
   .doc-tile.uploading { opacity: .55; pointer-events: none; }
+  .doc-tile-icon {
+    height: 58px; display: flex; align-items: center; justify-content: center; color: var(--line-strong);
+  }
+  .doc-tile.has-file .doc-tile-icon, .doc-tile.doc-tile-add .doc-tile-icon { color: var(--focus); }
+  .doc-tile-body { padding: 8px 9px; border-top: 1px solid var(--line); text-align: left; }
+  .doc-tile-add .doc-tile-body { text-align: center; }
   .doc-tile-label { font-size: 11.5px; font-weight: 600; line-height: 1.25; }
-  .doc-tile-file { font-size: 11px; color: var(--ink-2); max-width: 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .doc-required { font-size: 10.5px; color: var(--crit); text-transform: uppercase; letter-spacing: .03em; font-weight: 700; }
-  .doc-optional { font-size: 10.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
-  .doc-item .badge { font-size: 10px; padding: 3px 7px; }
+  .doc-tile-file { font-size: 10.5px; color: var(--ink-2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .doc-tile-status { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+  .doc-tile-status.doc-status-ok { color: var(--good); }
+  .doc-tile-status.doc-status-pending { color: #7A5B00; }
+  .doc-tile-status.doc-status-rejected { color: var(--crit); }
+  .doc-required { display: block; font-size: 10.5px; color: var(--crit); text-transform: uppercase; letter-spacing: .03em; font-weight: 700; margin-top: 2px; }
+  .doc-optional { display: block; font-size: 10.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+  .doc-tile-bar { height: 3px; background: var(--line); }
+  .doc-tile-bar.ok { background: var(--good); }
+  .doc-tile-bar.pending { background: #D8B23C; }
+  .doc-tile-bar.rejected { background: var(--crit); }
+  .doc-tile-bar.selected { background: var(--focus); }
   .doc-view { font-size: 11px; color: var(--focus); }
   .doc-note { font-size: 11px; color: var(--crit); text-align: center; max-width: 132px; }
-  .doc-tile-add { gap: 4px; }
-  .doc-tile-add-icon { font-size: 22px; line-height: 1; font-weight: 400; }
 
   /* "+" add card/driver tile */
   .add-tile {
@@ -169,9 +178,13 @@
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
         Orders
       </button>
+      <button type="button" class="tab" data-tab="company" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 2h7l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/></svg>
+        Company
+      </button>
       <button type="button" class="tab" data-tab="fleet" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3h11l3 4v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M6.5 9h7M6.5 12.5h7" stroke-linecap="round"/></svg>
-        Fleet &amp; Documents
+        Fleet
       </button>
       <button type="button" class="tab" data-tab="account" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
@@ -225,32 +238,47 @@
       </div>
     </section>
 
+    <section class="panel" id="panel-company">
+      <div class="dash-pagehead">
+        <h1>Company</h1>
+        <p class="sub">Your company profile and the documents we have on file.</p>
+      </div>
+
+      <div class="card section-card" style="max-width:640px;">
+        <h2>Company details</h2>
+        <div class="field" style="max-width:360px;">
+          <label for="coCompanyName">Company name</label>
+          <input type="text" id="coCompanyName" autocomplete="off">
+        </div>
+        <button type="button" class="btn" id="coSaveBtn" style="width:auto;">Save changes</button>
+        <p class="status" id="coStatus" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="card section-card" style="max-width:640px;">
+        <h2>Company documents</h2>
+        <p class="sub">Click a box to upload a document. Click it again any time to replace the file.</p>
+        <div class="doc-grid" id="companyDocGrid"></div>
+        <div class="block">
+          <div class="block-title">Other documents</div>
+          <div class="block-sub">Anything that doesn't fit the categories above</div>
+          <div class="doc-grid" id="otherDocGrid"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel" id="panel-fleet">
       <div id="fleetListView">
         <div class="dash-pagehead">
-          <h1>Fleet &amp; Documents</h1>
-          <p class="sub">Click a box to upload a document. Click it again any time to replace the file.</p>
+          <h1>Fleet</h1>
+          <p class="sub">Manage your vehicles and drivers. Click a card to edit details and documents.</p>
         </div>
 
         <div class="tabs" role="tablist" id="fleetTabs">
-          <button type="button" class="tab" data-fleet-tab="company" aria-pressed="true">Company</button>
-          <button type="button" class="tab" data-fleet-tab="vehicles" aria-pressed="false">Vehicles <span class="tab-count" id="countVehicles"></span></button>
+          <button type="button" class="tab" data-fleet-tab="vehicles" aria-pressed="true">Vehicles <span class="tab-count" id="countVehicles"></span></button>
           <button type="button" class="tab" data-fleet-tab="drivers" aria-pressed="false">Drivers <span class="tab-count" id="countDrivers"></span></button>
         </div>
 
-        <div class="fleet-tabpanel" id="fleetTab-company">
-          <div class="card section-card">
-            <h2>Company documents</h2>
-            <div class="doc-grid" id="companyDocGrid"></div>
-            <div class="block">
-              <div class="block-title">Other documents</div>
-              <div class="block-sub">Anything that doesn't fit the categories above</div>
-              <div class="doc-grid" id="otherDocGrid"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="fleet-tabpanel" id="fleetTab-vehicles" hidden>
+        <div class="fleet-tabpanel" id="fleetTab-vehicles">
           <div class="card-grid" id="vehicleCards"></div>
         </div>
 

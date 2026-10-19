@@ -14,27 +14,27 @@
   /* ---------- dashboard shell ---------- */
   .dash-shell { display: flex; flex-wrap: wrap; align-items: flex-start; min-height: 100vh; }
   .dash-sidebar {
-    width: 240px; flex: 0 0 240px; background: var(--surface); border-right: 1px solid var(--line);
+    width: 240px; flex: 0 0 240px; background: linear-gradient(180deg, #0B1E35 0%, #081627 100%);
     padding: 24px 14px; display: flex; flex-direction: column; box-sizing: border-box; min-height: 100vh;
   }
   .dash-brand { padding: 2px 10px 24px; }
-  .dash-brand-name { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.12; text-transform: none; color: var(--ink); }
-  .dash-brand-sub { font-size: 11px; color: var(--ink-2); margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
+  .dash-brand-name { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.12; text-transform: none; color: #fff; }
+  .dash-brand-sub { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
   .dash-nav { display: flex; flex-direction: column; gap: 3px; }
   .dash-nav .tab {
     border: 0; background: transparent; border-radius: 8px; min-height: auto;
     padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 11px;
-    font-size: 14px; font-weight: 500; color: var(--ink-2);
+    font-size: 14px; font-weight: 500; color: rgba(255,255,255,.65);
   }
-  .dash-nav .tab:hover { background: var(--surface-2); }
-  .dash-nav .tab[aria-pressed="true"] { background: #E7F0FA; color: var(--focus); font-weight: 600; }
+  .dash-nav .tab:hover { background: rgba(255,255,255,.08); }
+  .dash-nav .tab[aria-pressed="true"] { background: rgba(255,255,255,.1); color: #fff; font-weight: 700; }
   .dash-nav svg { flex: none; }
   .dash-sidebar-foot {
-    margin-top: auto; padding: 14px 10px 2px; border-top: 1px solid var(--line);
-    display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2);
+    margin-top: auto; padding: 14px 10px 2px; border-top: 1px solid rgba(255,255,255,.14);
+    display: flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,255,255,.6);
   }
   .dash-avatar {
-    width: 28px; height: 28px; border-radius: 999px; background: #E7F0FA; color: var(--focus);
+    width: 28px; height: 28px; border-radius: 999px; background: rgba(255,255,255,.12); color: #fff;
     display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
     font-family: var(--font-display);
   }

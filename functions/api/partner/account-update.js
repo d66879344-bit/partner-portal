@@ -10,28 +10,55 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const phone = (body.phone || "").toString().trim().slice(0, 50);
-    if (!phone) return Response.json({ error: "invalid_submission", field: "phone" }, { status: 400 });
-    const serviceCity = (body.serviceCity || "").toString().trim().slice(0, 150);
+    const sets = [];
+    const values = [];
+    const result = {};
 
-    let airports = [];
-    if (Array.isArray(body.airports)) {
-      const seen = new Set();
-      for (const a of body.airports) {
-        const code = String(a || "").trim().toUpperCase();
-        if (AIRPORT_CODE_RE.test(code) && !seen.has(code)) {
-          seen.add(code);
-          airports.push(code);
-        }
-        if (airports.length >= 30) break;
-      }
+    if (body.companyName !== undefined) {
+      const companyName = (body.companyName || "").toString().trim().slice(0, 200);
+      if (!companyName) return Response.json({ error: "invalid_submission", field: "companyName" }, { status: 400 });
+      sets.push("company_name = ?");
+      values.push(companyName);
+      result.companyName = companyName;
     }
 
-    await env.DB.prepare("UPDATE partners SET phone = ?, covered_airports = ?, service_city = ? WHERE id = ?")
-      .bind(phone, JSON.stringify(airports), serviceCity || null, partnerId)
+    if (body.phone !== undefined) {
+      const phone = (body.phone || "").toString().trim().slice(0, 50);
+      if (!phone) return Response.json({ error: "invalid_submission", field: "phone" }, { status: 400 });
+      sets.push("phone = ?");
+      values.push(phone);
+      result.phone = phone;
+
+      const serviceCity = (body.serviceCity || "").toString().trim().slice(0, 150);
+      sets.push("service_city = ?");
+      values.push(serviceCity || null);
+      result.serviceCity = serviceCity;
+
+      let airports = [];
+      if (Array.isArray(body.airports)) {
+        const seen = new Set();
+        for (const a of body.airports) {
+          const code = String(a || "").trim().toUpperCase();
+          if (AIRPORT_CODE_RE.test(code) && !seen.has(code)) {
+            seen.add(code);
+            airports.push(code);
+          }
+          if (airports.length >= 30) break;
+        }
+      }
+      sets.push("covered_airports = ?");
+      values.push(JSON.stringify(airports));
+      result.airports = airports;
+    }
+
+    if (!sets.length) return Response.json({ error: "invalid_submission" }, { status: 400 });
+
+    values.push(partnerId);
+    await env.DB.prepare(`UPDATE partners SET ${sets.join(", ")} WHERE id = ?`)
+      .bind(...values)
       .run();
 
-    return Response.json({ ok: true, phone, airports, serviceCity });
+    return Response.json({ ok: true, ...result });
   } catch (e) {
     return Response.json({ error: "server_error", message: String(e && e.message || e) }, { status: 500 });
   }
