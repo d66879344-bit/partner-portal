@@ -21,15 +21,20 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
   function fmtDate(iso) {
     if (!iso) return "";
-    try { return new Date(iso.replace(" ", "T") + "Z").toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
-    catch (e) { return iso; }
+    try {
+      var d = new Date(iso.replace(" ", "T") + "Z");
+      return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear() + ", " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    } catch (e) { return iso; }
   }
   function fmtDay(d) {
     if (!d) return "";
-    try { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
-    catch (e) { return d; }
+    try {
+      var dt = new Date(d);
+      return pad2(dt.getDate()) + "/" + pad2(dt.getMonth() + 1) + "/" + dt.getFullYear();
+    } catch (e) { return d; }
   }
   function typeFor(f) {
     if (OK_TYPES[f.type]) return f.type;
@@ -226,23 +231,32 @@
       return ka < kb ? -dir : ka > kb ? dir : 0;
     });
 
-    $("ordersStatus").textContent = orders.length ? "" : EMPTY_MESSAGE[orderTab];
     $("ordersStatus").className = "status";
+    if (!orders.length) {
+      $("ordersStatus").textContent = "";
+      $("ordersList").innerHTML = '<tr><td colspan="9" class="empty-cell">' + EMPTY_MESSAGE[orderTab] + "</td></tr>";
+      return;
+    }
+    $("ordersStatus").textContent = "";
     $("ordersList").innerHTML = orders.map(function (o) {
-      var actions = o.status === "offered"
-        ? '<div class="orow-actions">' +
+      var stageLabel = o.status === "accepted" && o.tripStage ? STAGES.filter(function (s) { return s.key === o.tripStage; })[0] : null;
+      var action = o.status === "offered"
+        ? '<div style="display:flex;gap:8px;">' +
           '<button type="button" class="minibtn accept" data-accept="' + o.id + '">Accept</button>' +
           '<button type="button" class="minibtn decline" data-decline="' + o.id + '">Decline</button>' +
           "</div>"
-        : "";
-      return '<div class="orow" data-order-open="' + o.id + '">' +
-        '<div class="orow-top"><span class="orow-route">' + esc(o.pickup) + " → " + esc(o.dropoff) + "</span>" + badge(o.status) + "</div>" +
-        '<div class="orow-meta">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + " · " + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") +
-        (o.vehicleType ? " · " + esc(o.vehicleType) : "") +
-        (o.passengers ? " · " + esc(o.passengers) + " pax" : "") +
-        (o.price ? " · " + esc(o.price) + " " + esc(o.currency || "") : "") + "</div>" +
-        (o.passengerName ? '<div class="orow-meta">' + esc(o.passengerName) + "</div>" : "") +
-        actions + "</div>";
+        : (stageLabel ? '<span class="badge badge-accepted">' + esc(stageLabel.label) + "</span>" : badge(o.status));
+      return '<tr class="data-row" data-order-open="' + o.id + '">' +
+        '<td class="col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
+        "<td>" + esc(o.pickup) + "</td>" +
+        "<td>" + esc(o.dropoff) + "</td>" +
+        "<td>" + esc(fmtDay(o.orderDate)) + "</td>" +
+        "<td>" + esc(o.orderTime || "—") + "</td>" +
+        "<td>" + esc(o.vehicleType || "—") + "</td>" +
+        "<td>" + esc(o.passengers != null ? o.passengers : "—") + "</td>" +
+        "<td>" + (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") + "</td>" +
+        "<td>" + action + "</td>" +
+        "</tr>";
     }).join("");
   }
   $("ordersList").addEventListener("click", async function (e) {
@@ -286,19 +300,18 @@
     var warning = missing && o.status === "accepted"
       ? '<div class="warn-chip">Please assign a vehicle and driver before the pickup time</div>'
       : "";
-    return '<div class="om-row"><div class="om-label">Vehicle &amp; driver</div>' +
+    return '<div class="card">' +
+      '<h2 style="margin:0 0 10px;font-size:14px;">Vehicle &amp; driver</h2>' +
       warning +
-      '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:8px;">' +
-      '<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Vehicle</label>' +
-      '<select id="assignVehicle">' + fleetOptionsHtml(myFleet.vehicles, o.vehicleId, "vehicle") + "</select></div>" +
-      '<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Driver</label>' +
-      '<select id="assignDriver">' + fleetOptionsHtml(myFleet.drivers, o.driverId, "driver") + "</select></div>" +
-      "</div>" +
-      '<button type="button" class="minibtn good" style="margin-top:10px;" data-assign-order="' + o.id + '">Save assignment</button>' +
-      '<p class="status" id="assignStatus"></p></div>';
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:' + (warning ? "10px" : "0") + ';">' +
+      '<select id="assignVehicle">' + fleetOptionsHtml(myFleet.vehicles, o.vehicleId, "vehicle") + "</select>" +
+      '<select id="assignDriver">' + fleetOptionsHtml(myFleet.drivers, o.driverId, "driver") + "</select>" +
+      '<button type="button" class="minibtn good" data-assign-order="' + o.id + '">Save assignment</button>' +
+      '<p class="status" id="assignStatus" style="margin:0;"></p>' +
+      "</div></div>";
   }
 
-  function stageTrackerHtml(o) {
+  function stageProgressHtml(o) {
     if (o.status !== "accepted" && o.status !== "completed" && o.status !== "no_show") return "";
     var keys = STAGES.map(function (s) { return s.key; });
     var currentIndex = o.tripStage ? keys.indexOf(o.tripStage) : -1;
@@ -306,57 +319,82 @@
       var state = i <= currentIndex ? "done" : (i === currentIndex + 1 && o.status === "accepted" ? "next" : "upcoming");
       return '<span class="stage-chip stage-' + state + '">' + (i <= currentIndex ? "✓ " : "") + esc(s.label) + "</span>";
     }).join("");
+    return '<div class="card">' +
+      '<h2 style="margin:0 0 10px;font-size:14px;">Trip progress</h2>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + items + "</div>" +
+      "</div>";
+  }
 
-    var controls = "";
-    if (o.status === "no_show") {
-      controls = '<p class="status" style="margin-top:8px;">Reported as a customer no-show — pending review.</p>';
-    } else if (o.status === "accepted" && currentIndex < STAGES.length - 1) {
-      var next = STAGES[currentIndex + 1];
-      var canReportNoShow = currentIndex >= keys.indexOf("arrived");
-      controls = '<div style="display:flex;gap:8px;margin-top:10px;">' +
-        '<button type="button" class="minibtn good" style="flex:1;" data-stage-next="' + next.key + '" data-stage-order="' + o.id + '">' + esc(next.label) + "</button>" +
-        (canReportNoShow
-          ? '<div class="more-wrap">' +
-            '<button type="button" class="minibtn" id="moreBtn">More &#9662;</button>' +
-            '<div class="more-menu" id="moreMenu" hidden>' +
-            '<button type="button" class="more-menu-item danger" id="reportNoShowBtn" data-order="' + o.id + '">Report customer no-show</button>' +
-            "</div></div>"
-          : "") +
-        "</div>";
+  function moreMenuHtml(orderId) {
+    return '<div class="more-wrap">' +
+      '<button type="button" class="minibtn" id="moreBtn">More &#9662;</button>' +
+      '<div class="more-menu" id="moreMenu" hidden>' +
+      '<button type="button" class="more-menu-item danger" id="reportNoShowBtn" data-order="' + orderId + '">Report customer no-show</button>' +
+      "</div></div>";
+  }
+
+  // Content of the sticky status-action bar fixed under the order view.
+  function actionBarHtml(o) {
+    if (o.status === "offered") {
+      return '<button type="button" class="minibtn accept" style="flex:1;max-width:320px;" data-accept="' + o.id + '">Accept</button>' +
+        '<button type="button" class="minibtn decline" data-decline="' + o.id + '">Decline</button>';
     }
-    return '<div class="om-row"><div class="om-label">Trip progress</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">' + items + "</div>" +
-      controls + '<p class="status" id="omStageStatus"></p></div>';
+    if (o.status === "no_show") {
+      return '<p class="status" style="margin:0;">Reported as a customer no-show — pending review.</p>';
+    }
+    if (o.status === "accepted") {
+      var keys = STAGES.map(function (s) { return s.key; });
+      var currentIndex = o.tripStage ? keys.indexOf(o.tripStage) : -1;
+      if (currentIndex < STAGES.length - 1) {
+        var next = STAGES[currentIndex + 1];
+        var canReportNoShow = currentIndex >= keys.indexOf("arrived");
+        return '<button type="button" class="minibtn good" style="flex:1;max-width:420px;" data-stage-next="' + next.key + '" data-stage-order="' + o.id + '">' + esc(next.label) + "</button>" +
+          (canReportNoShow ? moreMenuHtml(o.id) : "");
+      }
+    }
+    return "";
   }
 
   function openOrderDetail(id) {
     var o = lastOrders.filter(function (x) { return x.id === id; })[0];
     if (!o) return;
     $("odTitle").textContent = "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id);
+    $("odStatusBadge").innerHTML = badge(o.status);
 
-    var body =
-      '<div class="om-row"><div class="om-label">Status</div>' + badge(o.status) + "</div>" +
-      '<div class="om-row"><div class="om-label">Pickup</div>' + esc(o.pickup) + "</div>" +
-      '<div class="om-row"><div class="om-label">Dropoff</div>' + esc(o.dropoff) + "</div>" +
-      (o.flightNumber ? '<div class="om-row"><div class="om-label">Flight number</div>' + esc(o.flightNumber) + "</div>" : "") +
-      '<div class="om-row"><div class="om-label">Date</div>' + esc(fmtDay(o.orderDate)) + "</div>" +
-      (o.flightTime ? '<div class="om-row"><div class="om-label">Flight arrival time</div>' + esc(o.flightTime) + "</div>" : "") +
-      (o.bufferMinutes != null ? '<div class="om-row"><div class="om-label">Buffer time</div>' + esc(o.bufferMinutes) + " min</div>" : "") +
-      '<div class="om-row"><div class="om-label">Pickup time</div>' + esc(o.orderTime || "—") + "</div>" +
-      '<div class="om-row"><div class="om-label">Vehicle type</div>' + esc(o.vehicleType || "—") + "</div>" +
-      '<div class="om-row"><div class="om-label">Passengers / luggage</div>' + esc(o.passengers != null ? o.passengers : "—") + " / " + esc(o.luggage != null ? o.luggage : "—") + "</div>" +
-      '<div class="om-row"><div class="om-label">Passenger name</div>' + esc(o.passengerName || "—") + "</div>" +
-      '<div class="om-row"><div class="om-label">Passenger phone</div>' + esc(o.passengerPhone || "—") + "</div>" +
-      (o.meetGreet ? '<div class="om-row"><div class="om-label">Meet &amp; greet</div>' + esc(o.meetGreet) + "</div>" : "") +
-      (o.notes ? '<div class="om-row"><div class="om-label">Additional instructions</div>' + esc(o.notes) + "</div>" : "") +
-      (o.price ? '<div class="om-row"><div class="om-label">Price</div>' + esc(o.price) + " " + esc(o.currency || "") + "</div>" : "") +
-      assignBlockHtml(o) +
-      stageTrackerHtml(o) +
-      (o.status === "offered"
-        ? '<div class="om-row" style="display:flex;gap:8px;">' +
-          '<button type="button" class="minibtn accept" data-accept="' + o.id + '">Accept</button>' +
-          '<button type="button" class="minibtn decline" data-decline="' + o.id + '">Decline</button>' +
-          "</div>"
+    var tripCard = '<div class="card">' +
+      '<h2 style="margin:0 0 12px;font-size:14px;">Trip</h2>' +
+      '<div class="od-fields">' +
+      '<div class="field"><div class="field-label">Pickup</div><div class="field-val">' + esc(o.pickup) + "</div></div>" +
+      '<div class="field"><div class="field-label">Dropoff</div><div class="field-val">' + esc(o.dropoff) + "</div></div>" +
+      '<div class="field"><div class="field-label">Date</div><div class="field-val">' + esc(fmtDay(o.orderDate)) + "</div></div>" +
+      '<div class="field"><div class="field-label">Pickup time</div><div class="field-val">' + esc(o.orderTime || "—") + "</div></div>" +
+      (o.flightNumber ? '<div class="field"><div class="field-label">Flight number</div><div class="field-val">' + esc(o.flightNumber) + "</div></div>" : "") +
+      (o.flightTime ? '<div class="field"><div class="field-label">Flight arrival</div><div class="field-val">' + esc(o.flightTime) + "</div></div>" : "") +
+      (o.bufferMinutes != null ? '<div class="field"><div class="field-label">Buffer time</div><div class="field-val">' + esc(o.bufferMinutes) + " min</div></div>" : "") +
+      '<div class="field"><div class="field-label">Vehicle type</div><div class="field-val">' + esc(o.vehicleType || "—") + "</div></div>" +
+      "</div></div>";
+
+    var passengerCard = '<div class="card">' +
+      '<h2 style="margin:0 0 12px;font-size:14px;">Passenger &amp; price</h2>' +
+      '<div class="od-fields">' +
+      '<div class="field" style="grid-column:1 / -1;"><div class="field-label">Passenger</div><div class="field-val">' + esc(o.passengerName || "—") + (o.passengerPhone ? " · " + esc(o.passengerPhone) : "") + "</div></div>" +
+      '<div class="field"><div class="field-label">Passengers</div><div class="field-val">' + esc(o.passengers != null ? o.passengers : "—") + "</div></div>" +
+      '<div class="field"><div class="field-label">Luggage</div><div class="field-val">' + esc(o.luggage != null ? o.luggage : "—") + "</div></div>" +
+      (o.meetGreet ? '<div class="field" style="grid-column:1 / -1;"><div class="field-label">Meet &amp; greet</div><div class="field-val">' + esc(o.meetGreet) + "</div></div>" : "") +
+      (o.notes ? '<div class="field" style="grid-column:1 / -1;"><div class="field-label">Additional instructions</div><div class="field-val">' + esc(o.notes) + "</div></div>" : "") +
+      (o.price ? '<div class="field"><div class="field-label">Price</div><div class="field-val" style="font-weight:700;">' + esc(o.price) + " " + esc(o.currency || "") + "</div></div>" : "") +
+      "</div></div>";
+
+    var thirdCol = assignBlockHtml(o) + stageProgressHtml(o);
+    var actionBar = actionBarHtml(o);
+
+    var body = '<div class="od-grid">' +
+      tripCard + passengerCard +
+      (thirdCol ? '<div style="display:flex;flex-direction:column;">' + thirdCol + "</div>" : "<div></div>") +
+      "</div>" +
+      (actionBar
+        ? '<div class="od-actionbar"><div style="display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap;">' + actionBar + "</div>" +
+          '<p class="status" id="omStageStatus" style="margin:0;"></p></div>'
         : "");
 
     $("odBody").innerHTML = body;

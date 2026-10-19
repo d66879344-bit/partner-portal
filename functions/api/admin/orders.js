@@ -10,7 +10,8 @@ export async function onRequestGet(context) {
             o.buffer_minutes, o.order_date, o.order_time,
             o.vehicle_type, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet,
             o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
-            o.price, o.currency, o.notes, o.status, o.trip_stage, o.created_at, o.responded_at
+            o.price, o.currency, o.notes, o.status, o.trip_stage, o.no_show_type, o.no_show_at, o.no_show_review_status,
+            o.created_at, o.responded_at
      FROM orders o
      JOIN partners p ON p.id = o.partner_id
      LEFT JOIN drivers dr ON dr.id = o.driver_id
@@ -46,6 +47,9 @@ export async function onRequestGet(context) {
     notes: o.notes,
     status: o.status,
     tripStage: o.trip_stage,
+    noShowType: o.no_show_type,
+    noShowAt: o.no_show_at,
+    noShowReviewStatus: o.no_show_review_status,
     createdAt: o.created_at,
     respondedAt: o.responded_at,
   }));

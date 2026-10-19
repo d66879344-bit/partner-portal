@@ -91,6 +91,22 @@
   .stage-chip { font: 600 12px/1 var(--font-body); padding: 5px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink-2); }
   .stage-chip.stage-done { background: var(--good-bg); color: var(--good); border-color: var(--good); }
   .stage-chip.stage-next { background: #FDF0CC; color: #7A5B00; border-color: #D8B23C; }
+
+  /* ---------- order detail: full-screen 3-column layout ---------- */
+  .od-grid { display: grid; grid-template-columns: 1.1fr 1.1fr 1fr; gap: 16px; align-items: start; }
+  .od-grid > .card { margin-top: 0; }
+  .od-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 14px; }
+  .field { margin-bottom: 12px; }
+  .field-label { font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
+  .field-val { margin-top: 3px; font-size: 13.5px; }
+  .od-actionbar {
+    position: sticky; bottom: 0; margin-top: 16px; padding: 14px 0; background: var(--surface);
+    border-top: 1px solid var(--line); box-shadow: 0 -6px 16px rgba(16,24,40,.06);
+    display: flex; gap: 10px; align-items: center;
+  }
+  @media (max-width: 960px) {
+    .od-grid { grid-template-columns: 1fr; }
+  }
   .minibtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 8px 14px; min-height: 38px; cursor: pointer; font-weight: 600; font-size: 13px; transition: border-color .12s, background .12s; }
   .minibtn:hover:not(:disabled) { border-color: var(--ink); }
   .minibtn:disabled { opacity: .55; cursor: not-allowed; }
@@ -270,15 +286,33 @@
           </select>
         </div>
         <p class="status" id="ordersStatus"></p>
-        <div id="ordersList"></div>
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Start point</th>
+                <th>Destination</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Vehicle</th>
+                <th>Passengers</th>
+                <th>Price</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="ordersList"></tbody>
+          </table>
+        </div>
       </div>
 
       <div id="orderDetailView" hidden>
         <button type="button" class="minibtn" id="orderDetailBack" style="margin-bottom:18px;">&larr; Back</button>
-        <div class="dash-pagehead">
+        <div class="dash-pagehead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <h1 id="odTitle">Order</h1>
+          <span id="odStatusBadge"></span>
         </div>
-        <div class="card" id="odBody" style="max-width:640px;"></div>
+        <div id="odBody"></div>
       </div>
 
       <div id="noShowView" hidden>

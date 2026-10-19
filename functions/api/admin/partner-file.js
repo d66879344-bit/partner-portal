@@ -16,8 +16,9 @@ export async function onRequestGet(context) {
   const obj = await env.BUCKET.get(doc.file_key);
   if (!obj) return Response.json({ error: "not_found" }, { status: 404 });
 
+  const disposition = url.searchParams.get("dl") ? "attachment" : "inline";
   const headers = new Headers();
   obj.writeHttpMetadata(headers);
-  headers.set("Content-Disposition", 'inline; filename="' + (doc.filename || "document").replace(/"/g, "") + '"');
+  headers.set("Content-Disposition", disposition + '; filename="' + (doc.filename || "document").replace(/"/g, "") + '"');
   return new Response(obj.body, { headers });
 }

@@ -92,6 +92,9 @@ CREATE TABLE IF NOT EXISTS orders (
   -- set together with status = 'no_show'. 'customer' = passenger no-show, 'driver' = driver no-show.
   no_show_type TEXT,
   no_show_at TEXT,
+  -- NULL = pending admin review | 'confirmed' | 'rejected'. Confirming a no_show
+  -- also sets status = 'completed'; rejecting leaves status = 'no_show'.
+  no_show_review_status TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   responded_at TEXT,
   hidden_from_admin INTEGER NOT NULL DEFAULT 0 -- hides the order from the admin view only; the partner still sees it

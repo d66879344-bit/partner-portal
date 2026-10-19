@@ -176,6 +176,18 @@ textarea { resize: vertical; min-height: 64px; }
 .badge-rejected, .badge-declined, .badge-cancelled, .badge-blocked { background: var(--crit-bg); color: var(--crit); }
 .badge-no_show { background: #ECE7FB; color: #5B3FB0; }
 
+/* ---------- data table (shared by admin + partner dashboards) ---------- */
+.table-card { padding: 4px 0 2px; overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.data-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); font-weight: 600; padding: 0 14px 10px; white-space: nowrap; }
+.data-table th:first-child, .data-table td:first-child { padding-left: 18px; }
+.data-table td { padding: 13px 14px; font-size: 14px; border-top: 1px solid var(--line); vertical-align: middle; }
+.data-row { cursor: pointer; }
+.data-row:hover td { background: var(--surface-2); }
+.col-main { font-weight: 600; }
+.col-chev { color: var(--line-strong); text-align: right; padding-right: 18px !important; width: 20px; }
+.empty-cell { padding: 18px; color: var(--ink-2); border-top: 1px solid var(--line); }
+
 .navbar {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   margin-bottom: 18px; font-size: 14px; flex-wrap: wrap;

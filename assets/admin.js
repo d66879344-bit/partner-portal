@@ -13,16 +13,29 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
   function fmtDate(iso) {
     if (!iso) return "";
-    try { return new Date(iso.replace(" ", "T") + "Z").toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
-    catch (e) { return iso; }
+    try {
+      var d = new Date(iso.replace(" ", "T") + "Z");
+      return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear() + ", " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    } catch (e) { return iso; }
+  }
+  function fmtDay(d) {
+    if (!d) return "";
+    try {
+      var dt = new Date(d);
+      return pad2(dt.getDate()) + "/" + pad2(dt.getMonth() + 1) + "/" + dt.getFullYear();
+    } catch (e) { return d; }
   }
   function badge(status) {
     return '<span class="badge badge-' + esc(status) + '">' + esc(status) + "</span>";
   }
   function fileUrl(id) {
     return "/api/admin/partner-file?secret=" + encodeURIComponent(secret) + "&id=" + id;
+  }
+  function downloadUrl(id) {
+    return fileUrl(id) + "&dl=1";
   }
 
   async function api(path, opts) {
@@ -142,7 +155,8 @@
       if (!docs.length) return '<p class="docrow" style="color:var(--ink-2);">No documents.</p>';
       return docs.map(function (doc) {
         return '<div class="docrow"><div class="docrow-main">' + esc(doc.label) +
-          ' · <a href="' + fileUrl(doc.id) + '" target="_blank" rel="noopener">' + esc(doc.filename || "file") + "</a> " + badge(doc.status) + "</div>" +
+          ' · <a href="' + fileUrl(doc.id) + '" target="_blank" rel="noopener">' + esc(doc.filename || "file") + "</a>" +
+          ' · <a href="' + downloadUrl(doc.id) + '" download>Download</a> ' + badge(doc.status) + "</div>" +
           '<div class="docrow-actions">' +
           '<button type="button" class="minibtn good" data-doc-approve="' + doc.id + '">Approve</button>' +
           '<button type="button" class="minibtn crit" data-doc-reject="' + doc.id + '">Reject</button>' +
@@ -398,7 +412,7 @@
         '<td class="mono col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
         "<td>" + esc(o.companyName) + "</td>" +
         "<td>" + esc(o.pickup) + " → " + esc(o.dropoff) + "</td>" +
-        '<td class="mono">' + esc(o.orderDate) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</td>" +
+        '<td class="mono">' + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</td>" +
         '<td class="mono">' + (o.price ? esc(o.price) + " " + esc(o.currency) : "—") + "</td>" +
         "<td>" + statusBadge(o) + "</td>" +
         '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
@@ -430,12 +444,21 @@
         evidenceBlock = '<div class="block"><h3 style="font-family:inherit;text-transform:none;font-size:15px;font-weight:700;margin-bottom:10px;">Customer no-show evidence</h3>' +
           evidenceDocs.map(function (d) {
             var fileLink = d.hasFile
-              ? '<div><a href="' + fileUrl(d.id) + '" target="_blank" rel="noopener">View upload' + (d.filename ? ": " + esc(d.filename) : "") + "</a></div>"
+              ? '<div><a href="' + fileUrl(d.id) + '" target="_blank" rel="noopener">View upload' + (d.filename ? ": " + esc(d.filename) : "") + '</a> &middot; <a href="' + downloadUrl(d.id) + '" download>Download</a></div>'
               : "";
             var noteText = d.note ? '<div class="row-meta" style="margin-top:2px;">' + esc(d.note) + "</div>" : "";
             if (!d.hasFile && !d.note) noteText = '<div class="row-meta" style="margin-top:2px;">No file or note provided.</div>';
             return '<div class="row-meta" style="margin-bottom:10px;"><b>' + esc(d.label || d.field) + "</b>" + fileLink + noteText + "</div>";
           }).join("") +
+          "</div>";
+      }
+      if (o.noShowReviewStatus === "rejected") {
+        evidenceBlock += '<div class="block"><div class="row-meta">This no-show report was <b>rejected</b> by an admin.</div></div>';
+      } else {
+        evidenceBlock += '<div class="block" style="display:flex;gap:8px;">' +
+          '<button type="button" class="minibtn good" data-noshow-confirm="' + o.id + '">Confirm no-show</button>' +
+          '<button type="button" class="minibtn crit" data-noshow-reject="' + o.id + '">Reject</button>' +
+          '<span class="status" id="noshowReviewStatus-' + o.id + '" style="margin:0;"></span>' +
           "</div>";
       }
     }
@@ -492,8 +515,10 @@
     var hide = e.target.closest("[data-order-hide]");
     var del = e.target.closest("[data-order-delete]");
     var reassign = e.target.closest("[data-order-reassign]");
+    var noshowConfirm = e.target.closest("[data-noshow-confirm]");
+    var noshowReject = e.target.closest("[data-noshow-reject]");
 
-    if (toggle && !complete && !cancel && !hide && !del && !reassign) {
+    if (toggle && !complete && !cancel && !hide && !del && !reassign && !noshowConfirm && !noshowReject) {
       var id = Number(toggle.getAttribute("data-order-toggle"));
       openOrderId = openOrderId === id ? null : id;
       renderOrders();
@@ -563,6 +588,44 @@
       } catch (err) {
         if (statusEl) { statusEl.textContent = "Could not reassign. Try again."; statusEl.className = "status err"; }
         reassign.disabled = false;
+      }
+      return;
+    }
+    if (noshowConfirm) {
+      e.stopPropagation();
+      var ncId = Number(noshowConfirm.getAttribute("data-noshow-confirm"));
+      var ncStatusEl = $("noshowReviewStatus-" + ncId);
+      noshowConfirm.disabled = true;
+      if (ncStatusEl) { ncStatusEl.textContent = "Confirming…"; ncStatusEl.className = "status"; }
+      try {
+        await api("/api/admin/order-no-show-review", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: ncId, action: "confirm" })
+        });
+        openOrderId = null;
+        await loadOrders();
+      } catch (err) {
+        noshowConfirm.disabled = false;
+        if (ncStatusEl) { ncStatusEl.textContent = "Could not confirm. Try again."; ncStatusEl.className = "status err"; }
+      }
+      return;
+    }
+    if (noshowReject) {
+      e.stopPropagation();
+      var nrId = Number(noshowReject.getAttribute("data-noshow-reject"));
+      if (!confirm("Reject this no-show report? The order stays marked as a no-show but will no longer need action.")) return;
+      var nrStatusEl = $("noshowReviewStatus-" + nrId);
+      noshowReject.disabled = true;
+      if (nrStatusEl) { nrStatusEl.textContent = "Rejecting…"; nrStatusEl.className = "status"; }
+      try {
+        await api("/api/admin/order-no-show-review", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: nrId, action: "reject" })
+        });
+        await loadOrders();
+      } catch (err) {
+        noshowReject.disabled = false;
+        if (nrStatusEl) { nrStatusEl.textContent = "Could not reject. Try again."; nrStatusEl.className = "status err"; }
       }
       return;
     }
