@@ -4,6 +4,13 @@
   var EXT_TYPES = { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif" };
 
   var slotsFor = (window.DOC_DEFS && window.DOC_DEFS.slotsFor) || function () { return []; };
+  var expandSlots = (window.DOC_DEFS && window.DOC_DEFS.expandSlots) || function (d) { return d; };
+  // Matches the partner dashboard's Fleet & Documents tab: a vehicle photo plus
+  // whichever documents the country requires, with "registration"/"insurance"
+  // split into a required + an optional file (single combined PDF, or two photos).
+  function vehicleSlotDefs(country) {
+    return [{ id: "photo", label: "Vehicle photo", required: true }].concat(expandSlots(slotsFor(country, "vehicle")));
+  }
   var COUNTRY_NAMES = {};
   (window.WORLD_COUNTRIES || []).forEach(function (row) { COUNTRY_NAMES[row[0]] = row[1]; });
   var OTHER_SLOT = [{ id: "document", label: "Document", required: false }];
@@ -69,8 +76,8 @@
   }
   function renderAllSlots() {
     renderSlotsInto("slots-company", "company", slotsFor(state.country, "company"));
-    renderSlotsInto("slots-vehicle1", "vehicle1", slotsFor(state.country, "vehicle"));
-    renderSlotsInto("slots-vehicle2", "vehicle2", slotsFor(state.country, "vehicle"));
+    renderSlotsInto("slots-vehicle1", "vehicle1", vehicleSlotDefs(state.country));
+    renderSlotsInto("slots-vehicle2", "vehicle2", vehicleSlotDefs(state.country));
     renderSlotsInto("slots-driver1", "driver1", slotsFor(state.country, "driver"));
     renderSlotsInto("slots-driver2", "driver2", slotsFor(state.country, "driver"));
     renderSlotsInto("slots-other", "other", OTHER_SLOT);
@@ -107,8 +114,8 @@
   }
 
   /* ---------- validation + submit ---------- */
-  function validateRequiredSlots(prefix, type, errors, blockLabel) {
-    slotsFor(state.country, type).forEach(function (d) {
+  function validateRequiredSlots(prefix, defs, errors, blockLabel) {
+    defs.forEach(function (d) {
       if (d.required && !state.files[prefix + "_" + d.id]) {
         errors.push(blockLabel + ": " + d.label);
       }
@@ -136,24 +143,24 @@
     var d2ref = $("ref-driver2").value.trim();
     var otherDesc = $("otherDesc").value.trim();
 
-    validateRequiredSlots("company", "company", errors, "Company");
+    validateRequiredSlots("company", slotsFor(state.country, "company"), errors, "Company");
 
     if (!v1ref) errors.push("Vehicle 1: plate number is required");
-    validateRequiredSlots("vehicle1", "vehicle", errors, "Vehicle 1");
+    validateRequiredSlots("vehicle1", vehicleSlotDefs(state.country), errors, "Vehicle 1");
 
     var v2touched = !!v2ref || hasFilesWithPrefix("vehicle2");
     if (v2touched) {
       if (!v2ref) errors.push("Vehicle 2: plate number is required");
-      validateRequiredSlots("vehicle2", "vehicle", errors, "Vehicle 2");
+      validateRequiredSlots("vehicle2", vehicleSlotDefs(state.country), errors, "Vehicle 2");
     }
 
     if (!d1ref) errors.push("Driver 1: driver name is required");
-    validateRequiredSlots("driver1", "driver", errors, "Driver 1");
+    validateRequiredSlots("driver1", slotsFor(state.country, "driver"), errors, "Driver 1");
 
     var d2touched = !!d2ref || hasFilesWithPrefix("driver2");
     if (d2touched) {
       if (!d2ref) errors.push("Driver 2: driver name is required");
-      validateRequiredSlots("driver2", "driver", errors, "Driver 2");
+      validateRequiredSlots("driver2", slotsFor(state.country, "driver"), errors, "Driver 2");
     }
 
     if (errors.length) {
@@ -191,9 +198,11 @@
         if (data.error === "email_taken") throw new Error("That email is already registered.");
         throw new Error("Something went wrong. Please try again.");
       }
-      $("progress").textContent = "";
-      setStatus("Account created. You can sign in right away — we'll review your documents and activate order assignment once they're approved.", "ok");
+      $("countryBar").hidden = true;
       $("registerForm").hidden = true;
+      $("successMsg").textContent = "You can sign in right away — we'll review your documents and activate order assignment once they're approved.";
+      $("successCard").hidden = false;
+      window.scrollTo(0, 0);
     } catch (e) {
       $("progress").textContent = "";
       setStatus(e.message || "Something went wrong. Please try again.", "err");
