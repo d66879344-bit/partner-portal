@@ -22,10 +22,18 @@ export async function onRequestGet(context) {
   if (!id) return Response.json({ error: "invalid_id" }, { status: 400 });
 
   const partner = await env.DB.prepare(
-    `SELECT id, email, company_name, contact_name, phone, country, country_name, status, admin_note, created_at, activated_at
+    `SELECT id, email, company_name, contact_name, phone, account_id, covered_airports, service_city, country, country_name, status, admin_note, created_at, activated_at
      FROM partners WHERE id = ?`
   ).bind(id).first();
   if (!partner) return Response.json({ error: "not_found" }, { status: 404 });
+
+  let airports = [];
+  try {
+    airports = JSON.parse(partner.covered_airports || "[]");
+    if (!Array.isArray(airports)) airports = [];
+  } catch (e) {
+    airports = [];
+  }
 
   const [vehiclesRes, driversRes, documentsRes] = await Promise.all([
     env.DB.prepare("SELECT id, plate, category, make FROM vehicles WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
@@ -49,6 +57,9 @@ export async function onRequestGet(context) {
       companyName: partner.company_name,
       contactName: partner.contact_name,
       phone: partner.phone,
+      accountId: partner.account_id,
+      airports: airports,
+      serviceCity: partner.service_city,
       country: partner.country,
       countryName: partner.country_name,
       status: partner.status,

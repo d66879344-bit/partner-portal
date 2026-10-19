@@ -36,6 +36,7 @@ export async function onRequestPost(context) {
     const company = (form.get("company") || "").toString().trim();
     const contactName = (form.get("contactName") || "").toString().trim().slice(0, 150);
     const phone = (form.get("phone") || "").toString().trim().slice(0, 50);
+    const serviceCity = (form.get("serviceCity") || "").toString().trim().slice(0, 150);
     const otherDescription = (form.get("otherDescription") || "").toString().trim().slice(0, 500);
 
     let airports = [];
@@ -76,9 +77,9 @@ export async function onRequestPost(context) {
     const accountId = await generateUniqueAccountId(env);
 
     const partnerInsert = await env.DB.prepare(
-      `INSERT INTO partners (email, password_hash, password_salt, company_name, contact_name, phone, account_id, covered_airports, country, country_name, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
-    ).bind(email, hash, salt, company.slice(0, 200), contactName, phone, accountId, JSON.stringify(airports), country, countryName || country).run();
+      `INSERT INTO partners (email, password_hash, password_salt, company_name, contact_name, phone, account_id, covered_airports, service_city, country, country_name, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
+    ).bind(email, hash, salt, company.slice(0, 200), contactName, phone, accountId, JSON.stringify(airports), serviceCity || null, country, countryName || country).run();
     const partnerId = partnerInsert.meta.last_row_id;
 
     // Vehicles

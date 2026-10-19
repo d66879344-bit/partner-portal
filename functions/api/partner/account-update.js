@@ -12,6 +12,7 @@ export async function onRequestPost(context) {
     const body = await request.json();
     const phone = (body.phone || "").toString().trim().slice(0, 50);
     if (!phone) return Response.json({ error: "invalid_submission", field: "phone" }, { status: 400 });
+    const serviceCity = (body.serviceCity || "").toString().trim().slice(0, 150);
 
     let airports = [];
     if (Array.isArray(body.airports)) {
@@ -26,11 +27,11 @@ export async function onRequestPost(context) {
       }
     }
 
-    await env.DB.prepare("UPDATE partners SET phone = ?, covered_airports = ? WHERE id = ?")
-      .bind(phone, JSON.stringify(airports), partnerId)
+    await env.DB.prepare("UPDATE partners SET phone = ?, covered_airports = ?, service_city = ? WHERE id = ?")
+      .bind(phone, JSON.stringify(airports), serviceCity || null, partnerId)
       .run();
 
-    return Response.json({ ok: true, phone, airports });
+    return Response.json({ ok: true, phone, airports, serviceCity });
   } catch (e) {
     return Response.json({ error: "server_error", message: String(e && e.message || e) }, { status: 500 });
   }

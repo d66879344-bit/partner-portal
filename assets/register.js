@@ -16,8 +16,10 @@
   var OTHER_SLOT = [{ id: "document", label: "Document", required: false }];
 
   var $ = function (id) { return document.getElementById(id); };
-  var state = { country: null, files: {}, labels: {} };
+  var state = { country: null, serviceCity: "", files: {}, labels: {} };
   var airportPicker = null;
+  var countryCombo = null;
+  var cityCombo = null;
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -38,23 +40,19 @@
     return Object.keys(state.files).some(function (k) { return k.indexOf(prefix + "_") === 0 && state.files[k]; });
   }
 
-  /* ---------- country modal ---------- */
-  function renderCountrySelect() {
-    var rows = (window.WORLD_COUNTRIES || []).slice();
-    var html = '<option value="" disabled selected>Select a country…</option>' +
-      rows.map(function (r) { return '<option value="' + esc(r[0]) + '">' + esc(r[1]) + "</option>"; }).join("");
-    $("countrySelect").innerHTML = html;
-  }
-  function openCountryModal() { $("countryModal").hidden = false; }
-  function closeCountryModal() { $("countryModal").hidden = true; }
-  function selectCountry(code) {
-    state.country = code;
+  /* ---------- country + city + airports ---------- */
+  function onCountryChange(code) {
+    state.country = code || null;
     state.files = {};
-    $("countryLabel").textContent = COUNTRY_NAMES[code] || code;
-    $("countryBar").hidden = false;
-    $("formCard").hidden = false;
-    closeCountryModal();
     renderAllSlots();
+
+    var cities = code && window.citiesForCountry ? window.citiesForCountry(code) : [];
+    if (cityCombo) {
+      cityCombo.clear();
+      cityCombo.setItems(cities.map(function (c) { return [c, c]; }));
+    }
+    state.serviceCity = "";
+
     if (window.AirportPicker && $("airportsPicker")) {
       if (!airportPicker) {
         airportPicker = window.AirportPicker.create($("airportsPicker"), { country: code });
@@ -62,6 +60,10 @@
         airportPicker.setCountry(code);
       }
     }
+  }
+  function onCityChange(city) {
+    state.serviceCity = city || "";
+    if (airportPicker) airportPicker.setCity(city || null);
   }
 
   /* ---------- file slots ---------- */
@@ -132,21 +134,18 @@
 
   async function submit(ev) {
     ev.preventDefault();
-    if (!state.country) return;
 
     var email = $("email").value.trim();
     var password = $("password").value;
-    var password2 = $("password2").value;
     var company = $("company").value.trim();
-
     var phone = $("phone").value.trim();
 
     var errors = [];
+    if (!company) errors.push("Enter the company name.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Enter a valid email address.");
     if (password.length < 8) errors.push("Password must be at least 8 characters.");
-    if (password !== password2) errors.push("Passwords do not match.");
-    if (!company) errors.push("Enter the company name.");
     if (!phone) errors.push("Enter a contact phone number.");
+    if (!state.country) errors.push("Select a country.");
 
     var v1ref = $("ref-vehicle1").value.trim().toUpperCase();
     var v2ref = $("ref-vehicle2").value.trim().toUpperCase();
@@ -154,24 +153,26 @@
     var d2ref = $("ref-driver2").value.trim();
     var otherDesc = $("otherDesc").value.trim();
 
-    validateRequiredSlots("company", slotsFor(state.country, "company"), errors, "Company");
+    if (state.country) {
+      validateRequiredSlots("company", slotsFor(state.country, "company"), errors, "Company");
 
-    if (!v1ref) errors.push("Vehicle 1: plate number is required");
-    validateRequiredSlots("vehicle1", vehicleSlotDefs(state.country), errors, "Vehicle 1");
+      if (!v1ref) errors.push("Vehicle 1: plate number is required");
+      validateRequiredSlots("vehicle1", vehicleSlotDefs(state.country), errors, "Vehicle 1");
 
-    var v2touched = !!v2ref || hasFilesWithPrefix("vehicle2");
-    if (v2touched) {
-      if (!v2ref) errors.push("Vehicle 2: plate number is required");
-      validateRequiredSlots("vehicle2", vehicleSlotDefs(state.country), errors, "Vehicle 2");
-    }
+      var v2touched = !!v2ref || hasFilesWithPrefix("vehicle2");
+      if (v2touched) {
+        if (!v2ref) errors.push("Vehicle 2: plate number is required");
+        validateRequiredSlots("vehicle2", vehicleSlotDefs(state.country), errors, "Vehicle 2");
+      }
 
-    if (!d1ref) errors.push("Driver 1: driver name is required");
-    validateRequiredSlots("driver1", slotsFor(state.country, "driver"), errors, "Driver 1");
+      if (!d1ref) errors.push("Driver 1: driver name is required");
+      validateRequiredSlots("driver1", slotsFor(state.country, "driver"), errors, "Driver 1");
 
-    var d2touched = !!d2ref || hasFilesWithPrefix("driver2");
-    if (d2touched) {
-      if (!d2ref) errors.push("Driver 2: driver name is required");
-      validateRequiredSlots("driver2", slotsFor(state.country, "driver"), errors, "Driver 2");
+      var d2touched = !!d2ref || hasFilesWithPrefix("driver2");
+      if (d2touched) {
+        if (!d2ref) errors.push("Driver 2: driver name is required");
+        validateRequiredSlots("driver2", slotsFor(state.country, "driver"), errors, "Driver 2");
+      }
     }
 
     if (errors.length) {
@@ -191,8 +192,8 @@
       fd.append("country", state.country);
       fd.append("countryName", COUNTRY_NAMES[state.country] || state.country);
       fd.append("company", company);
-      fd.append("contactName", $("contactName").value.trim());
       fd.append("phone", phone);
+      fd.append("serviceCity", state.serviceCity || "");
       fd.append("airports", JSON.stringify(airportPicker ? airportPicker.getSelected() : []));
       fd.append("otherDescription", otherDesc);
       fd.append("vehicle1_ref", v1ref);
@@ -210,7 +211,6 @@
         if (data.error === "email_taken") throw new Error("That email is already registered.");
         throw new Error("Something went wrong. Please try again.");
       }
-      $("countryBar").hidden = true;
       $("registerForm").hidden = true;
       $("successMsg").textContent = "You can sign in right away — we'll review your documents and activate order assignment once they're approved.";
       $("successCard").hidden = false;
@@ -224,14 +224,26 @@
   }
 
   /* ---------- wiring ---------- */
-  renderCountrySelect();
-  $("countryContinue").addEventListener("click", function () {
-    var code = $("countrySelect").value;
-    if (!code) { $("countryModalErr").textContent = "Please select a country."; return; }
-    $("countryModalErr").textContent = "";
-    selectCountry(code);
+  if (window.Combobox) {
+    countryCombo = window.Combobox.create($("countryCombo"), {
+      items: (window.WORLD_COUNTRIES || []).map(function (r) { return [r[0], r[1]]; }),
+      placeholder: "Start typing a country…",
+      onChange: onCountryChange,
+    });
+    cityCombo = window.Combobox.create($("cityCombo"), {
+      items: [],
+      placeholder: "Start typing a city…",
+      allowFreeText: true,
+      onChange: onCityChange,
+    });
+  }
+
+  $("passwordToggle").addEventListener("click", function () {
+    var input = $("password");
+    var show = input.type === "password";
+    input.type = show ? "text" : "password";
+    $("passwordToggle").textContent = show ? "Hide" : "Show";
   });
-  $("changeCountry").addEventListener("click", openCountryModal);
 
   $("registerForm").addEventListener("change", function (e) {
     var input = e.target.closest("input[type=file]"); if (!input) return;
@@ -250,6 +262,4 @@
     setSlotFile(fid, null);
   });
   $("registerForm").addEventListener("submit", submit);
-
-  openCountryModal();
 })();

@@ -206,28 +206,50 @@ window.AIRPORTS_BY_COUNTRY = {
     });
   }
 
+  // Unique, sorted city names among the curated airports for a country —
+  // used to drive the "city of service" combobox, since for an airport-transfer
+  // business a service city is, in practice, an airport's home city.
+  function citiesForCountry(country) {
+    var list = (window.AIRPORTS_BY_COUNTRY && window.AIRPORTS_BY_COUNTRY[country]) || [];
+    var seen = {};
+    var cities = [];
+    list.forEach(function (a) {
+      var city = a[2];
+      if (city && !seen[city]) { seen[city] = true; cities.push(city); }
+    });
+    cities.sort();
+    return cities;
+  }
+
   // A small searchable, multi-select "chip" picker for airports, scoped to one
-  // country at a time. create(container, {country, selected, onChange}) returns
-  // {getSelected(), setCountry(code), setSelected(codes)}.
+  // country (and optionally one city within it) at a time.
+  // create(container, {country, city, selected, onChange}) returns
+  // {getSelected(), setCountry(code), setCity(city), setSelected(codes)}.
   function create(container, opts) {
     opts = opts || {};
     var country = opts.country || null;
+    var city = opts.city || null;
     var selected = (opts.selected || []).slice();
     var onChange = opts.onChange || function () {};
 
     container.innerHTML =
       '<div class="airport-chips"></div>' +
-      '<input type="text" class="airport-search" placeholder="Search airport name or code…" autocomplete="off">' +
-      '<div class="airport-suggest" hidden></div>';
+      '<input type="text" class="ac-search" placeholder="Search airport name or code…" autocomplete="off">' +
+      '<div class="ac-suggest" hidden></div>';
     var chipsEl = container.querySelector(".airport-chips");
-    var inputEl = container.querySelector(".airport-search");
-    var suggestEl = container.querySelector(".airport-suggest");
+    var inputEl = container.querySelector(".ac-search");
+    var suggestEl = container.querySelector(".ac-suggest");
 
-    function listForCountry() {
+    function fullCountryList() {
       return (window.AIRPORTS_BY_COUNTRY && window.AIRPORTS_BY_COUNTRY[country]) || [];
     }
+    function listForScope() {
+      var list = fullCountryList();
+      if (!city) return list;
+      return list.filter(function (a) { return a[2] === city; });
+    }
     function findAirport(code) {
-      var list = listForCountry();
+      var list = fullCountryList();
       for (var i = 0; i < list.length; i++) if (list[i][0] === code) return list[i];
       return null;
     }
@@ -240,7 +262,7 @@ window.AIRPORTS_BY_COUNTRY = {
       }).join("");
     }
     function renderSuggestions(query) {
-      var list = listForCountry();
+      var list = listForScope();
       var q = query.trim().toLowerCase();
       var matches = list.filter(function (a) {
         if (selected.indexOf(a[0]) !== -1) return false;
@@ -250,10 +272,10 @@ window.AIRPORTS_BY_COUNTRY = {
 
       if (!matches.length) {
         if (!list.length) {
-          suggestEl.innerHTML = '<div class="airport-suggest-empty">No airport list for this country yet — type the airport code and press Enter to add it.</div>';
+          suggestEl.innerHTML = '<div class="ac-suggest-empty">No airport list for this ' + (city ? "city" : "country") + ' yet — type the airport code and press Enter to add it.</div>';
           suggestEl.hidden = false;
         } else if (q) {
-          suggestEl.innerHTML = '<div class="airport-suggest-empty">No matches.</div>';
+          suggestEl.innerHTML = '<div class="ac-suggest-empty">No matches.</div>';
           suggestEl.hidden = false;
         } else {
           suggestEl.hidden = true;
@@ -261,8 +283,8 @@ window.AIRPORTS_BY_COUNTRY = {
         return;
       }
       suggestEl.innerHTML = matches.map(function (a) {
-        return '<div class="airport-suggest-item" data-pick="' + esc(a[0]) + '"><b>' + esc(a[0]) + '</b> — ' + esc(a[1]) +
-          (a[2] ? ' <span class="airport-suggest-city">(' + esc(a[2]) + ')</span>' : '') + '</div>';
+        return '<div class="ac-suggest-item" data-pick="' + esc(a[0]) + '"><b>' + esc(a[0]) + '</b> — ' + esc(a[1]) +
+          (a[2] ? ' <span class="ac-suggest-city">(' + esc(a[2]) + ')</span>' : '') + '</div>';
       }).join("");
       suggestEl.hidden = false;
     }
@@ -287,7 +309,7 @@ window.AIRPORTS_BY_COUNTRY = {
       var first = suggestEl.hidden ? null : suggestEl.querySelector("[data-pick]");
       if (first) {
         addCode(first.getAttribute("data-pick"));
-      } else if (!listForCountry().length && inputEl.value.trim()) {
+      } else if (!listForScope().length && inputEl.value.trim()) {
         addCode(inputEl.value);
       }
       inputEl.value = "";
@@ -316,6 +338,14 @@ window.AIRPORTS_BY_COUNTRY = {
       getSelected: function () { return selected.slice(); },
       setCountry: function (code) {
         country = code;
+        city = null;
+        selected = [];
+        renderChips();
+        suggestEl.hidden = true;
+        onChange(selected.slice());
+      },
+      setCity: function (newCity) {
+        city = newCity || null;
         selected = [];
         renderChips();
         suggestEl.hidden = true;
@@ -329,4 +359,5 @@ window.AIRPORTS_BY_COUNTRY = {
   }
 
   window.AirportPicker = { create: create };
+  window.citiesForCountry = citiesForCountry;
 })();

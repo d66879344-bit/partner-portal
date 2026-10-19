@@ -161,7 +161,8 @@
 
     el.innerHTML =
       '<div class="block"><div class="block-title">Contact</div>' +
-      '<div class="row-meta">' + esc(p.contactName || "—") + (p.phone ? " · " + esc(p.phone) : "") + "</div>" +
+      '<div class="row-meta">' + esc(p.contactName || "—") + (p.phone ? " · " + esc(p.phone) : "") + (p.accountId ? ' · <span class="mono">' + esc(p.accountId) + "</span>" : "") + "</div>" +
+      (p.serviceCity || (p.airports && p.airports.length) ? '<div class="row-meta">' + esc(p.serviceCity || "") + (p.airports && p.airports.length ? (p.serviceCity ? " · " : "") + "Airports: " + esc(p.airports.join(", ")) : "") + "</div>" : "") +
       '<div class="row-meta">Registered ' + esc(fmtDate(p.createdAt)) + (p.activatedAt ? " · activated " + esc(fmtDate(p.activatedAt)) : "") + "</div>" +
       (p.status === "pending" ? '<div class="row-meta">Account can sign in, but documents are not yet reviewed — it will not receive orders until activated.</div>' : "") +
       (p.adminNote ? '<div class="row-meta">Note: ' + esc(p.adminNote) + "</div>" : "") +

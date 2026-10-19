@@ -330,9 +330,15 @@
       <div class="card section-card" style="max-width:640px; margin-top:18px;">
         <h2>Contact &amp; coverage</h2>
         <p class="sub">Shown to our team only — keep this up to date so we can reach you and route the right orders your way.</p>
-        <div class="field">
-          <label for="acctPhone">Contact phone number</label>
-          <input type="tel" id="acctPhone" autocomplete="tel">
+        <div class="field-row">
+          <div class="field">
+            <label for="acctPhone">Contact phone number</label>
+            <input type="tel" id="acctPhone" autocomplete="tel">
+          </div>
+          <div class="field">
+            <label for="acctCityCombo">City of service</label>
+            <div id="acctCityCombo"></div>
+          </div>
         </div>
         <div class="field">
           <label>Airports you cover</label>
@@ -347,6 +353,7 @@
 
 <script src="/assets/doc-defs.js"></script>
 <script src="/assets/airports.js"></script>
+<script src="/assets/combobox.js"></script>
 <script src="/assets/partner-dashboard.js"></script>
 </body>
 </html>

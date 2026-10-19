@@ -71,6 +71,8 @@
 
   /* ---------- account / nav ---------- */
   var acctAirportPicker = null;
+  var acctCityCombo = null;
+  var acctLastCity = null;
 
   async function loadMe() {
     var data = await api("/api/partner/me");
@@ -85,10 +87,29 @@
     $("pendingBanner").hidden = me.status === "active";
 
     $("acctPhone").value = me.phone || "";
+    acctLastCity = me.serviceCity || null;
+
     if (window.AirportPicker && $("acctAirports")) {
       acctAirportPicker = window.AirportPicker.create($("acctAirports"), {
         country: me.country,
+        city: acctLastCity,
         selected: me.airports || [],
+      });
+    }
+    if (window.Combobox && $("acctCityCombo")) {
+      var cities = window.citiesForCountry ? window.citiesForCountry(me.country) : [];
+      acctCityCombo = window.Combobox.create($("acctCityCombo"), {
+        items: cities.map(function (c) { return [c, c]; }),
+        placeholder: "Start typing a city…",
+        allowFreeText: true,
+        value: acctLastCity,
+        onChange: function (city) {
+          // The initial value we just passed in also fires this — ignore that
+          // "no-op" sync so we don't wipe out the airports we just loaded.
+          if (city === acctLastCity) return;
+          acctLastCity = city;
+          if (acctAirportPicker) acctAirportPicker.setCity(city || null);
+        },
       });
     }
   }
@@ -111,9 +132,12 @@
     statusEl.className = "status";
     try {
       var airports = acctAirportPicker ? acctAirportPicker.getSelected() : (me.airports || []);
-      await api("/api/partner/account-update", { method: "POST", json: true, body: JSON.stringify({ phone: phone, airports: airports }) });
+      var serviceCity = acctCityCombo ? (acctCityCombo.getValue() || "") : (me.serviceCity || "");
+      await api("/api/partner/account-update", { method: "POST", json: true, body: JSON.stringify({ phone: phone, airports: airports, serviceCity: serviceCity }) });
       me.phone = phone;
       me.airports = airports;
+      me.serviceCity = serviceCity;
+      acctLastCity = serviceCity || null;
       statusEl.textContent = "Saved.";
       statusEl.className = "status ok";
     } catch (e) {

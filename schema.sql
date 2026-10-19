@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS partners (
   phone TEXT,
   account_id TEXT UNIQUE,
   covered_airports TEXT NOT NULL DEFAULT '[]',
+  service_city TEXT,
   country TEXT NOT NULL,
   country_name TEXT,
   -- pending: just registered, can sign in, but not assigned orders yet.
