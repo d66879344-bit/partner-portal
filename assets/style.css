@@ -7,6 +7,7 @@
   --line: #DEE4EA;
   --line-strong: #B9C6D4;
   --accent: #1476D4;
+  --accent-soft: #EAF2FB;
   --accent-hover: #0F5FAE;
   --on-accent: #FFFFFF;
   --accent-warm: #F2B705;
@@ -62,6 +63,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .section .sub { color: var(--ink-2); font-size: 13px; margin-bottom: 14px; }
 
 .linkbtn { background: none; border: 0; padding: 0; color: var(--focus); cursor: pointer; text-decoration: underline; font-size: 14px; }
+
+.feature-head { max-width: 60ch; }
+.feature-head .sub { color: var(--ink-2); font-size: 14px; margin-top: 8px; }
+.feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 24px; }
+.feature-card { padding: 22px; }
+.feature-icon {
+  width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); color: var(--accent);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+}
+.feature-card h3 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .01em; font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+.feature-card p { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+@media (max-width: 760px) { .feature-grid { grid-template-columns: 1fr; } }
 
 .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
 .field label { font-size: 13px; font-weight: 600; }

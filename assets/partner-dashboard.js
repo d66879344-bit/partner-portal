@@ -83,6 +83,8 @@
     $("acctCompany").textContent = me.companyName;
     $("acctCountry").textContent = me.countryName || me.country;
     if ($("coCompanyName")) $("coCompanyName").value = me.companyName || "";
+    if ($("whoAvatar")) $("whoAvatar").textContent = (me.companyName || "?").trim().charAt(0).toUpperCase() || "?";
+    if ($("whoCompanyFoot")) $("whoCompanyFoot").textContent = me.companyName;
     $("acctStatus").innerHTML = badge(me.status);
     $("acctSince").textContent = fmtDate(me.createdAt);
     $("pendingBanner").hidden = me.status === "active";
@@ -176,6 +178,7 @@
   });
 
   /* ---------- orders ---------- */
+  var lastClosedCount = 0;
   async function loadOrders(silent) {
     if (!silent) {
       $("ordersStatus").textContent = "Loading…";
@@ -184,6 +187,7 @@
     try {
       var data = await api("/api/partner/orders");
       lastOrders = data.orders || [];
+      lastClosedCount = data.declinedCount || 0;
       renderOrders(lastOrders);
     } catch (e) {
       if (silent) return;
@@ -197,8 +201,13 @@
   function updateTabCounts(allOrders) {
     var newCount = allOrders.filter(function (o) { return o.status === "offered"; }).length;
     var acceptedCount = allOrders.filter(function (o) { return o.status === "accepted"; }).length;
+    var completedCount = allOrders.filter(function (o) { return o.status === "completed"; }).length;
     $("countNew").textContent = newCount || "";
     $("countAccepted").textContent = acceptedCount || "";
+    if ($("statNew")) $("statNew").textContent = newCount;
+    if ($("statAccepted")) $("statAccepted").textContent = acceptedCount;
+    if ($("statCompleted")) $("statCompleted").textContent = completedCount;
+    if ($("statClosed")) $("statClosed").textContent = lastClosedCount;
   }
 
   function renderOrders(allOrders) {

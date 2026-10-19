@@ -32,14 +32,26 @@
   .dash-nav svg { flex: none; }
   .dash-sidebar-foot {
     margin-top: auto; padding: 14px 10px 2px; border-top: 1px solid rgba(255,255,255,.14);
-    display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: rgba(255,255,255,.6);
+    display: flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,255,255,.6);
   }
+  .dash-avatar {
+    width: 28px; height: 28px; flex: none; border-radius: 999px; background: rgba(255,255,255,.12); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
+  }
+  .dash-sidebar-foot-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: rgba(255,255,255,.85); }
   .dash-main { flex: 999 1 560px; min-width: 0; padding: 28px 32px 56px; box-sizing: border-box; }
   .dash-pagehead { margin-bottom: 18px; }
   .dash-pagehead h1 { font-size: 28px; text-transform: none; color: var(--ink); }
   .dash-pagehead .sub { color: var(--ink-2); font-size: 14px; margin-top: 4px; max-width: 70ch; }
 
   .pending-banner { border-color: #E8C65A; background: #FDF6E0; margin-bottom: 18px; padding: 14px 18px; }
+
+  /* ---------- stat cards ---------- */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 22px; }
+  .stat-card { padding: 16px 18px; }
+  .stat-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+  .stat-value { font-size: 26px; font-weight: 600; margin-top: 6px; }
+  @media (max-width: 760px) { .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 
   /* ---------- order cards ---------- */
   .orow { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--surface); margin-bottom: 10px; cursor: pointer; }
@@ -193,8 +205,9 @@
     </nav>
 
     <div class="dash-sidebar-foot">
-      <span>Signed in</span>
-      <button type="button" class="minibtn" id="logoutBtn" style="color:var(--crit); min-height:30px; padding:5px 10px; font-size:12px;">Log out</button>
+      <div class="dash-avatar" id="whoAvatar">…</div>
+      <div class="dash-sidebar-foot-name" id="whoCompanyFoot">…</div>
+      <button type="button" class="minibtn" id="logoutBtn" style="color:var(--crit); min-height:30px; padding:5px 10px; font-size:12px; flex:none;">Log out</button>
     </div>
   </aside>
 
@@ -210,6 +223,13 @@
         <div class="dash-pagehead">
           <h1>Orders</h1>
           <p class="sub">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
+        </div>
+
+        <div class="stat-grid">
+          <div class="card stat-card"><div class="stat-label">New</div><div class="stat-value mono" id="statNew">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Accepted</div><div class="stat-value mono" id="statAccepted">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
         </div>
 
         <div class="tabs" role="tablist" id="orderTabs">

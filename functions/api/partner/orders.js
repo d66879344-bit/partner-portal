@@ -19,6 +19,10 @@ export async function onRequestGet(context) {
      ORDER BY o.order_date ASC, o.order_time ASC`
   ).bind(partnerId).all();
 
+  const closedRow = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM orders WHERE partner_id = ? AND status IN ('declined', 'cancelled')"
+  ).bind(partnerId).first();
+
   const orders = (results || []).map((o) => ({
     id: o.id,
     orderNumber: o.order_number,
@@ -48,5 +52,5 @@ export async function onRequestGet(context) {
     respondedAt: o.responded_at,
   }));
 
-  return Response.json({ ok: true, orders });
+  return Response.json({ ok: true, orders, declinedCount: closedRow ? closedRow.n : 0 });
 }
