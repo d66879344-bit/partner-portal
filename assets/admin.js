@@ -59,6 +59,7 @@
     try {
       var data = await api("/api/admin/partners");
       partners = data.partners || [];
+      populatePartnersCountryFilter();
       renderPartners();
       populatePartnerSelect();
       populateOrderPartnerFilter();
@@ -75,10 +76,25 @@
   }
 
   function matchesPartnerFilter(p) {
-    var fs = $("fStatus").value, q = $("fSearch").value.trim().toLowerCase();
+    var fs = $("fStatus").value, fc = $("fCountry").value;
     if (fs && p.status !== fs) return false;
-    if (q && (p.companyName + " " + p.email).toLowerCase().indexOf(q) === -1) return false;
+    if (fc && p.country !== fc) return false;
     return true;
+  }
+
+  function populatePartnersCountryFilter() {
+    var prev = $("fCountry").value;
+    var seen = {};
+    var rows = [];
+    partners.forEach(function (p) {
+      if (!p.country || seen[p.country]) return;
+      seen[p.country] = true;
+      rows.push([p.country, p.countryName || p.country]);
+    });
+    rows.sort(function (a, b) { return a[1].localeCompare(b[1]); });
+    $("fCountry").innerHTML = '<option value="">All countries</option>' +
+      rows.map(function (r) { return '<option value="' + esc(r[0]) + '">' + esc(r[1]) + "</option>"; }).join("");
+    $("fCountry").value = prev;
   }
 
   function renderPartners() {
@@ -221,7 +237,7 @@
   });
 
   $("fStatus").addEventListener("change", renderPartners);
-  $("fSearch").addEventListener("input", renderPartners);
+  $("fCountry").addEventListener("change", renderPartners);
 
   /* ---------- orders: create form ---------- */
   function populatePartnerSelect() {

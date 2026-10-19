@@ -1,4 +1,5 @@
 import { hashPassword } from "../_lib/auth.js";
+import { generateUniqueAccountId } from "../_lib/account-id.js";
 
 const ALLOWED = {
   "application/pdf": "pdf",
@@ -11,6 +12,7 @@ const MAX_BYTES = 20 * 1024 * 1024;
 const COUNTRY_RE = /^[A-Z]{2}$/;
 const FILE_FIELD_RE = /^file_(company|vehicle1|vehicle2|driver1|driver2|other)_(.+)$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const AIRPORT_CODE_RE = /^[A-Z0-9]{2,4}$/;
 
 function slugify(s) {
   return String(s || "")
@@ -33,8 +35,26 @@ export async function onRequestPost(context) {
     const countryName = (form.get("countryName") || "").toString().trim().slice(0, 100);
     const company = (form.get("company") || "").toString().trim();
     const contactName = (form.get("contactName") || "").toString().trim().slice(0, 150);
-    const contact = (form.get("contact") || "").toString().trim().slice(0, 200);
+    const phone = (form.get("phone") || "").toString().trim().slice(0, 50);
     const otherDescription = (form.get("otherDescription") || "").toString().trim().slice(0, 500);
+
+    let airports = [];
+    try {
+      const rawAirports = JSON.parse((form.get("airports") || "[]").toString());
+      if (Array.isArray(rawAirports)) {
+        const seen = new Set();
+        for (const a of rawAirports) {
+          const code = String(a || "").trim().toUpperCase();
+          if (AIRPORT_CODE_RE.test(code) && !seen.has(code)) {
+            seen.add(code);
+            airports.push(code);
+          }
+          if (airports.length >= 30) break;
+        }
+      }
+    } catch (e) {
+      airports = [];
+    }
     const vehicle1Ref = (form.get("vehicle1_ref") || "").toString().trim().slice(0, 50);
     const vehicle2Ref = (form.get("vehicle2_ref") || "").toString().trim().slice(0, 50);
     const driver1Ref = (form.get("driver1_ref") || "").toString().trim().slice(0, 200);
@@ -45,16 +65,20 @@ export async function onRequestPost(context) {
     if (!COUNTRY_RE.test(country) || !company) {
       return Response.json({ error: "invalid_submission" }, { status: 400 });
     }
+    if (!phone) {
+      return Response.json({ error: "invalid_submission", field: "phone" }, { status: 400 });
+    }
 
     const existing = await env.DB.prepare("SELECT id FROM partners WHERE email = ?").bind(email).first();
     if (existing) return Response.json({ error: "email_taken" }, { status: 409 });
 
     const { hash, salt } = await hashPassword(password);
+    const accountId = await generateUniqueAccountId(env);
 
     const partnerInsert = await env.DB.prepare(
-      `INSERT INTO partners (email, password_hash, password_salt, company_name, contact_name, phone, country, country_name, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
-    ).bind(email, hash, salt, company.slice(0, 200), contactName, contact, country, countryName || country).run();
+      `INSERT INTO partners (email, password_hash, password_salt, company_name, contact_name, phone, account_id, covered_airports, country, country_name, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
+    ).bind(email, hash, salt, company.slice(0, 200), contactName, phone, accountId, JSON.stringify(airports), country, countryName || country).run();
     const partnerId = partnerInsert.meta.last_row_id;
 
     // Vehicles

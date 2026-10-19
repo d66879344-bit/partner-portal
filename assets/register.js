@@ -17,6 +17,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var state = { country: null, files: {}, labels: {} };
+  var airportPicker = null;
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -54,6 +55,13 @@
     $("formCard").hidden = false;
     closeCountryModal();
     renderAllSlots();
+    if (window.AirportPicker && $("airportsPicker")) {
+      if (!airportPicker) {
+        airportPicker = window.AirportPicker.create($("airportsPicker"), { country: code });
+      } else {
+        airportPicker.setCountry(code);
+      }
+    }
   }
 
   /* ---------- file slots ---------- */
@@ -131,11 +139,14 @@
     var password2 = $("password2").value;
     var company = $("company").value.trim();
 
+    var phone = $("phone").value.trim();
+
     var errors = [];
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Enter a valid email address.");
     if (password.length < 8) errors.push("Password must be at least 8 characters.");
     if (password !== password2) errors.push("Passwords do not match.");
     if (!company) errors.push("Enter the company name.");
+    if (!phone) errors.push("Enter a contact phone number.");
 
     var v1ref = $("ref-vehicle1").value.trim().toUpperCase();
     var v2ref = $("ref-vehicle2").value.trim().toUpperCase();
@@ -181,7 +192,8 @@
       fd.append("countryName", COUNTRY_NAMES[state.country] || state.country);
       fd.append("company", company);
       fd.append("contactName", $("contactName").value.trim());
-      fd.append("contact", $("contact").value.trim());
+      fd.append("phone", phone);
+      fd.append("airports", JSON.stringify(airportPicker ? airportPicker.getSelected() : []));
       fd.append("otherDescription", otherDesc);
       fd.append("vehicle1_ref", v1ref);
       fd.append("vehicle2_ref", v2ref);

@@ -93,6 +93,32 @@ textarea { resize: vertical; min-height: 64px; }
 .slot.error { border-color: var(--crit); }
 .slot-err { width: 100%; color: var(--crit); font-size: 12px; }
 
+.airport-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.airport-chips:empty { margin-bottom: 0; }
+.airport-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 999px;
+  padding: 5px 6px 5px 12px; font-size: 13px; font-weight: 500;
+}
+.airport-chip-remove {
+  border: 0; background: none; cursor: pointer; color: var(--ink-2); font-size: 15px;
+  line-height: 1; padding: 2px 6px; border-radius: 999px;
+}
+.airport-chip-remove:hover { color: var(--crit); background: var(--crit-bg); }
+.airport-search {
+  width: 100%; background: var(--surface-2); border: 1px solid var(--line-strong);
+  border-radius: 6px; padding: 9px 10px; min-height: 42px;
+}
+.airport-suggest {
+  position: relative; margin-top: 4px; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--surface); max-height: 220px; overflow-y: auto;
+}
+.airport-suggest-item { padding: 9px 12px; font-size: 13px; cursor: pointer; }
+.airport-suggest-item:hover { background: var(--surface-2); }
+.airport-suggest-item + .airport-suggest-item { border-top: 1px solid var(--line); }
+.airport-suggest-city { color: var(--ink-2); }
+.airport-suggest-empty { padding: 9px 12px; font-size: 13px; color: var(--ink-2); }
+
 .btn {
   border: 0; border-radius: 6px; padding: 12px 18px; min-height: 46px; cursor: pointer;
   font-weight: 600; background: var(--accent); color: var(--on-accent); width: 100%;

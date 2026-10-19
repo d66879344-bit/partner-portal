@@ -70,21 +70,58 @@
   $("fSort").addEventListener("change", function () { renderOrders(lastOrders); });
 
   /* ---------- account / nav ---------- */
+  var acctAirportPicker = null;
+
   async function loadMe() {
     var data = await api("/api/partner/me");
     me = data.partner;
     $("whoCompany").textContent = me.companyName;
+    $("acctId").textContent = me.accountId || "—";
     $("acctEmail").textContent = me.email;
     $("acctCompany").textContent = me.companyName;
     $("acctCountry").textContent = me.countryName || me.country;
     $("acctStatus").innerHTML = badge(me.status);
     $("acctSince").textContent = fmtDate(me.createdAt);
     $("pendingBanner").hidden = me.status === "active";
+
+    $("acctPhone").value = me.phone || "";
+    if (window.AirportPicker && $("acctAirports")) {
+      acctAirportPicker = window.AirportPicker.create($("acctAirports"), {
+        country: me.country,
+        selected: me.airports || [],
+      });
+    }
   }
 
   $("logoutBtn").addEventListener("click", async function () {
     try { await fetch("/api/logout", { method: "POST" }); } catch (e) {}
     window.location.href = "/login.html";
+  });
+
+  $("acctSaveBtn").addEventListener("click", async function () {
+    var phone = $("acctPhone").value.trim();
+    var statusEl = $("acctStatus2");
+    if (!phone) {
+      statusEl.textContent = "Enter a contact phone number.";
+      statusEl.className = "status err";
+      return;
+    }
+    $("acctSaveBtn").disabled = true;
+    statusEl.textContent = "";
+    statusEl.className = "status";
+    try {
+      var airports = acctAirportPicker ? acctAirportPicker.getSelected() : (me.airports || []);
+      await api("/api/partner/account-update", { method: "POST", json: true, body: JSON.stringify({ phone: phone, airports: airports }) });
+      me.phone = phone;
+      me.airports = airports;
+      statusEl.textContent = "Saved.";
+      statusEl.className = "status ok";
+    } catch (e) {
+      statusEl.textContent = "Something went wrong. Please try again.";
+      statusEl.className = "status err";
+    } finally {
+      $("acctSaveBtn").disabled = false;
+    }
   });
 
   /* ---------- orders ---------- */
@@ -371,7 +408,7 @@
     var byField = latestByField(d.documents);
     var license = byField["license_front"];
     return '<div class="fleet-card" data-driver-open="' + d.id + '">' +
-      '<div class="fleet-card-avatar" style="align-self:flex-start;">' + imageDocThumb(license, PERSON_ICON) + "</div>" +
+      '<div class="fleet-card-thumb">' + imageDocThumb(license, PERSON_ICON) + "</div>" +
       '<div><div class="fleet-card-name">' + esc(d.fullName || ("Driver #" + d.id)) + '</div>' +
       '<div class="fleet-card-sub">' + esc(d.phone || "") + "</div></div>" +
       '<div class="fleet-card-foot">' + badge(d.status) + "</div>" +

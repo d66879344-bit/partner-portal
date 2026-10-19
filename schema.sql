@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS partners (
   company_name TEXT NOT NULL,
   contact_name TEXT,
   phone TEXT,
+  account_id TEXT UNIQUE,
+  covered_airports TEXT NOT NULL DEFAULT '[]',
   country TEXT NOT NULL,
   country_name TEXT,
   -- pending: just registered, can sign in, but not assigned orders yet.

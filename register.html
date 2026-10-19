@@ -55,8 +55,13 @@
           <input type="text" id="contactName" autocomplete="off">
         </div>
         <div class="field">
-          <label for="contact">Contact phone or email <span class="hint">optional</span></label>
-          <input type="text" id="contact" autocomplete="off">
+          <label for="phone">Contact phone number</label>
+          <input type="tel" id="phone" autocomplete="tel" required>
+        </div>
+        <div class="field">
+          <label>Airports you cover</label>
+          <p class="sub" style="margin-top:-4px;">Search and add every airport your company serves in this country.</p>
+          <div id="airportsPicker"></div>
         </div>
         <div class="slots" id="slots-company"></div>
       </div>
@@ -138,6 +143,7 @@
 </div>
 
 <script src="/assets/countries.js"></script>
+<script src="/assets/airports.js"></script>
 <script src="/assets/doc-defs.js"></script>
 <script src="/assets/register.js"></script>
 </body>
