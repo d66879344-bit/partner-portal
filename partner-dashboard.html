@@ -229,54 +229,54 @@
     <nav class="dash-nav" id="mainTabs">
       <button type="button" class="tab" data-tab="orders" aria-pressed="true">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
-        Orders
+        <span data-i18n="nav_orders">Orders</span>
       </button>
       <button type="button" class="tab" data-tab="company" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 2h7l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/></svg>
-        Company
+        <span data-i18n="nav_company">Company</span>
       </button>
       <button type="button" class="tab" data-tab="fleet" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3h11l3 4v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M6.5 9h7M6.5 12.5h7" stroke-linecap="round"/></svg>
-        Fleet
+        <span data-i18n="nav_fleet">Fleet</span>
       </button>
       <button type="button" class="tab" data-tab="account" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
-        Account
+        <span data-i18n="nav_account">Account</span>
       </button>
     </nav>
 
     <div class="dash-sidebar-foot">
       <div class="dash-avatar" id="whoAvatar">…</div>
       <div class="dash-sidebar-foot-name" id="whoCompanyFoot">…</div>
-      <button type="button" class="minibtn" id="logoutBtn" style="color:var(--crit); min-height:30px; padding:5px 10px; font-size:12px; flex:none;">Log out</button>
+      <button type="button" class="minibtn" id="logoutBtn" style="color:var(--crit); min-height:30px; padding:5px 10px; font-size:12px; flex:none;" data-i18n="logout">Log out</button>
     </div>
   </aside>
 
   <main class="dash-main">
 
     <div class="card pending-banner" id="pendingBanner" hidden>
-      <strong>Your documents are still under review.</strong>
-      <span style="color:var(--ink-2);">You can use your dashboard, but you won't receive orders until an admin activates your account.</span>
+      <strong data-i18n="pending_banner_title">Your documents are still under review.</strong>
+      <span style="color:var(--ink-2);" data-i18n="pending_banner_body">You can use your dashboard, but you won't receive orders until an admin activates your account.</span>
     </div>
 
     <section class="panel active" id="panel-orders">
       <div id="ordersListView">
         <div class="dash-pagehead">
-          <h1>Orders</h1>
-          <p class="sub">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
+          <h1 data-i18n="dash_orders_title">Orders</h1>
+          <p class="sub" data-i18n="dash_orders_sub">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
         </div>
 
         <div class="stat-grid">
-          <div class="card stat-card"><div class="stat-label">New</div><div class="stat-value mono" id="statNew">0</div></div>
-          <div class="card stat-card"><div class="stat-label">Accepted</div><div class="stat-value mono" id="statAccepted">0</div></div>
-          <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
-          <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
+          <div class="card stat-card"><div class="stat-label" data-i18n="stat_new">New</div><div class="stat-value mono" id="statNew">0</div></div>
+          <div class="card stat-card"><div class="stat-label" data-i18n="stat_accepted">Accepted</div><div class="stat-value mono" id="statAccepted">0</div></div>
+          <div class="card stat-card"><div class="stat-label" data-i18n="stat_completed">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
+          <div class="card stat-card"><div class="stat-label" data-i18n="stat_closed">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
         </div>
 
         <div class="tabs" role="tablist" id="orderTabs">
-          <button type="button" class="tab" data-order-tab="new" aria-pressed="true">New <span class="tab-count" id="countNew"></span></button>
-          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">Accepted <span class="tab-count" id="countAccepted"></span></button>
-          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed</button>
+          <button type="button" class="tab" data-order-tab="new" aria-pressed="true"><span data-i18n="stat_new">New</span> <span class="tab-count" id="countNew"></span></button>
+          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false"><span data-i18n="stat_accepted">Accepted</span> <span class="tab-count" id="countAccepted"></span></button>
+          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false" data-i18n="stat_completed">Completed</button>
         </div>
         <div class="toolbar">
           <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
@@ -291,15 +291,15 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Order #</th>
-                <th>Start point</th>
-                <th>Destination</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Vehicle</th>
-                <th>Passengers</th>
-                <th>Price</th>
-                <th>Action</th>
+                <th data-i18n="th_order">Order #</th>
+                <th data-i18n="th_start">Start point</th>
+                <th data-i18n="th_dest">Destination</th>
+                <th data-i18n="th_date">Date</th>
+                <th data-i18n="th_time">Time</th>
+                <th data-i18n="th_vehicle">Vehicle</th>
+                <th data-i18n="th_passengers">Passengers</th>
+                <th data-i18n="th_price">Price</th>
+                <th data-i18n="th_action">Action</th>
               </tr>
             </thead>
             <tbody id="ordersList"></tbody>
@@ -329,27 +329,27 @@
 
     <section class="panel" id="panel-company">
       <div class="dash-pagehead">
-        <h1>Company</h1>
-        <p class="sub">Your company profile and the documents we have on file.</p>
+        <h1 data-i18n="dash_company_title">Company</h1>
+        <p class="sub" data-i18n="dash_company_sub">Your company profile and the documents we have on file.</p>
       </div>
 
-      <div class="card section-card" style="max-width:640px;">
-        <h2>Company details</h2>
+      <div class="card section-card">
+        <h2 data-i18n="company_details_title">Company details</h2>
         <div class="field" style="max-width:360px;">
-          <label for="coCompanyName">Company name</label>
+          <label for="coCompanyName" data-i18n="register_company_name">Company name</label>
           <input type="text" id="coCompanyName" autocomplete="off">
         </div>
-        <button type="button" class="btn" id="coSaveBtn" style="width:auto;">Save changes</button>
+        <button type="button" class="btn" id="coSaveBtn" style="width:auto;" data-i18n="save_changes_btn">Save changes</button>
         <p class="status" id="coStatus" role="status" aria-live="polite"></p>
       </div>
 
-      <div class="card section-card" style="max-width:640px;">
-        <h2>Company documents</h2>
-        <p class="sub">Click a box to upload a document. Click it again any time to replace the file.</p>
+      <div class="card section-card">
+        <h2 data-i18n="company_documents_title">Company documents</h2>
+        <p class="sub" data-i18n="company_documents_sub">Click a box to upload a document. Click it again any time to replace the file.</p>
         <div class="doc-grid" id="companyDocGrid"></div>
         <div class="block">
-          <div class="block-title">Other documents</div>
-          <div class="block-sub">Anything that doesn't fit the categories above</div>
+          <div class="block-title" data-i18n="other_documents_title">Other documents</div>
+          <div class="block-sub" data-i18n="other_documents_sub">Anything that doesn't fit the categories above</div>
           <div class="doc-grid" id="otherDocGrid"></div>
         </div>
       </div>
@@ -358,13 +358,13 @@
     <section class="panel" id="panel-fleet">
       <div id="fleetListView">
         <div class="dash-pagehead">
-          <h1>Fleet</h1>
-          <p class="sub">Manage your vehicles and drivers. Click a card to edit details and documents.</p>
+          <h1 data-i18n="dash_fleet_title">Fleet</h1>
+          <p class="sub" data-i18n="dash_fleet_sub">Manage your vehicles and drivers. Click a card to edit details and documents.</p>
         </div>
 
         <div class="tabs" role="tablist" id="fleetTabs">
-          <button type="button" class="tab" data-fleet-tab="vehicles" aria-pressed="true">Vehicles <span class="tab-count" id="countVehicles"></span></button>
-          <button type="button" class="tab" data-fleet-tab="drivers" aria-pressed="false">Drivers <span class="tab-count" id="countDrivers"></span></button>
+          <button type="button" class="tab" data-fleet-tab="vehicles" aria-pressed="true"><span data-i18n="fleet_vehicles_tab">Vehicles</span> <span class="tab-count" id="countVehicles"></span></button>
+          <button type="button" class="tab" data-fleet-tab="drivers" aria-pressed="false"><span data-i18n="fleet_drivers_tab">Drivers</span> <span class="tab-count" id="countDrivers"></span></button>
         </div>
 
         <div class="fleet-tabpanel" id="fleetTab-vehicles">
@@ -432,42 +432,44 @@
 
     <section class="panel" id="panel-account">
       <div class="dash-pagehead">
-        <h1>Account</h1>
-        <p class="sub">Your company's details on file</p>
+        <h1 data-i18n="dash_account_title">Account</h1>
+        <p class="sub" data-i18n="dash_account_sub">Your company's details on file</p>
       </div>
-      <div class="card" style="max-width:640px;">
-        <div class="va-field"><span class="va-fieldlabel">Account ID</span><div class="mono" id="acctId"></div></div>
-        <div class="va-field"><span class="va-fieldlabel">Email</span><div id="acctEmail"></div></div>
-        <div class="va-field"><span class="va-fieldlabel">Company</span><div id="acctCompany"></div></div>
-        <div class="va-field"><span class="va-fieldlabel">Country</span><div id="acctCountry"></div></div>
-        <div class="va-field"><span class="va-fieldlabel">Status</span><div id="acctStatus"></div></div>
-        <div class="va-field"><span class="va-fieldlabel">Member since</span><div id="acctSince"></div></div>
+      <div class="card">
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_id_label">Account ID</span><div class="mono" id="acctId"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_email_label">Email</span><div id="acctEmail"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_company_label">Company</span><div id="acctCompany"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_country_label">Country</span><div id="acctCountry"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_status_label">Status</span><div id="acctStatus"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_since_label">Member since</span><div id="acctSince"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="language_label">Dashboard language</span><div id="acctLangWrap"><select id="acctLang" style="min-height:32px;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface);padding:4px 8px;font-size:13px;"></select></div></div>
       </div>
 
-      <div class="card section-card" style="max-width:640px; margin-top:18px;">
-        <h2>Contact &amp; coverage</h2>
-        <p class="sub">Shown to our team only — keep this up to date so we can reach you and route the right orders your way.</p>
+      <div class="card section-card" style="margin-top:18px;">
+        <h2 data-i18n="contact_coverage_title">Contact &amp; coverage</h2>
+        <p class="sub" data-i18n="contact_coverage_sub">Shown to our team only — keep this up to date so we can reach you and route the right orders your way.</p>
         <div class="field-row">
           <div class="field">
-            <label for="acctPhone">Contact phone number</label>
+            <label for="acctPhone" data-i18n="contact_phone_label">Contact phone number</label>
             <input type="tel" id="acctPhone" autocomplete="tel">
           </div>
           <div class="field">
-            <label for="acctCityCombo">City of service</label>
+            <label for="acctCityCombo" data-i18n="city_of_service_label">City of service</label>
             <div id="acctCityCombo"></div>
           </div>
         </div>
         <div class="field">
-          <label>Airports you cover</label>
+          <label data-i18n="airports_you_cover_label">Airports you cover</label>
           <div id="acctAirports"></div>
         </div>
-        <button type="button" class="btn" id="acctSaveBtn" style="width:auto;">Save changes</button>
+        <button type="button" class="btn" id="acctSaveBtn" style="width:auto;" data-i18n="save_changes_btn">Save changes</button>
         <p class="status" id="acctStatus2" role="status" aria-live="polite"></p>
       </div>
     </section>
   </main>
 </div>
 
+<script src="/assets/i18n.js"></script>
 <script src="/assets/doc-defs.js"></script>
 <script src="/assets/airports.js"></script>
 <script src="/assets/combobox.js"></script>

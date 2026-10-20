@@ -297,11 +297,11 @@
           passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
           passengerName: $("opPassengerName").value.trim(), passengerPhone: $("opPassengerPhone").value.trim(),
           price: $("opPrice").value.trim(), currency: $("opCurrency").value || "EUR",
-          meetGreet: $("opMeetGreet").value.trim(), signText: $("opSignText").value.trim(), notes: $("opNotes").value.trim()
+          meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim()
         })
       });
       ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
-        "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opSignText", "opNotes"].forEach(function (id) { $(id).value = ""; });
+        "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
       $("opCurrency").value = "EUR";
       $("createOrderStatus").textContent = "Order created and assigned.";
       $("createOrderStatus").className = "status ok";
@@ -482,7 +482,6 @@
         '<div class="field" style="min-width:140px;flex:1 1 140px;margin-bottom:0;"><label>Currency</label><select data-reassign-field="currency">' +
         ["EUR", "USD", "GBP"].map(function (c) { return '<option value="' + c + '"' + (c === o.currency ? " selected" : "") + '>' + c + "</option>"; }).join("") +
         "</select></div>" +
-        '<div class="field" style="min-width:200px;flex:2 1 200px;margin-bottom:0;"><label>Sign text</label><input type="text" data-reassign-field="signText" value="' + esc(o.signText || "") + '"></div>' +
         '<div style="flex:1 1 100%;display:flex;align-items:center;gap:10px;">' +
         '<button type="button" class="minibtn good" data-order-reassign="' + o.id + '">Reassign &amp; offer to new partner</button>' +
         '<span class="status" id="reassignStatus-' + o.id + '" style="margin:0;"></span>' +
@@ -532,14 +531,12 @@
         ? '<div class="row-meta" style="margin-top:8px;">Trip stage: ' + esc(o.tripStage ? STAGE_LABELS[o.tripStage] : "Accepted, not started yet") + "</div>"
         : "");
 
-    var meetGreetBlock = (o.meetGreet || o.signText)
+    var meetGreetBlock = o.meetGreet
       ? '<div class="meetgreet-box">' +
         '<div style="display:flex;align-items:flex-start;gap:8px;">' +
         '<svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor" style="margin-top:2px;flex:none;color:var(--warn-ink);" aria-hidden="true"><path d="M3 5h14v2H3zM3 9h14v2H3zM3 13h9v2H3z"/></svg>' +
-        "<div>" +
-        (o.meetGreet ? '<div class="mg-instruction">' + esc(o.meetGreet) + "</div>" : "") +
-        (o.signText ? '<div class="mg-sign" style="margin-top:3px;">' + esc(o.signText) + "</div>" : "") +
-        "</div></div></div>"
+        '<div class="mg-instruction">' + esc(o.meetGreet) + "</div>" +
+        "</div></div>"
       : "";
 
     el.innerHTML =
@@ -630,8 +627,7 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: reId, partnerId: Number(fields.partnerId), pickup: fields.pickup, dropoff: fields.dropoff,
-            orderDate: fields.orderDate, orderTime: fields.orderTime, price: fields.price, currency: fields.currency,
-            signText: fields.signText
+            orderDate: fields.orderDate, orderTime: fields.orderTime, price: fields.price, currency: fields.currency
           })
         });
         openOrderId = null;

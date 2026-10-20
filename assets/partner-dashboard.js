@@ -10,11 +10,16 @@
   var lastOrders = [];
   var myFleet = { company: { documents: [] }, other: { documents: [] }, vehicles: [], drivers: [] };
   var STAGES = [
-    { key: "on_the_way", label: "On the way" },
-    { key: "arrived", label: "Arrived at pickup" },
-    { key: "in_car", label: "Passenger on board" },
-    { key: "dropped_off", label: "Dropped off" },
+    { key: "on_the_way" },
+    { key: "arrived" },
+    { key: "in_car" },
+    { key: "dropped_off" },
   ];
+  var STAGE_I18N_KEY = {
+    on_the_way: "stage_on_the_way", arrived: "stage_arrived",
+    in_car: "stage_in_car", dropped_off: "stage_dropped_off",
+  };
+  function stageLabel(key) { return window.I18N ? I18N.t(STAGE_I18N_KEY[key]) : key; }
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -104,6 +109,19 @@
   async function loadMe() {
     var data = await api("/api/partner/me");
     me = data.partner;
+
+    if (window.I18N) {
+      I18N.setLang(me.language || "en");
+      I18N.apply(document);
+      I18N.renderLangSwitcher("acctLang", async function (lang) {
+        try {
+          await api("/api/partner/account-update", { method: "POST", json: true, body: JSON.stringify({ language: lang }) });
+          me.language = lang;
+        } catch (e) { /* language still applies locally even if the save fails */ }
+      });
+      renderOrders(lastOrders);
+    }
+
     $("whoCompany").textContent = me.companyName;
     $("acctId").textContent = me.accountId || "—";
     $("acctEmail").textContent = me.email;
@@ -223,7 +241,8 @@
     }
   }
   var STATUS_FOR_TAB = { new: "offered", accepted: "accepted", completed: "completed" };
-  var EMPTY_MESSAGE = { new: "No new orders right now.", accepted: "Nothing in progress right now.", completed: "No completed orders yet." };
+  var EMPTY_MESSAGE_KEY = { new: "empty_new", accepted: "empty_accepted", completed: "empty_completed" };
+  function emptyMessage(tab) { return window.I18N ? I18N.t(EMPTY_MESSAGE_KEY[tab]) : ""; }
 
   function updateTabCounts(allOrders) {
     var newCount = allOrders.filter(function (o) { return o.status === "offered"; }).length;
@@ -256,18 +275,18 @@
     $("ordersStatus").className = "status";
     if (!orders.length) {
       $("ordersStatus").textContent = "";
-      $("ordersList").innerHTML = '<tr><td colspan="9" class="empty-cell">' + EMPTY_MESSAGE[orderTab] + "</td></tr>";
+      $("ordersList").innerHTML = '<tr><td colspan="9" class="empty-cell">' + esc(emptyMessage(orderTab)) + "</td></tr>";
       return;
     }
     $("ordersStatus").textContent = "";
     $("ordersList").innerHTML = orders.map(function (o) {
-      var stageLabel = o.status === "accepted" && o.tripStage ? STAGES.filter(function (s) { return s.key === o.tripStage; })[0] : null;
+      var stageObj = o.status === "accepted" && o.tripStage ? STAGES.filter(function (s) { return s.key === o.tripStage; })[0] : null;
       var action = o.status === "offered"
         ? '<div style="display:flex;gap:8px;">' +
-          '<button type="button" class="minibtn accept" data-accept="' + o.id + '">Accept</button>' +
-          '<button type="button" class="minibtn decline" data-decline="' + o.id + '">Decline</button>' +
+          '<button type="button" class="minibtn accept" data-accept="' + o.id + '">' + esc(I18N.t("btn_accept")) + '</button>' +
+          '<button type="button" class="minibtn decline" data-decline="' + o.id + '">' + esc(I18N.t("btn_decline")) + '</button>' +
           "</div>"
-        : (stageLabel ? '<span class="badge badge-accepted">' + esc(stageLabel.label) + "</span>" : badge(o.status));
+        : (stageObj ? '<span class="badge badge-accepted">' + esc(stageLabel(stageObj.key)) + "</span>" : badge(o.status));
       return '<tr class="data-row" data-order-open="' + o.id + '">' +
         '<td class="col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
         "<td>" + esc(o.pickup) + "</td>" +
@@ -324,10 +343,10 @@
       : "";
     return '<div class="card" style="padding:14px 20px;">' +
       '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
-      '<h2 style="margin:0;font-size:13px;flex:none;">Vehicle &amp; driver</h2>' +
+      '<h2 style="margin:0;font-size:13px;flex:none;">' + esc(I18N.t("od_vehicle_driver")) + "</h2>" +
       '<select id="assignVehicle" style="flex:1 1 140px;min-width:120px;">' + fleetOptionsHtml(myFleet.vehicles, o.vehicleId, "vehicle") + "</select>" +
       '<select id="assignDriver" style="flex:1 1 120px;min-width:100px;">' + fleetOptionsHtml(myFleet.drivers, o.driverId, "driver") + "</select>" +
-      '<button type="button" class="minibtn good" data-assign-order="' + o.id + '" style="flex:none;">Save</button>' +
+      '<button type="button" class="minibtn good" data-assign-order="' + o.id + '" style="flex:none;">' + esc(I18N.t("btn_save")) + "</button>" +
       "</div>" + warning +
       '<p class="status" id="assignStatus" style="margin:6px 0 0;"></p>' +
       "</div>";
@@ -339,31 +358,31 @@
     var currentIndex = o.tripStage ? keys.indexOf(o.tripStage) : -1;
     var items = STAGES.map(function (s, i) {
       var state = i <= currentIndex ? "done" : (i === currentIndex + 1 && o.status === "accepted" ? "next" : "upcoming");
-      return '<span class="stage-chip stage-' + state + '">' + (i <= currentIndex ? "✓ " : "") + esc(s.label) + "</span>";
+      return '<span class="stage-chip stage-' + state + '">' + (i <= currentIndex ? "✓ " : "") + esc(stageLabel(s.key)) + "</span>";
     }).join("");
     return '<div class="card" style="padding:14px 20px;">' +
       '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
-      '<h2 style="margin:0;font-size:13px;flex:none;">Trip progress</h2>' +
+      '<h2 style="margin:0;font-size:13px;flex:none;">' + esc(I18N.t("od_trip_progress")) + "</h2>" +
       '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + items + "</div>" +
       "</div></div>";
   }
 
   function moreMenuHtml(orderId) {
     return '<div class="more-wrap">' +
-      '<button type="button" class="minibtn" id="moreBtn">More &#9662;</button>' +
+      '<button type="button" class="minibtn" id="moreBtn">' + esc(I18N.t("btn_more")) + ' &#9662;</button>' +
       '<div class="more-menu" id="moreMenu" hidden>' +
-      '<button type="button" class="more-menu-item danger" id="reportNoShowBtn" data-order="' + orderId + '">Report customer no-show</button>' +
+      '<button type="button" class="more-menu-item danger" id="reportNoShowBtn" data-order="' + orderId + '">' + esc(I18N.t("report_no_show_btn")) + "</button>" +
       "</div></div>";
   }
 
   // Content of the sticky status-action bar fixed under the order view.
   function actionBarHtml(o) {
     if (o.status === "offered") {
-      return '<button type="button" class="minibtn accept" style="flex:1;max-width:320px;" data-accept="' + o.id + '">Accept</button>' +
-        '<button type="button" class="minibtn decline" data-decline="' + o.id + '">Decline</button>';
+      return '<button type="button" class="minibtn accept" style="flex:1;max-width:320px;" data-accept="' + o.id + '">' + esc(I18N.t("btn_accept")) + '</button>' +
+        '<button type="button" class="minibtn decline" data-decline="' + o.id + '">' + esc(I18N.t("btn_decline")) + "</button>";
     }
     if (o.status === "no_show") {
-      return '<p class="status" style="margin:0;">Reported as a customer no-show — pending review.</p>';
+      return '<p class="status" style="margin:0;">' + esc(I18N.t("no_show_pending")) + "</p>";
     }
     if (o.status === "accepted") {
       var keys = STAGES.map(function (s) { return s.key; });
@@ -371,7 +390,7 @@
       if (currentIndex < STAGES.length - 1) {
         var next = STAGES[currentIndex + 1];
         var canReportNoShow = currentIndex >= keys.indexOf("arrived");
-        return '<button type="button" class="minibtn good" style="flex:1;max-width:420px;" data-stage-next="' + next.key + '" data-stage-order="' + o.id + '">' + esc(next.label) + "</button>" +
+        return '<button type="button" class="minibtn good" style="flex:1;max-width:420px;" data-stage-next="' + next.key + '" data-stage-order="' + o.id + '">' + esc(stageLabel(next.key)) + "</button>" +
           (canReportNoShow ? moreMenuHtml(o.id) : "");
       }
     }
@@ -385,7 +404,7 @@
     $("odStatusBadge").innerHTML = badge(o.status);
 
     var tripCard = '<div class="card" style="border-left:4px solid var(--accent);">' +
-      '<h2 style="margin:0 0 14px;font-size:14px;">Trip</h2>' +
+      '<h2 style="margin:0 0 14px;font-size:14px;">' + esc(I18N.t("od_trip")) + "</h2>" +
       '<div style="display:flex;gap:12px;margin-bottom:16px;">' +
       '<div class="route-track" style="padding-top:4px;">' +
       '<div class="route-dot"></div>' +
@@ -400,14 +419,14 @@
       '<div class="route-line" style="margin-top:' + (o.flightNumber ? "20" : "6") + 'px;"><span style="font-weight:700;font-size:14px;">' + esc(o.dropoff) + "</span>" + copyBtnHtml(o.dropoff) + "</div>" +
       "</div></div>" +
       '<div class="od-fields">' +
-      '<div class="field"><div class="field-label">Date</div><div class="field-val">' + esc(fmtDay(o.orderDate)) + "</div></div>" +
-      '<div class="field"><div class="field-label">Pickup time</div><div class="field-val">' + esc(o.orderTime || "—") + "</div></div>" +
-      (o.bufferMinutes != null ? '<div class="field"><div class="field-label">Buffer time</div><div class="field-val">' + esc(o.bufferMinutes) + " min</div></div>" : "") +
-      '<div class="field"><div class="field-label">Vehicle type</div><div class="field-val">' + esc(o.vehicleType || "—") + copyBtnHtml(o.vehicleType) + "</div></div>" +
+      '<div class="field"><div class="field-label">' + esc(I18N.t("fl_date")) + '</div><div class="field-val">' + esc(fmtDay(o.orderDate)) + "</div></div>" +
+      '<div class="field"><div class="field-label">' + esc(I18N.t("fl_pickup_time")) + '</div><div class="field-val">' + esc(o.orderTime || "—") + "</div></div>" +
+      (o.bufferMinutes != null ? '<div class="field"><div class="field-label">' + esc(I18N.t("fl_buffer_time")) + '</div><div class="field-val">' + esc(o.bufferMinutes) + " min</div></div>" : "") +
+      '<div class="field"><div class="field-label">' + esc(I18N.t("fl_vehicle_type")) + '</div><div class="field-val">' + esc(o.vehicleType || "—") + copyBtnHtml(o.vehicleType) + "</div></div>" +
       "</div></div>";
 
     var passengerCard = '<div class="card">' +
-      '<h2 style="margin:0 0 10px;font-size:14px;">Passenger &amp; price</h2>' +
+      '<h2 style="margin:0 0 10px;font-size:14px;">' + esc(I18N.t("od_passenger_price")) + "</h2>" +
       '<div class="icon-row">' +
       '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>' +
       esc(o.passengerName || "—") + copyBtnHtml(o.passengerName) +
@@ -426,10 +445,9 @@
       (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") +
       "</div>" +
       (o.notes ? '<div class="row-meta" style="margin-top:10px;">Instructions: ' + esc(o.notes) + "</div>" : "") +
-      ((o.meetGreet || o.signText)
+      (o.meetGreet
         ? '<div class="meetgreet-box">' +
-          (o.meetGreet ? '<div class="route-line"><span class="mg-instruction">' + esc(o.meetGreet) + "</span>" + copyBtnHtml(o.meetGreet) + "</div>" : "") +
-          (o.signText ? '<div class="route-line" style="margin-top:' + (o.meetGreet ? "3" : "0") + 'px;"><span class="mg-sign">' + esc(o.signText) + "</span>" + copyBtnHtml(o.signText) + "</div>" : "") +
+          '<div class="route-line"><span class="mg-instruction">' + esc(o.meetGreet) + "</span>" + copyBtnHtml(o.meetGreet) + "</div>" +
           "</div>"
         : "") +
       "</div>";

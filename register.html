@@ -13,37 +13,40 @@
 <body>
 
 <div class="wrap">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <select id="langSwitch" style="min-height:32px;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface);padding:4px 8px;font-size:12px;"></select>
+  </div>
   <header class="head">
-    <span class="eyebrow">Partner registration</span>
-    <h1>Create your partner account</h1>
-    <p class="lede">Register your company, add your vehicles and drivers, and upload the required documents. You can sign in right away — an admin reviews your documents afterward to activate order assignment. Already registered? <a href="/login.html">Sign in</a>.</p>
+    <span class="eyebrow" data-i18n="register_eyebrow">Partner registration</span>
+    <h1 data-i18n="register_title">Create your partner account</h1>
+    <p class="lede"><span data-i18n="register_lede_pre">Register your company, add your vehicles and drivers, and upload the required documents. You can sign in right away — an admin reviews your documents afterward to activate order assignment. Already registered? </span><a href="/login.html" data-i18n="register_lede_link">Sign in</a><span data-i18n="register_lede_post">.</span></p>
   </header>
 
   <section class="card" id="formCard">
     <form id="registerForm" novalidate>
 
       <div class="section">
-        <h2>Company &amp; account</h2>
-        <p class="sub">Used to sign in to your partner dashboard right after you register.</p>
+        <h2 data-i18n="register_section_account_title">Company &amp; account</h2>
+        <p class="sub" data-i18n="register_section_account_sub">Used to sign in to your partner dashboard right after you register.</p>
 
         <div class="field-row">
           <div class="field">
-            <label for="company">Company name</label>
+            <label for="company" data-i18n="register_company_name">Company name</label>
             <input type="text" id="company" autocomplete="off" required>
           </div>
           <div class="field">
-            <label for="email">Email</label>
+            <label for="email" data-i18n="register_email">Email</label>
             <input type="email" id="email" autocomplete="email" required>
           </div>
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label for="phone">Contact phone number</label>
+            <label for="phone" data-i18n="register_phone">Contact phone number</label>
             <input type="tel" id="phone" autocomplete="tel" required>
           </div>
           <div class="field">
-            <label for="password">Password</label>
+            <label for="password" data-i18n="register_password">Password</label>
             <div class="password-field">
               <input type="password" id="password" autocomplete="new-password" minlength="8" required>
               <button type="button" class="password-toggle" id="passwordToggle">Show</button>
@@ -53,18 +56,18 @@
 
         <div class="field-row">
           <div class="field">
-            <label for="countryCombo">Country</label>
+            <label for="countryCombo" data-i18n="register_country">Country</label>
             <div id="countryCombo"></div>
           </div>
           <div class="field">
-            <label for="cityCombo">City of service</label>
+            <label for="cityCombo" data-i18n="register_city">City of service</label>
             <div id="cityCombo"></div>
           </div>
         </div>
 
         <div class="field">
-          <label>Airports you cover</label>
-          <p class="sub" style="margin-top:-4px;">Select a country and city above, then search and add every airport your company serves there.</p>
+          <label data-i18n="register_airports_label">Airports you cover</label>
+          <p class="sub" style="margin-top:-4px;" data-i18n="register_airports_sub">Select a country and city above, then search and add every airport your company serves there.</p>
           <div id="airportsPicker"></div>
         </div>
 
@@ -72,55 +75,55 @@
       </div>
 
       <div class="section">
-        <h2>Vehicle 1</h2>
+        <h2 data-i18n="register_vehicle1_title">Vehicle 1</h2>
         <div class="field">
-          <label for="ref-vehicle1">Plate number</label>
+          <label for="ref-vehicle1" data-i18n="register_plate">Plate number</label>
           <input type="text" id="ref-vehicle1" class="plate-input" autocomplete="off">
         </div>
         <div class="slots" id="slots-vehicle1"></div>
       </div>
 
       <div class="section">
-        <h2>Vehicle 2</h2>
-        <p class="sub">Only if this company has a second vehicle — otherwise leave blank.</p>
+        <h2 data-i18n="register_vehicle2_title">Vehicle 2</h2>
+        <p class="sub" data-i18n="register_vehicle2_sub">Only if this company has a second vehicle — otherwise leave blank.</p>
         <div class="field">
-          <label for="ref-vehicle2">Plate number</label>
+          <label for="ref-vehicle2" data-i18n="register_plate">Plate number</label>
           <input type="text" id="ref-vehicle2" class="plate-input" autocomplete="off">
         </div>
         <div class="slots" id="slots-vehicle2"></div>
       </div>
 
       <div class="section">
-        <h2>Driver 1</h2>
+        <h2 data-i18n="register_driver1_title">Driver 1</h2>
         <div class="field">
-          <label for="ref-driver1">Driver name</label>
+          <label for="ref-driver1" data-i18n="register_driver_name">Driver name</label>
           <input type="text" id="ref-driver1" autocomplete="off">
         </div>
         <div class="slots" id="slots-driver1"></div>
       </div>
 
       <div class="section">
-        <h2>Driver 2</h2>
-        <p class="sub">Only if this company has a second driver — otherwise leave blank.</p>
+        <h2 data-i18n="register_driver2_title">Driver 2</h2>
+        <p class="sub" data-i18n="register_driver2_sub">Only if this company has a second driver — otherwise leave blank.</p>
         <div class="field">
-          <label for="ref-driver2">Driver name</label>
+          <label for="ref-driver2" data-i18n="register_driver_name">Driver name</label>
           <input type="text" id="ref-driver2" autocomplete="off">
         </div>
         <div class="slots" id="slots-driver2"></div>
       </div>
 
       <div class="section">
-        <h2>Other document</h2>
-        <p class="sub">Optional — anything that doesn't fit above.</p>
+        <h2 data-i18n="register_other_title">Other document</h2>
+        <p class="sub" data-i18n="register_other_sub">Optional — anything that doesn't fit above.</p>
         <div class="field">
-          <label for="otherDesc">What is this document?</label>
+          <label for="otherDesc" data-i18n="register_other_desc">What is this document?</label>
           <input type="text" id="otherDesc" autocomplete="off" placeholder="e.g. general liability policy, additional permit">
         </div>
         <div class="slots" id="slots-other"></div>
       </div>
 
       <div class="section">
-        <button type="submit" class="btn" id="submitBtn">Submit application</button>
+        <button type="submit" class="btn" id="submitBtn" data-i18n="register_submit_btn">Submit application</button>
         <p class="progress" id="progress"></p>
         <p class="status" id="status" role="status" aria-live="polite"></p>
       </div>
@@ -128,16 +131,21 @@
   </section>
 
   <section class="card" id="successCard" hidden style="text-align:center;">
-    <h2>Application submitted</h2>
+    <h2 data-i18n="register_success_title">Application submitted</h2>
     <p class="sub" id="successMsg" style="margin-bottom:16px;"></p>
-    <a class="btn" href="/login.html" style="display:inline-block;max-width:240px;text-decoration:none;">Go to sign in</a>
+    <a class="btn" href="/login.html" style="display:inline-block;max-width:240px;text-decoration:none;" data-i18n="register_goto_login">Go to sign in</a>
   </section>
 </div>
 
+<script src="/assets/i18n.js"></script>
 <script src="/assets/countries.js"></script>
 <script src="/assets/airports.js"></script>
 <script src="/assets/combobox.js"></script>
 <script src="/assets/doc-defs.js"></script>
 <script src="/assets/register.js"></script>
+<script>
+  I18N.renderLangSwitcher("langSwitch");
+  I18N.apply(document);
+</script>
 </body>
 </html>

@@ -183,14 +183,6 @@
         <p class="sub">All orders across all partners</p>
       </div>
 
-      <div class="stat-grid">
-        <div class="card stat-card"><div class="stat-label">Not accepted</div><div class="stat-value mono" id="statOffered">0</div></div>
-        <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
-        <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
-        <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
-        <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
-      </div>
-
       <div style="margin-bottom:14px;">
         <h2 style="margin-bottom:4px;">Create order</h2>
         <p class="sub" style="margin:0;">Fill in the trip, passenger and price details, then create &amp; assign to a partner.</p>
@@ -262,17 +254,20 @@
       </div>
 
       <div class="card">
-        <div class="meetgreet-box" style="margin-top:0;">
-          <label style="font-size:12.5px;font-weight:600;" for="opMeetGreet">Meet &amp; greet <span class="hint">optional</span></label>
-          <input type="text" id="opMeetGreet" placeholder="e.g. Meet at arrival hall with name sign" style="margin-top:5px;">
-          <label style="font-size:12.5px;font-weight:600;margin-top:12px;display:block;" for="opSignText">Sign text <span class="hint">optional</span></label>
-          <input type="text" id="opSignText" placeholder="e.g. Welcome FLORINA GAVRILESCU" style="margin-top:5px;">
-        </div>
+        <div class="field" style="margin-bottom:0;"><label for="opMeetGreet">Meet &amp; greet <span class="hint">optional</span></label><input type="text" id="opMeetGreet" placeholder="e.g. Meet at arrival hall with name sign"></div>
         <div class="field" style="margin-top:14px;margin-bottom:0;"><label for="opNotes">Additional instructions <span class="hint">optional</span></label><input type="text" id="opNotes"></div>
       </div>
 
       <button type="button" class="minibtn good" id="createOrderBtn" style="width:100%;margin-top:14px;">Create &amp; assign</button>
       <p class="status" id="createOrderStatus" style="margin-bottom:18px;"></p>
+
+      <div class="stat-grid">
+        <div class="card stat-card"><div class="stat-label">Not accepted</div><div class="stat-value mono" id="statOffered">0</div></div>
+        <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
+        <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
+        <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
+        <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
+      </div>
 
       <div class="tabs" role="tablist" id="orderTabs">
         <button type="button" class="tab" data-order-tab="offered" aria-pressed="true">Not accepted <span class="tab-count" id="countOffered"></span></button>

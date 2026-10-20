@@ -1,6 +1,7 @@
 import { getPartnerId } from "../../_lib/auth.js";
 
 const AIRPORT_CODE_RE = /^[A-Z0-9]{2,4}$/;
+const VALID_LANGUAGES = ["en", "ru", "es", "el", "fr", "pt"];
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -49,6 +50,13 @@ export async function onRequestPost(context) {
       sets.push("covered_airports = ?");
       values.push(JSON.stringify(airports));
       result.airports = airports;
+    }
+
+    if (body.language !== undefined) {
+      const language = VALID_LANGUAGES.indexOf(body.language) !== -1 ? body.language : "en";
+      sets.push("language = ?");
+      values.push(language);
+      result.language = language;
     }
 
     if (!sets.length) return Response.json({ error: "invalid_submission" }, { status: 400 });

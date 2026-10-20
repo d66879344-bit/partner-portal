@@ -14,10 +14,13 @@
 
 <div class="hero-band">
   <div class="hero-inner">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <select id="langSwitch" style="min-height:32px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;padding:4px 8px;font-size:12px;"></select>
+    </div>
     <header class="head" style="margin-bottom:0;">
-      <span class="eyebrow">Partner portal</span>
-      <h1>Fleet Partner Portal</h1>
-      <p class="lede">Register your company, upload your documents, and receive orders assigned directly to you.</p>
+      <span class="eyebrow" data-i18n="home_eyebrow">Partner portal</span>
+      <h1 data-i18n="home_title">Fleet Partner Portal</h1>
+      <p class="lede" data-i18n="home_lede">Register your company, upload your documents, and receive orders assigned directly to you.</p>
     </header>
   </div>
 </div>
@@ -25,20 +28,20 @@
 <div class="wrap" style="padding-top:28px;">
   <section class="card">
     <div class="section" style="margin-top:0;padding-top:0;border-top:0;">
-      <h2>New partner</h2>
-      <p class="sub">Create your account, add your vehicles and drivers, and upload the required documents.</p>
-      <a class="btn" style="display:block;text-align:center;text-decoration:none;" href="/register.html">Create partner account</a>
+      <h2 data-i18n="home_new_title">New partner</h2>
+      <p class="sub" data-i18n="home_new_sub">Create your account, add your vehicles and drivers, and upload the required documents.</p>
+      <a class="btn" style="display:block;text-align:center;text-decoration:none;" href="/register.html" data-i18n="home_new_btn">Create partner account</a>
     </div>
     <div class="section">
-      <h2>Already registered</h2>
-      <p class="sub">Sign in to see your orders and manage your documents.</p>
-      <a class="btn" style="display:block;text-align:center;text-decoration:none;background:var(--surface-2);color:var(--ink);border:1px solid var(--line-strong);box-shadow:none;" href="/login.html">Sign in</a>
+      <h2 data-i18n="home_existing_title">Already registered</h2>
+      <p class="sub" data-i18n="home_existing_sub">Sign in to see your orders and manage your documents.</p>
+      <a class="btn" style="display:block;text-align:center;text-decoration:none;background:var(--surface-2);color:var(--ink);border:1px solid var(--line-strong);box-shadow:none;" href="/login.html" data-i18n="home_existing_btn">Sign in</a>
     </div>
   </section>
 
   <div class="feature-head" style="margin-top:48px;">
-    <h2 style="text-transform:none;font-size:24px;">How it works</h2>
-    <p class="sub">Everything a partner needs to get active and start receiving orders.</p>
+    <h2 style="text-transform:none;font-size:24px;" data-i18n="home_how_title">How it works</h2>
+    <p class="sub" data-i18n="home_how_sub">Everything a partner needs to get active and start receiving orders.</p>
   </div>
 
   <div class="feature-grid">
@@ -46,25 +49,30 @@
       <div class="feature-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
       </div>
-      <h3>Direct order assignment</h3>
-      <p>Orders go straight into your dashboard. Accept or decline before someone else is asked — no bidding, no marketplace in between.</p>
+      <h3 data-i18n="home_f1_title">Direct order assignment</h3>
+      <p data-i18n="home_f1_body">Orders go straight into your dashboard. Accept or decline before someone else is asked — no bidding, no marketplace in between.</p>
     </div>
     <div class="card feature-card">
       <div class="feature-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.1-7-11a7 7 0 0 1 14 0c0 5.9-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg>
       </div>
-      <h3>Multi-country coverage</h3>
-      <p>Register once, then list every city and airport your vehicles actually cover.</p>
+      <h3 data-i18n="home_f2_title">Multi-country coverage</h3>
+      <p data-i18n="home_f2_body">Register once, then list every city and airport your vehicles actually cover.</p>
     </div>
     <div class="card feature-card">
       <div class="feature-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h5l5 5v13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M13 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
       </div>
-      <h3>Clear document tracking</h3>
-      <p>Upload vehicle and driver documents once and track review status for every slot, right in your account.</p>
+      <h3 data-i18n="home_f3_title">Clear document tracking</h3>
+      <p data-i18n="home_f3_body">Upload vehicle and driver documents once and track review status for every slot, right in your account.</p>
     </div>
   </div>
 </div>
 
+<script src="/assets/i18n.js"></script>
+<script>
+  I18N.renderLangSwitcher("langSwitch");
+  I18N.apply(document);
+</script>
 </body>
 </html>

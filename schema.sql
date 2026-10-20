@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS partners (
   service_city TEXT,
   country TEXT NOT NULL,
   country_name TEXT,
+  language TEXT NOT NULL DEFAULT 'en', -- dashboard UI language: en | ru | es | el | fr | pt
   -- pending: just registered, can sign in, but not assigned orders yet.
   -- active: admin has reviewed documents and activated the account — can receive orders.
   -- blocked: admin has blocked the account — cannot sign in.
