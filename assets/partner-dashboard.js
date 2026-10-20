@@ -111,27 +111,33 @@
     return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear();
   }
   function renderTrial(startedAt) {
-    if (!window.TrialInfo) return;
-    var info = TrialInfo.compute(startedAt);
-    if (info.state === "not_started") {
-      $("trialCard").hidden = true;
-      $("trialChip").hidden = true;
-      return;
-    }
-    $("trialCard").hidden = false;
-    $("trialDayLabel").textContent = "Day " + info.dayNumber + " / " + TrialInfo.TRIAL_DAYS;
-    $("trialBadge").innerHTML = '<span class="badge badge-' + info.state + '">' +
-      (info.state === "ended" ? "Ended" : info.daysLeft + " day" + (info.daysLeft === 1 ? "" : "s") + " left") + "</span>";
-    var pct = Math.max(0, Math.min(100, Math.round((info.dayNumber / TrialInfo.TRIAL_DAYS) * 100)));
-    var fill = $("trialBarFill");
-    fill.style.width = pct + "%";
-    fill.className = "trial-bar-fill" + (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "");
-    $("trialStartDate").textContent = fmtShortDate(info.start);
-    $("trialEndDate").textContent = fmtShortDate(info.end);
+    // Defensive on purpose: this is a secondary display, and must never be
+    // able to take down the rest of the account/orders/fleet rendering if
+    // something here is missing or unexpected (e.g. mid-rollout of a schema
+    // change on the server).
+    try {
+      if (!window.TrialInfo || !$("trialCard") || !$("trialChip")) return;
+      var info = TrialInfo.compute(startedAt);
+      if (info.state === "not_started") {
+        $("trialCard").hidden = true;
+        $("trialChip").hidden = true;
+        return;
+      }
+      $("trialCard").hidden = false;
+      $("trialDayLabel").textContent = "Day " + info.dayNumber + " / " + TrialInfo.TRIAL_DAYS;
+      $("trialBadge").innerHTML = '<span class="badge badge-' + info.state + '">' +
+        (info.state === "ended" ? "Ended" : info.daysLeft + " day" + (info.daysLeft === 1 ? "" : "s") + " left") + "</span>";
+      var pct = Math.max(0, Math.min(100, Math.round((info.dayNumber / TrialInfo.TRIAL_DAYS) * 100)));
+      var fill = $("trialBarFill");
+      fill.style.width = pct + "%";
+      fill.className = "trial-bar-fill" + (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "");
+      $("trialStartDate").textContent = fmtShortDate(info.start);
+      $("trialEndDate").textContent = fmtShortDate(info.end);
 
-    $("trialChip").hidden = false;
-    $("trialChip").className = "trial-chip" + (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "");
-    $("trialChip").textContent = info.state === "ended" ? "Trial ended" : "Trial: " + info.daysLeft + "d left";
+      $("trialChip").hidden = false;
+      $("trialChip").className = "trial-chip" + (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "");
+      $("trialChip").textContent = info.state === "ended" ? "Trial ended" : "Trial: " + info.daysLeft + "d left";
+    } catch (e) { /* never let a trial-display glitch blank the rest of the dashboard */ }
   }
 
   async function loadMe() {
@@ -1280,12 +1286,15 @@
 
   /* ---------- boot ---------- */
   (async function () {
-    try {
-      await loadMe();
-      await Promise.all([loadOrders(), loadFleet()]);
-    } catch (e) {
-      // loadMe already redirects to /login.html on 401
-    }
+    // loadMe, loadOrders and loadFleet are independent of each other — a
+    // problem in any one of them (a temporary server error, a schema not yet
+    // migrated, etc.) must not leave the other panels blank too. loadMe still
+    // redirects to /login.html itself on a 401, so that path is unaffected.
+    await Promise.all([
+      loadMe().catch(function (e) {}),
+      loadOrders().catch(function (e) {}),
+      loadFleet().catch(function (e) {}),
+    ]);
   })();
 
   /* ---------- live updates: poll orders every 5s, pause while the tab is hidden ---------- */
