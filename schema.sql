@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS documents (
 
 CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_number TEXT,                             -- entered by admin, never auto-generated
+  order_number TEXT,                             -- auto-generated (city code + random digits/letters), editable by admin; checked for uniqueness before insert
   partner_id INTEGER NOT NULL REFERENCES partners(id),
   pickup TEXT NOT NULL,
   dropoff TEXT NOT NULL,

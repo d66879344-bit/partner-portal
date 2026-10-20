@@ -91,6 +91,9 @@ export async function onRequestPost(context) {
       return Response.json({ error: "invalid_request" }, { status: 400 });
     }
 
+    const dup = await env.DB.prepare("SELECT id FROM orders WHERE order_number = ?").bind(orderNumber).first();
+    if (dup) return Response.json({ error: "order_number_taken" }, { status: 409 });
+
     const partner = await env.DB.prepare("SELECT id, status FROM partners WHERE id = ?").bind(partnerId).first();
     if (!partner) return Response.json({ error: "partner_not_found" }, { status: 404 });
     if (partner.status !== "active") return Response.json({ error: "partner_not_active" }, { status: 409 });

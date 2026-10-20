@@ -7,6 +7,8 @@
   var openId = null;
   var openOrderId = null;
   var STAGE_LABELS = { on_the_way: "On the way", arrived: "Arrived at pickup", in_car: "Passenger on board", dropped_off: "Dropped off" };
+  var orderNumberManual = false;
+  var bufferManual = false;
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -260,7 +262,74 @@
     $("opPartner").innerHTML = active.length
       ? active.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
       : '<option value="">No active partners yet</option>';
+    if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
   }
+
+  /* ---------- order number: auto-generate [city code][4 digits][2 letters][4 digits] ---------- */
+  var ORDER_NUMBER_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  function randDigits(n) {
+    var s = "";
+    for (var i = 0; i < n; i++) s += Math.floor(Math.random() * 10);
+    return s;
+  }
+  function randLetters(n) {
+    var s = "";
+    for (var i = 0; i < n; i++) s += ORDER_NUMBER_LETTERS.charAt(Math.floor(Math.random() * ORDER_NUMBER_LETTERS.length));
+    return s;
+  }
+  function orderNumberExists(num) {
+    return orders.some(function (o) { return o.orderNumber === num; });
+  }
+  function generateOrderNumber(cityCode) {
+    var candidate, attempts = 0;
+    do {
+      candidate = cityCode + randDigits(4) + randLetters(2) + randDigits(4);
+      attempts++;
+    } while (orderNumberExists(candidate) && attempts < 20);
+    return candidate;
+  }
+  function regenerateOrderNumberForSelectedPartner() {
+    var partnerId = Number($("opPartner").value);
+    if (!partnerId) return;
+    var p = partners.filter(function (x) { return x.id === partnerId; })[0];
+    var cityCode = (window.CityCodes && window.CityCodes.codeFor(p && p.serviceCity)) || "XX";
+    $("opOrderNumber").value = generateOrderNumber(cityCode);
+  }
+  $("opPartner").addEventListener("change", function () {
+    if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
+  });
+  $("opOrderNumber").addEventListener("input", function () {
+    orderNumberManual = true;
+  });
+
+  /* ---------- waiting time: auto 60 min with a flight number, 15 min without ---------- */
+  function computeAutoBuffer() {
+    return $("opFlight").value.trim() ? 60 : 15;
+  }
+  function updateBufferNote() {
+    if (bufferManual) {
+      $("opBufferNote").innerHTML = 'Changed manually. <button type="button" data-buffer-reset style="border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:underline;">Use automatic value</button>';
+    } else {
+      var hasFlight = $("opFlight").value.trim().length > 0;
+      $("opBufferNote").textContent = "Auto-set to " + $("opBuffer").value + " min — " + (hasFlight ? "flight number filled in (airport pickup)" : "no flight number (non-airport pickup)");
+    }
+  }
+  function applyAutoBuffer() {
+    if (!bufferManual) $("opBuffer").value = computeAutoBuffer();
+    updateBufferNote();
+  }
+  $("opFlight").addEventListener("input", applyAutoBuffer);
+  $("opBuffer").addEventListener("input", function () {
+    bufferManual = true;
+    updateBufferNote();
+  });
+  $("opBufferNote").addEventListener("click", function (e) {
+    if (e.target.closest("[data-buffer-reset]")) {
+      bufferManual = false;
+      applyAutoBuffer();
+    }
+  });
+  applyAutoBuffer();
 
   function populateOrderPartnerFilter() {
     var prev = $("fOrderPartner").value;
@@ -277,41 +346,56 @@
 
   $("createOrderBtn").addEventListener("click", async function () {
     var partnerId = Number($("opPartner").value);
-    var orderNumber = $("opOrderNumber").value.trim();
     var pickup = $("opPickup").value.trim();
     var dropoff = $("opDropoff").value.trim();
     var orderDate = $("opDate").value;
-    if (!orderNumber || !partnerId || !pickup || !dropoff || !orderDate) {
+    if (!$("opOrderNumber").value.trim() || !partnerId || !pickup || !dropoff || !orderDate) {
       $("createOrderStatus").textContent = "Order number, partner, pickup, dropoff and date are required.";
       $("createOrderStatus").className = "status err";
       return;
     }
     this.disabled = true;
-    try {
-      await api("/api/admin/orders", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderNumber: orderNumber, partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
-          flightNumber: $("opFlight").value.trim(), flightTime: $("opFlightTime").value, bufferMinutes: $("opBuffer").value.trim(),
-          orderTime: $("opTime").value, vehicleType: $("opVehicleType").value,
-          passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
-          passengerName: $("opPassengerName").value.trim(), passengerPhone: $("opPassengerPhone").value.trim(),
-          price: $("opPrice").value.trim(), currency: $("opCurrency").value || "EUR",
-          meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim()
-        })
-      });
-      ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
-        "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
-      $("opCurrency").value = "EUR";
-      $("createOrderStatus").textContent = "Order created and assigned.";
-      $("createOrderStatus").className = "status ok";
-      loadOrders();
-    } catch (e) {
-      $("createOrderStatus").textContent = "Could not create the order.";
-      $("createOrderStatus").className = "status err";
-    } finally {
-      this.disabled = false;
-    }
+    var btn = this;
+    var attempts = 0;
+    (async function attempt() {
+      try {
+        await api("/api/admin/orders", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderNumber: $("opOrderNumber").value.trim(), partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
+            flightNumber: $("opFlight").value.trim(), flightTime: $("opFlightTime").value, bufferMinutes: $("opBuffer").value.trim(),
+            orderTime: $("opTime").value, vehicleType: $("opVehicleType").value,
+            passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
+            passengerName: $("opPassengerName").value.trim(), passengerPhone: $("opPassengerPhone").value.trim(),
+            price: $("opPrice").value.trim(), currency: $("opCurrency").value || "EUR",
+            meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim()
+          })
+        });
+        ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
+          "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
+        $("opCurrency").value = "EUR";
+        orderNumberManual = false;
+        bufferManual = false;
+        regenerateOrderNumberForSelectedPartner();
+        applyAutoBuffer();
+        $("createOrderStatus").textContent = "Order created and assigned.";
+        $("createOrderStatus").className = "status ok";
+        loadOrders();
+        btn.disabled = false;
+      } catch (e) {
+        if (e.message === "order_number_taken" && !orderNumberManual && attempts < 8) {
+          attempts++;
+          regenerateOrderNumberForSelectedPartner();
+          attempt();
+          return;
+        }
+        $("createOrderStatus").textContent = e.message === "order_number_taken"
+          ? "This order number is already in use — try another."
+          : "Could not create the order.";
+        $("createOrderStatus").className = "status err";
+        btn.disabled = false;
+      }
+    })();
   });
 
   /* ---------- orders: list ---------- */
@@ -488,7 +572,7 @@
         "</div></div></details>";
     }
 
-    var dateLine = esc(fmtDay(o.orderDate)) + (o.orderTime ? " · pickup " + esc(o.orderTime) : "") + (o.bufferMinutes != null ? " · buffer " + esc(o.bufferMinutes) + " min" : "");
+    var dateLine = esc(fmtDay(o.orderDate)) + (o.orderTime ? " · pickup " + esc(o.orderTime) : "") + (o.bufferMinutes != null ? " · waiting " + esc(o.bufferMinutes) + " min" : "");
 
     var routeBlock =
       '<div style="display:flex;gap:10px;">' +
