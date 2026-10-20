@@ -1,4 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
+import { startTrialIfNeeded } from "../../_lib/trial.js";
 
 // Admin review of a Customer-no-show report. Confirming the report closes the
 // trip out as completed (so it shows as completed for the partner and will
@@ -17,7 +18,7 @@ export async function onRequestPost(context) {
       return Response.json({ error: "invalid_request" }, { status: 400 });
     }
 
-    const order = await env.DB.prepare("SELECT id, status FROM orders WHERE id = ?").bind(id).first();
+    const order = await env.DB.prepare("SELECT id, partner_id, status FROM orders WHERE id = ?").bind(id).first();
     if (!order) return Response.json({ error: "not_found" }, { status: 404 });
     if (order.status !== "no_show") return Response.json({ error: "not_no_show" }, { status: 409 });
 
@@ -25,6 +26,7 @@ export async function onRequestPost(context) {
       await env.DB.prepare(
         "UPDATE orders SET status = 'completed', no_show_review_status = 'confirmed' WHERE id = ?"
       ).bind(id).run();
+      await startTrialIfNeeded(env, order.partner_id);
     } else {
       await env.DB.prepare(
         "UPDATE orders SET no_show_review_status = 'rejected' WHERE id = ?"

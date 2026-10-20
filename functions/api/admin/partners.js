@@ -6,7 +6,7 @@ export async function onRequestGet(context) {
   if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
 
   const { results } = await env.DB.prepare(
-    `SELECT id, email, company_name, contact_name, phone, country, country_name, service_city, status, created_at, activated_at
+    `SELECT id, email, company_name, contact_name, phone, country, country_name, service_city, status, created_at, activated_at, trial_started_at
      FROM partners ORDER BY created_at DESC`
   ).all();
 
@@ -22,6 +22,7 @@ export async function onRequestGet(context) {
     status: p.status,
     createdAt: p.created_at,
     activatedAt: p.activated_at,
+    trialStartedAt: p.trial_started_at || null,
   }));
 
   return Response.json({ ok: true, partners });

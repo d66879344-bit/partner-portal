@@ -78,6 +78,8 @@
       renderPartners();
       populatePartnerSelect();
       populateOrderPartnerFilter();
+      populateFinancePartnerFilter();
+      renderFinance();
       $("partnersStatus").textContent = partners.length + " partner(s)";
     } catch (e) {
       if (e.message === "unauthorized") {
@@ -91,10 +93,30 @@
   }
 
   function matchesPartnerFilter(p) {
-    var fs = $("fStatus").value, fc = $("fCountry").value;
+    var fs = $("fStatus").value, fc = $("fCountry").value, ft = $("fTrialState").value;
     if (fs && p.status !== fs) return false;
     if (fc && p.country !== fc) return false;
+    if (ft) {
+      var info = window.TrialInfo ? TrialInfo.compute(p.trialStartedAt) : { state: "not_started" };
+      if (info.state !== ft) return false;
+    }
     return true;
+  }
+
+  function trialPillHtml(startedAt) {
+    if (!window.TrialInfo) return "—";
+    var info = TrialInfo.compute(startedAt);
+    if (info.state === "not_started") {
+      return '<span class="badge badge-not_started">Not started</span>';
+    }
+    var label = info.state === "ended" ? "Ended" : "Day " + info.dayNumber + "/" + TrialInfo.TRIAL_DAYS;
+    var pct = Math.max(0, Math.min(100, Math.round((info.dayNumber / TrialInfo.TRIAL_DAYS) * 100)));
+    return '<div class="trial-pill">' +
+      '<span class="trial-pill-badge badge badge-' + info.state + '">' + esc(label) + "</span>" +
+      '<div class="trial-bar-track" style="width:70px;margin-top:4px;"><div class="trial-bar-fill' +
+      (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "") +
+      '" style="width:' + pct + '%;"></div></div>' +
+      "</div>";
   }
 
   function populatePartnersCountryFilter() {
@@ -114,7 +136,7 @@
 
   function renderPartners() {
     var rows = partners.filter(matchesPartnerFilter);
-    if (!rows.length) { $("partnersList").innerHTML = '<tr><td colspan="6" class="empty-cell">No matching partners.</td></tr>'; return; }
+    if (!rows.length) { $("partnersList").innerHTML = '<tr><td colspan="7" class="empty-cell">No matching partners.</td></tr>'; return; }
     $("partnersList").innerHTML = rows.map(function (p) {
       var isOpen = openId === p.id;
       return '<tr class="data-row" data-toggle="' + p.id + '">' +
@@ -123,9 +145,10 @@
         "<td>" + esc(p.countryName || p.country) + "</td>" +
         '<td class="mono">' + esc(fmtDate(p.createdAt)) + "</td>" +
         "<td>" + badge(p.status) + "</td>" +
+        "<td>" + trialPillHtml(p.trialStartedAt) + "</td>" +
         '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
         "</tr>" +
-        '<tr><td colspan="6" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="detail-' + p.id + '"></div></td></tr>';
+        '<tr><td colspan="7" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="detail-' + p.id + '"></div></td></tr>';
     }).join("");
     if (openId != null) renderDetail(openId);
   }
@@ -255,6 +278,7 @@
 
   $("fStatus").addEventListener("change", renderPartners);
   $("fCountry").addEventListener("change", renderPartners);
+  $("fTrialState").addEventListener("change", renderPartners);
 
   /* ---------- orders: create form ---------- */
   function populatePartnerSelect() {
@@ -322,6 +346,130 @@
       sorted.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("");
     $("fOrderPartner").value = prev;
   }
+
+  /* ---------- finance ---------- */
+  function populateFinancePartnerFilter() {
+    var prev = $("finPartner").value;
+    var sorted = partners.slice().sort(function (a, b) { return a.companyName.localeCompare(b.companyName); });
+    $("finPartner").innerHTML = '<option value="">All partners</option>' +
+      sorted.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("");
+    $("finPartner").value = prev;
+  }
+  function csvCell(v) {
+    var s = String(v == null ? "" : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function downloadCsv(filename, rows) {
+    var csv = rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
+    var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  var lastFinanceOrders = [];
+  function renderFinance() {
+    var rows = orders.filter(function (o) { return o.status === "completed"; });
+    var partnerFilter = $("finPartner").value;
+    if (partnerFilter) rows = rows.filter(function (o) { return String(o.partnerId) === partnerFilter; });
+    var from = $("finDateFrom").value, to = $("finDateTo").value;
+    if (from) rows = rows.filter(function (o) { return o.orderDate >= from; });
+    if (to) rows = rows.filter(function (o) { return o.orderDate <= to; });
+    lastFinanceOrders = rows;
+
+    var totals = {};
+    var noShowCount = 0;
+    rows.forEach(function (o) {
+      if (o.price) {
+        var cur = o.currency || "—";
+        totals[cur] = (totals[cur] || 0) + Number(o.price);
+      }
+      if (o.noShowReviewStatus === "confirmed") noShowCount++;
+    });
+    var partnerCount = {};
+    rows.forEach(function (o) { partnerCount[o.partnerId] = true; });
+
+    var cards = '<div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono">' + rows.length + "</div></div>" +
+      '<div class="card stat-card"><div class="stat-label">Partners</div><div class="stat-value mono">' + Object.keys(partnerCount).length + "</div></div>";
+    Object.keys(totals).sort().forEach(function (cur) {
+      cards += '<div class="card stat-card"><div class="stat-label">' + esc(cur) + '</div><div class="stat-value mono">' +
+        totals[cur].toLocaleString(undefined, { maximumFractionDigits: 2 }) + "</div></div>";
+    });
+    cards += '<div class="card stat-card"><div class="stat-label">No-shows (confirmed)</div><div class="stat-value mono">' + noShowCount + "</div></div>";
+    $("finStatGrid").innerHTML = cards;
+
+    if (!rows.length) {
+      $("financeList").innerHTML = '<tr><td colspan="5" class="empty-cell">No completed orders match these filters.</td></tr>';
+      return;
+    }
+
+    // Group by partner, each group sorted by date desc, with a subtotal row, then a grand total.
+    var byPartner = {};
+    rows.forEach(function (o) {
+      (byPartner[o.partnerId] = byPartner[o.partnerId] || []).push(o);
+    });
+    var partnerIds = Object.keys(byPartner).sort(function (a, b) {
+      var na = byPartner[a][0].companyName || "", nb = byPartner[b][0].companyName || "";
+      return na.localeCompare(nb);
+    });
+    var html = "";
+    var grandTotals = {};
+    partnerIds.forEach(function (pid) {
+      var group = byPartner[pid].slice().sort(function (a, b) {
+        var ka = (a.orderDate || "") + " " + (a.orderTime || "");
+        var kb = (b.orderDate || "") + " " + (b.orderTime || "");
+        return ka < kb ? 1 : ka > kb ? -1 : 0;
+      });
+      var subtotals = {};
+      group.forEach(function (o) {
+        var tag = o.noShowReviewStatus === "confirmed"
+          ? ' <span class="badge" style="background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-ink);">no-show</span>'
+          : "";
+        html += "<tr>" +
+          "<td>" + esc(o.companyName) + "</td>" +
+          '<td class="mono">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
+          '<td class="mono">' + esc(fmtDay(o.orderDate)) + "</td>" +
+          "<td>" + esc(o.pickup) + " → " + esc(o.dropoff) + tag + "</td>" +
+          '<td class="mono">' + (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") + "</td>" +
+          "</tr>";
+        if (o.price) {
+          var cur = o.currency || "—";
+          subtotals[cur] = (subtotals[cur] || 0) + Number(o.price);
+          grandTotals[cur] = (grandTotals[cur] || 0) + Number(o.price);
+        }
+      });
+      var subtotalText = Object.keys(subtotals).sort().map(function (cur) {
+        return subtotals[cur].toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + cur;
+      }).join(" · ") || "—";
+      html += '<tr class="subtotal-row" style="background:var(--surface-2);">' +
+        '<td colspan="4" style="font-weight:600;">' + esc(group[0].companyName) + " — subtotal</td>" +
+        '<td class="mono" style="font-weight:600;">' + esc(subtotalText) + "</td>" +
+        "</tr>";
+    });
+    var grandText = Object.keys(grandTotals).sort().map(function (cur) {
+      return grandTotals[cur].toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + cur;
+    }).join(" · ") || "—";
+    html += '<tr class="grand-row" style="background:var(--surface-2);border-top:2px solid var(--line-strong);">' +
+      '<td colspan="4" style="font-weight:700;">Grand total</td>' +
+      '<td class="mono" style="font-weight:700;">' + esc(grandText) + "</td>" +
+      "</tr>";
+    $("financeList").innerHTML = html;
+  }
+  $("finPartner").addEventListener("change", renderFinance);
+  $("finDateFrom").addEventListener("change", renderFinance);
+  $("finDateTo").addEventListener("change", renderFinance);
+  $("finExportBtn").addEventListener("click", function () {
+    var rows = [["Partner", "Order #", "Date", "Pickup", "Dropoff", "No-show", "Price", "Currency"]];
+    lastFinanceOrders.forEach(function (o) {
+      rows.push([
+        o.companyName, o.orderNumber || o.id, o.orderDate, o.pickup, o.dropoff,
+        o.noShowReviewStatus === "confirmed" ? "yes" : "", o.price || "", o.currency || "",
+      ]);
+    });
+    downloadCsv("finance-all-partners.csv", rows);
+  });
+  $("finPrintBtn").addEventListener("click", function () { window.print(); });
 
   (function initVehicleTypes() {
     var types = (window.VEHICLE_TYPES || []);
@@ -392,6 +540,7 @@
       var data = await api("/api/admin/orders");
       orders = data.orders || [];
       renderOrders();
+      renderFinance();
       $("ordersStatus").textContent = orders.length + " order(s)";
       $("ordersStatus").className = "status";
     } catch (e) {

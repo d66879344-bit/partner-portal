@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS partners (
   status TEXT NOT NULL DEFAULT 'pending',
   admin_note TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  activated_at TEXT
+  activated_at TEXT,
+  trial_started_at TEXT -- set once, automatically, when this partner's first order reaches status 'completed'; trial runs 30 days from here
 );
 
 CREATE TABLE IF NOT EXISTS vehicles (

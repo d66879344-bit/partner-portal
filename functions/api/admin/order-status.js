@@ -1,4 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
+import { startTrialIfNeeded } from "../../_lib/trial.js";
 
 const VALID = ["offered", "accepted", "declined", "completed", "cancelled"];
 
@@ -20,6 +21,7 @@ export async function onRequestPost(context) {
       const status = (body.status || "").toString();
       if (VALID.indexOf(status) === -1) return Response.json({ error: "invalid_request" }, { status: 400 });
       await env.DB.prepare("UPDATE orders SET status = ? WHERE id = ?").bind(status, id).run();
+      if (status === "completed") await startTrialIfNeeded(env, order.partner_id);
     }
 
     // Driver/vehicle reassignment (optional) — only from this order's own partner's fleet.

@@ -101,6 +101,13 @@
     .dash-sidebar-foot { display: none; }
     .dash-main { padding: 22px 16px 48px; }
   }
+
+  @media print {
+    .dash-sidebar, .toolbar, #gate { display: none !important; }
+    .dash-main { padding: 0; }
+    .panel { display: none !important; }
+    .panel.active { display: block !important; }
+  }
 </style>
 </head>
 <body>
@@ -138,6 +145,10 @@
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
         Partners
       </button>
+      <button type="button" class="tab" data-tab="finance" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5 7.5 10l3 3 6-6.5"/><path d="M12.5 6h4v4"/></svg>
+        Finance
+      </button>
     </nav>
 
     <div class="dash-sidebar-foot">
@@ -164,15 +175,57 @@
         <select id="fCountry">
           <option value="">All countries</option>
         </select>
+        <select id="fTrialState">
+          <option value="">All trial states</option>
+          <option value="not_started">Not started</option>
+          <option value="active">Active</option>
+          <option value="ending">Ending soon</option>
+          <option value="ended">Ended</option>
+        </select>
       </div>
       <p class="status" id="partnersStatus"></p>
 
       <div class="card table-card">
         <table class="data-table">
           <thead>
-            <tr><th>Company</th><th>Email</th><th>Country</th><th>Registered</th><th>Status</th><th></th></tr>
+            <tr><th>Company</th><th>Email</th><th>Country</th><th>Registered</th><th>Status</th><th>Trial</th><th></th></tr>
           </thead>
           <tbody id="partnersList"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-finance">
+      <div class="dash-pagehead">
+        <h1>Finance</h1>
+        <p class="sub">Completed trips and earnings across all partners. Every completed order (including confirmed no-shows) counts here automatically.</p>
+      </div>
+
+      <div class="toolbar">
+        <select id="finPartner"><option value="">All partners</option></select>
+        <label class="toolbar-field">From <input type="date" id="finDateFrom"></label>
+        <label class="toolbar-field">To <input type="date" id="finDateTo"></label>
+        <div style="flex:1;"></div>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="minibtn" id="finExportBtn">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:6px;vertical-align:-2px;"><path d="M10 4v9M6.5 9.5 10 13l3.5-3.5"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
+            Export CSV
+          </button>
+          <button type="button" class="minibtn" id="finPrintBtn">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:6px;vertical-align:-2px;"><path d="M6 8V3h8v5M6 17h8v-4H6v4Z"/><path d="M4 8h12a1 1 0 0 1 1 1v4h-2M5 13H3V9a1 1 0 0 1 1-1Z"/></svg>
+            Print
+          </button>
+        </div>
+      </div>
+
+      <div class="stat-grid" id="finStatGrid"></div>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr><th>Partner</th><th>Order #</th><th>Date</th><th>Route</th><th>Price</th></tr>
+          </thead>
+          <tbody id="financeList"></tbody>
         </table>
       </div>
     </section>
@@ -302,6 +355,7 @@
 
 <script src="/assets/order-defs.js"></script>
 <script src="/assets/city-codes.js"></script>
+<script src="/assets/trial.js"></script>
 <script src="/assets/admin.js"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@ export async function onRequestGet(context) {
   if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
 
   const partner = await env.DB.prepare(
-    "SELECT id, email, company_name, phone, account_id, covered_airports, service_city, status, country, country_name, language, created_at FROM partners WHERE id = ?"
+    "SELECT id, email, company_name, phone, account_id, covered_airports, service_city, status, country, country_name, language, created_at, trial_started_at FROM partners WHERE id = ?"
   ).bind(partnerId).first();
   if (!partner) return Response.json({ error: "not_found" }, { status: 404 });
 
@@ -44,6 +44,7 @@ export async function onRequestGet(context) {
       countryName: partner.country_name,
       language: partner.language || "en",
       createdAt: partner.created_at,
+      trialStartedAt: partner.trial_started_at || null,
     },
   });
 }

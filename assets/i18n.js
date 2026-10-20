@@ -19,7 +19,7 @@
 
   var DICT = {
     en: {
-      nav_orders: "Orders", nav_company: "Company", nav_fleet: "Fleet", nav_account: "Account",
+      nav_orders: "Orders", nav_company: "Company", nav_fleet: "Fleet", nav_finance: "Finance", nav_account: "Account",
       logout: "Log out",
 
       home_eyebrow: "Partner portal", home_title: "Fleet Partner Portal",
@@ -56,6 +56,10 @@
       dash_orders_title: "Orders", dash_orders_sub: "Orders assigned to you by the admin. Accept or decline before someone else is asked.",
       dash_company_title: "Company", dash_company_sub: "Your company profile and the documents we have on file.",
       dash_fleet_title: "Fleet", dash_fleet_sub: "Manage your vehicles and drivers. Click a card to edit details and documents.",
+      dash_finance_title: "Finance", dash_finance_sub: "Your completed trips and earnings. Every completed order (including confirmed no-shows) counts here automatically.",
+      fin_export_csv: "Export CSV", fin_print: "Print", fin_th_route: "Route", fin_th_price: "Price",
+      trial_title: "Trial period", trial_sub: "Starts automatically with your first completed order and runs for 30 days.",
+      fin_stat_noshows: "No-shows (confirmed)",
       dash_account_title: "Account", dash_account_sub: "Your company's details on file",
 
       stat_new: "New", stat_accepted: "Accepted", stat_completed: "Completed", stat_closed: "Declined / cancelled",
@@ -92,7 +96,7 @@
       company_doc_alert_body: "Upload them below — this notice clears once an admin approves them.",
     },
     ru: {
-      nav_orders: "Заказы", nav_company: "Компания", nav_fleet: "Автопарк", nav_account: "Аккаунт",
+      nav_orders: "Заказы", nav_company: "Компания", nav_fleet: "Автопарк", nav_finance: "Финансы", nav_account: "Аккаунт",
       logout: "Выйти",
 
       home_eyebrow: "Портал партнёров", home_title: "Портал партнёров автопарка",
@@ -129,6 +133,10 @@
       dash_orders_title: "Заказы", dash_orders_sub: "Заказы, назначенные вам админом. Принимайте или отклоняйте до того, как предложат другому.",
       dash_company_title: "Компания", dash_company_sub: "Профиль вашей компании и документы, которые у нас есть.",
       dash_fleet_title: "Автопарк", dash_fleet_sub: "Управляйте автомобилями и водителями. Нажмите на карточку, чтобы изменить данные и документы.",
+      dash_finance_title: "Финансы", dash_finance_sub: "Ваши завершённые поездки и заработок. Каждый завершённый заказ (включая подтверждённые no-show) учитывается здесь автоматически.",
+      fin_export_csv: "Экспорт CSV", fin_print: "Печать", fin_th_route: "Маршрут", fin_th_price: "Цена",
+      trial_title: "Триал-период", trial_sub: "Начинается автоматически с вашего первого завершённого заказа и длится 30 дней.",
+      fin_stat_noshows: "Неявки (подтверждённые)",
       dash_account_title: "Аккаунт", dash_account_sub: "Данные вашей компании в системе",
 
       stat_new: "Новые", stat_accepted: "Принятые", stat_completed: "Завершённые", stat_closed: "Отклонённые / отменённые",
@@ -165,7 +173,7 @@
       company_doc_alert_body: "Загрузите их ниже — уведомление исчезнет, как только админ их подтвердит.",
     },
     es: {
-      nav_orders: "Pedidos", nav_company: "Empresa", nav_fleet: "Flota", nav_account: "Cuenta",
+      nav_orders: "Pedidos", nav_company: "Empresa", nav_fleet: "Flota", nav_finance: "Finanzas", nav_account: "Cuenta",
       logout: "Cerrar sesión",
 
       home_eyebrow: "Portal de socios", home_title: "Portal de socios de flota",
@@ -202,6 +210,10 @@
       dash_orders_title: "Pedidos", dash_orders_sub: "Pedidos que te asignó el administrador. Acepta o rechaza antes de que se le pregunte a otro.",
       dash_company_title: "Empresa", dash_company_sub: "El perfil de tu empresa y los documentos que tenemos registrados.",
       dash_fleet_title: "Flota", dash_fleet_sub: "Gestiona tus vehículos y conductores. Haz clic en una tarjeta para editar los detalles y documentos.",
+      dash_finance_title: "Finanzas", dash_finance_sub: "Tus viajes completados y ganancias. Cada pedido completado (incluidos los no-shows confirmados) se contabiliza aquí automáticamente.",
+      fin_export_csv: "Exportar CSV", fin_print: "Imprimir", fin_th_route: "Ruta", fin_th_price: "Precio",
+      trial_title: "Período de prueba", trial_sub: "Comienza automáticamente con tu primer pedido completado y dura 30 días.",
+      fin_stat_noshows: "No-shows (confirmados)",
       dash_account_title: "Cuenta", dash_account_sub: "Los datos de tu empresa registrados",
 
       stat_new: "Nuevos", stat_accepted: "Aceptados", stat_completed: "Completados", stat_closed: "Rechazados / cancelados",
@@ -238,7 +250,7 @@
       company_doc_alert_body: "Súbelos abajo — este aviso desaparecerá cuando un administrador los apruebe.",
     },
     el: {
-      nav_orders: "Παραγγελίες", nav_company: "Εταιρεία", nav_fleet: "Στόλος", nav_account: "Λογαριασμός",
+      nav_orders: "Παραγγελίες", nav_company: "Εταιρεία", nav_fleet: "Στόλος", nav_finance: "Οικονομικά", nav_account: "Λογαριασμός",
       logout: "Αποσύνδεση",
 
       home_eyebrow: "Πύλη συνεργατών", home_title: "Πύλη συνεργατών στόλου",
@@ -275,6 +287,10 @@
       dash_orders_title: "Παραγγελίες", dash_orders_sub: "Παραγγελίες που σας ανέθεσε ο διαχειριστής. Αποδεχτείτε ή απορρίψτε πριν ρωτηθεί κάποιος άλλος.",
       dash_company_title: "Εταιρεία", dash_company_sub: "Το προφίλ της εταιρείας σας και τα έγγραφα που έχουμε καταχωρήσει.",
       dash_fleet_title: "Στόλος", dash_fleet_sub: "Διαχειριστείτε τα οχήματα και τους οδηγούς σας. Κάντε κλικ σε μια κάρτα για να επεξεργαστείτε στοιχεία και έγγραφα.",
+      dash_finance_title: "Οικονομικά", dash_finance_sub: "Οι ολοκληρωμένες διαδρομές και τα κέρδη σας. Κάθε ολοκληρωμένη παραγγελία (συμπεριλαμβανομένων των επιβεβαιωμένων no-show) προσμετράται εδώ αυτόματα.",
+      fin_export_csv: "Εξαγωγή CSV", fin_print: "Εκτύπωση", fin_th_route: "Διαδρομή", fin_th_price: "Τιμή",
+      trial_title: "Δοκιμαστική περίοδος", trial_sub: "Ξεκινά αυτόματα με την πρώτη ολοκληρωμένη παραγγελία σας και διαρκεί 30 ημέρες.",
+      fin_stat_noshows: "Μη εμφανίσεις (επιβεβαιωμένες)",
       dash_account_title: "Λογαριασμός", dash_account_sub: "Τα καταχωρημένα στοιχεία της εταιρείας σας",
 
       stat_new: "Νέες", stat_accepted: "Αποδεκτές", stat_completed: "Ολοκληρωμένες", stat_closed: "Απορριφθείσες / ακυρωμένες",
@@ -311,7 +327,7 @@
       company_doc_alert_body: "Ανεβάστε τα παρακάτω — η ειδοποίηση θα εξαφανιστεί μόλις τα εγκρίνει ένας διαχειριστής.",
     },
     fr: {
-      nav_orders: "Commandes", nav_company: "Entreprise", nav_fleet: "Flotte", nav_account: "Compte",
+      nav_orders: "Commandes", nav_company: "Entreprise", nav_fleet: "Flotte", nav_finance: "Finances", nav_account: "Compte",
       logout: "Déconnexion",
 
       home_eyebrow: "Portail partenaires", home_title: "Portail partenaires flotte",
@@ -348,6 +364,10 @@
       dash_orders_title: "Commandes", dash_orders_sub: "Commandes qui vous sont attribuées par l'administrateur. Acceptez ou refusez avant qu'un autre partenaire ne soit sollicité.",
       dash_company_title: "Entreprise", dash_company_sub: "Le profil de votre entreprise et les documents que nous avons en dossier.",
       dash_fleet_title: "Flotte", dash_fleet_sub: "Gérez vos véhicules et chauffeurs. Cliquez sur une carte pour modifier les détails et documents.",
+      dash_finance_title: "Finances", dash_finance_sub: "Vos trajets terminés et vos revenus. Chaque commande terminée (y compris les no-shows confirmés) est comptabilisée ici automatiquement.",
+      fin_export_csv: "Exporter en CSV", fin_print: "Imprimer", fin_th_route: "Trajet", fin_th_price: "Prix",
+      trial_title: "Période d'essai", trial_sub: "Commence automatiquement avec votre première commande terminée et dure 30 jours.",
+      fin_stat_noshows: "No-shows (confirmés)",
       dash_account_title: "Compte", dash_account_sub: "Les informations de votre entreprise en dossier",
 
       stat_new: "Nouvelles", stat_accepted: "Acceptées", stat_completed: "Terminées", stat_closed: "Refusées / annulées",
@@ -384,7 +404,7 @@
       company_doc_alert_body: "Téléversez-les ci-dessous — cet avis disparaîtra une fois qu'un administrateur les aura approuvés.",
     },
     pt: {
-      nav_orders: "Pedidos", nav_company: "Empresa", nav_fleet: "Frota", nav_account: "Conta",
+      nav_orders: "Pedidos", nav_company: "Empresa", nav_fleet: "Frota", nav_finance: "Finanças", nav_account: "Conta",
       logout: "Sair",
 
       home_eyebrow: "Portal de parceiros", home_title: "Portal de parceiros da frota",
@@ -421,6 +441,10 @@
       dash_orders_title: "Pedidos", dash_orders_sub: "Pedidos atribuídos a si pelo administrador. Aceite ou recuse antes que outro parceiro seja contactado.",
       dash_company_title: "Empresa", dash_company_sub: "O perfil da sua empresa e os documentos que temos registados.",
       dash_fleet_title: "Frota", dash_fleet_sub: "Faça a gestão dos seus veículos e motoristas. Clique num cartão para editar detalhes e documentos.",
+      dash_finance_title: "Finanças", dash_finance_sub: "As suas viagens concluídas e ganhos. Cada pedido concluído (incluindo no-shows confirmados) é contabilizado aqui automaticamente.",
+      fin_export_csv: "Exportar CSV", fin_print: "Imprimir", fin_th_route: "Trajeto", fin_th_price: "Preço",
+      trial_title: "Período de teste", trial_sub: "Começa automaticamente com o seu primeiro pedido concluído e dura 30 dias.",
+      fin_stat_noshows: "Não comparências (confirmadas)",
       dash_account_title: "Conta", dash_account_sub: "Os dados da sua empresa em registo",
 
       stat_new: "Novos", stat_accepted: "Aceites", stat_completed: "Concluídos", stat_closed: "Recusados / cancelados",

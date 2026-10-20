@@ -106,6 +106,34 @@
   var acctCityCombo = null;
   var acctLastCity = null;
 
+  function fmtShortDate(d) {
+    if (!d) return "";
+    return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear();
+  }
+  function renderTrial(startedAt) {
+    if (!window.TrialInfo) return;
+    var info = TrialInfo.compute(startedAt);
+    if (info.state === "not_started") {
+      $("trialCard").hidden = true;
+      $("trialChip").hidden = true;
+      return;
+    }
+    $("trialCard").hidden = false;
+    $("trialDayLabel").textContent = "Day " + info.dayNumber + " / " + TrialInfo.TRIAL_DAYS;
+    $("trialBadge").innerHTML = '<span class="badge badge-' + info.state + '">' +
+      (info.state === "ended" ? "Ended" : info.daysLeft + " day" + (info.daysLeft === 1 ? "" : "s") + " left") + "</span>";
+    var pct = Math.max(0, Math.min(100, Math.round((info.dayNumber / TrialInfo.TRIAL_DAYS) * 100)));
+    var fill = $("trialBarFill");
+    fill.style.width = pct + "%";
+    fill.className = "trial-bar-fill" + (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "");
+    $("trialStartDate").textContent = fmtShortDate(info.start);
+    $("trialEndDate").textContent = fmtShortDate(info.end);
+
+    $("trialChip").hidden = false;
+    $("trialChip").className = "trial-chip" + (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "");
+    $("trialChip").textContent = info.state === "ended" ? "Trial ended" : "Trial: " + info.daysLeft + "d left";
+  }
+
   async function loadMe() {
     var data = await api("/api/partner/me");
     me = data.partner;
@@ -120,7 +148,10 @@
         } catch (e) { /* language still applies locally even if the save fails */ }
       });
       renderOrders(lastOrders);
+      renderFinance(lastOrders);
     }
+
+    renderTrial(me.trialStartedAt);
 
     $("whoCompany").textContent = me.companyName;
     $("acctId").textContent = me.accountId || "—";
@@ -234,6 +265,7 @@
       lastOrders = data.orders || [];
       lastClosedCount = data.declinedCount || 0;
       renderOrders(lastOrders);
+      renderFinance(lastOrders);
     } catch (e) {
       if (silent) return;
       $("ordersStatus").textContent = "Could not load orders.";
@@ -321,6 +353,83 @@
     var open = e.target.closest("[data-order-open]");
     if (open) openOrderDetail(Number(open.getAttribute("data-order-open")));
   });
+
+  /* ---------- finance ---------- */
+  function csvCell(v) {
+    var s = String(v == null ? "" : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function downloadCsv(filename, rows) {
+    var csv = rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
+    var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  var lastFinanceOrders = [];
+  function renderFinance(allOrders) {
+    var orders = (allOrders || []).filter(function (o) { return o.status === "completed"; });
+    var from = $("finDateFrom").value, to = $("finDateTo").value;
+    if (from) orders = orders.filter(function (o) { return o.orderDate >= from; });
+    if (to) orders = orders.filter(function (o) { return o.orderDate <= to; });
+    orders = orders.slice().sort(function (a, b) {
+      var ka = (a.orderDate || "") + " " + (a.orderTime || "");
+      var kb = (b.orderDate || "") + " " + (b.orderTime || "");
+      return ka < kb ? 1 : ka > kb ? -1 : 0;
+    });
+    lastFinanceOrders = orders;
+
+    var totals = {};
+    var noShowCount = 0;
+    orders.forEach(function (o) {
+      if (o.price) {
+        var cur = o.currency || "—";
+        totals[cur] = (totals[cur] || 0) + Number(o.price);
+      }
+      if (o.noShowReviewStatus === "confirmed") noShowCount++;
+    });
+
+    var cards = '<div class="card stat-card"><div class="stat-label">' +
+      esc(window.I18N ? I18N.t("stat_completed") : "Completed") + '</div><div class="stat-value mono">' + orders.length + "</div></div>";
+    Object.keys(totals).sort().forEach(function (cur) {
+      cards += '<div class="card stat-card"><div class="stat-label">' + esc(cur) + '</div><div class="stat-value mono">' +
+        totals[cur].toLocaleString(undefined, { maximumFractionDigits: 2 }) + "</div></div>";
+    });
+    cards += '<div class="card stat-card"><div class="stat-label">' +
+      esc(window.I18N ? I18N.t("fin_stat_noshows") : "No-shows (confirmed)") + '</div><div class="stat-value mono">' + noShowCount + "</div></div>";
+    $("finStatGrid").innerHTML = cards;
+
+    if (!orders.length) {
+      $("financeList").innerHTML = '<tr><td colspan="4" class="empty-cell">' + esc(emptyMessage("completed")) + "</td></tr>";
+      return;
+    }
+    $("financeList").innerHTML = orders.map(function (o) {
+      var tag = o.noShowReviewStatus === "confirmed"
+        ? ' <span class="badge" style="background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-ink);">no-show</span>'
+        : "";
+      return "<tr>" +
+        '<td class="col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
+        "<td>" + esc(fmtDay(o.orderDate)) + "</td>" +
+        "<td>" + esc(o.pickup) + " → " + esc(o.dropoff) + tag + "</td>" +
+        "<td>" + (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") + "</td>" +
+        "</tr>";
+    }).join("");
+  }
+  $("finDateFrom").addEventListener("change", function () { renderFinance(lastOrders); });
+  $("finDateTo").addEventListener("change", function () { renderFinance(lastOrders); });
+  $("finExportBtn").addEventListener("click", function () {
+    var rows = [["Order #", "Date", "Pickup", "Dropoff", "No-show", "Price", "Currency"]];
+    lastFinanceOrders.forEach(function (o) {
+      rows.push([
+        o.orderNumber || o.id, o.orderDate, o.pickup, o.dropoff,
+        o.noShowReviewStatus === "confirmed" ? "yes" : "", o.price || "", o.currency || "",
+      ]);
+    });
+    downloadCsv("finance-" + (me ? me.companyName || "partner" : "partner") + ".csv", rows);
+  });
+  $("finPrintBtn").addEventListener("click", function () { window.print(); });
 
   /* ---------- order detail (full-page view) ---------- */
   function fleetOptionsHtml(list, selectedId, kind) {
