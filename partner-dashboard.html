@@ -149,6 +149,9 @@
   .doc-tile-status.doc-status-rejected { color: var(--crit); }
   .doc-required { display: block; font-size: 10.5px; color: var(--crit); text-transform: uppercase; letter-spacing: .03em; font-weight: 700; margin-top: 2px; }
   .doc-optional { display: block; font-size: 10.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+  .doc-tile.needed { border: 1.5px dashed var(--crit); background: var(--crit-bg); }
+  .doc-tile.needed .doc-tile-icon { color: var(--crit); }
+  .doc-tile.needed .doc-tile-body { border-top-color: #F3B7AE; }
   .doc-tile-bar { height: 3px; background: var(--line); }
   .doc-tile-bar.ok { background: var(--good); }
   .doc-tile-bar.pending { background: #D8B23C; }
@@ -209,6 +212,13 @@
   .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.08); font-size: 11px; margin-left: 2px; font-family: var(--font-mono); }
   .tab[aria-pressed="true"] .tab-count { background: rgba(0,0,0,.08); }
 
+  /* ---------- document-missing alerts (sidebar nav dot + Company banner) ---------- */
+  .dash-nav .tab-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent-warm); flex: none; margin-left: auto; box-shadow: 0 0 0 3px rgba(242,183,5,.25); }
+  .alert-banner { display: flex; align-items: center; gap: 14px; background: var(--crit-bg); border: 1px solid #F3B7AE; border-radius: 10px; padding: 14px 18px; }
+  .alert-banner svg { flex: none; color: var(--crit); }
+  .alert-banner strong { display: block; font-size: 14px; }
+  .alert-banner p { margin: 2px 0 0; font-size: 13px; color: #7A2318; }
+
   @media (max-width: 860px) {
     /* Below this width the sidebar becomes a horizontal top bar, so the page scrolls as a whole again. */
     .dash-shell { height: auto; overflow: visible; }
@@ -237,10 +247,12 @@
       <button type="button" class="tab" data-tab="company" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 2h7l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/></svg>
         <span data-i18n="nav_company">Company</span>
+        <span class="tab-dot" id="companyTabDot" hidden title="Documents needed"></span>
       </button>
       <button type="button" class="tab" data-tab="fleet" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3h11l3 4v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M6.5 9h7M6.5 12.5h7" stroke-linecap="round"/></svg>
         <span data-i18n="nav_fleet">Fleet</span>
+        <span class="tab-dot" id="fleetTabDot" hidden title="Documents needed"></span>
       </button>
       <button type="button" class="tab" data-tab="account" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
@@ -334,6 +346,14 @@
       <div class="dash-pagehead">
         <h1 data-i18n="dash_company_title">Company</h1>
         <p class="sub" data-i18n="dash_company_sub">Your company profile and the documents we have on file.</p>
+      </div>
+
+      <div class="alert-banner section-card" id="companyDocAlert" hidden>
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1.5 1 17h18L10 1.5Zm0 5.2 5.6 9.5H4.4L10 6.7Z"/><rect x="9.1" y="8.5" width="1.8" height="4.4" rx="0.9"/><circle cx="10" cy="14.4" r="1.1"/></svg>
+        <div>
+          <strong data-i18n="company_doc_alert_title">Some company documents are still needed</strong>
+          <p data-i18n="company_doc_alert_body">Upload them below — this notice clears once an admin approves them.</p>
+        </div>
       </div>
 
       <div class="card section-card">

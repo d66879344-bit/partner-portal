@@ -19,7 +19,7 @@
   <header class="head">
     <span class="eyebrow" data-i18n="register_eyebrow">Partner registration</span>
     <h1 data-i18n="register_title">Create your partner account</h1>
-    <p class="lede"><span data-i18n="register_lede_pre">Register your company, add your vehicles and drivers, and upload the required documents. You can sign in right away — an admin reviews your documents afterward to activate order assignment. Already registered? </span><a href="/login.html" data-i18n="register_lede_link">Sign in</a><span data-i18n="register_lede_post">.</span></p>
+    <p class="lede"><span data-i18n="register_lede_pre">Register your company account below. You'll add your vehicles, drivers and documents from your dashboard right after you sign in. Already registered? </span><a href="/login.html" data-i18n="register_lede_link">Sign in</a><span data-i18n="register_lede_post">.</span></p>
   </header>
 
   <section class="card" id="formCard">
@@ -70,62 +70,13 @@
           <p class="sub" style="margin-top:-4px;" data-i18n="register_airports_sub">Select a country and city above, then search and add every airport your company serves there.</p>
           <div id="airportsPicker"></div>
         </div>
-
-        <div class="slots" id="slots-company"></div>
       </div>
 
       <div class="section">
-        <h2 data-i18n="register_vehicle1_title">Vehicle 1</h2>
-        <div class="field">
-          <label for="ref-vehicle1" data-i18n="register_plate">Plate number</label>
-          <input type="text" id="ref-vehicle1" class="plate-input" autocomplete="off">
-        </div>
-        <div class="slots" id="slots-vehicle1"></div>
-      </div>
-
-      <div class="section">
-        <h2 data-i18n="register_vehicle2_title">Vehicle 2</h2>
-        <p class="sub" data-i18n="register_vehicle2_sub">Only if this company has a second vehicle — otherwise leave blank.</p>
-        <div class="field">
-          <label for="ref-vehicle2" data-i18n="register_plate">Plate number</label>
-          <input type="text" id="ref-vehicle2" class="plate-input" autocomplete="off">
-        </div>
-        <div class="slots" id="slots-vehicle2"></div>
-      </div>
-
-      <div class="section">
-        <h2 data-i18n="register_driver1_title">Driver 1</h2>
-        <div class="field">
-          <label for="ref-driver1" data-i18n="register_driver_name">Driver name</label>
-          <input type="text" id="ref-driver1" autocomplete="off">
-        </div>
-        <div class="slots" id="slots-driver1"></div>
-      </div>
-
-      <div class="section">
-        <h2 data-i18n="register_driver2_title">Driver 2</h2>
-        <p class="sub" data-i18n="register_driver2_sub">Only if this company has a second driver — otherwise leave blank.</p>
-        <div class="field">
-          <label for="ref-driver2" data-i18n="register_driver_name">Driver name</label>
-          <input type="text" id="ref-driver2" autocomplete="off">
-        </div>
-        <div class="slots" id="slots-driver2"></div>
-      </div>
-
-      <div class="section">
-        <h2 data-i18n="register_other_title">Other document</h2>
-        <p class="sub" data-i18n="register_other_sub">Optional — anything that doesn't fit above.</p>
-        <div class="field">
-          <label for="otherDesc" data-i18n="register_other_desc">What is this document?</label>
-          <input type="text" id="otherDesc" autocomplete="off" placeholder="e.g. general liability policy, additional permit">
-        </div>
-        <div class="slots" id="slots-other"></div>
-      </div>
-
-      <div class="section">
-        <button type="submit" class="btn" id="submitBtn" data-i18n="register_submit_btn">Submit application</button>
+        <button type="submit" class="btn" id="submitBtn" data-i18n="register_submit_btn">Create account</button>
         <p class="progress" id="progress"></p>
         <p class="status" id="status" role="status" aria-live="polite"></p>
+        <p class="sub" style="margin-top:14px;text-align:center;" data-i18n="register_next_note">Next: sign in and add your vehicles, drivers and documents from the dashboard.</p>
       </div>
     </form>
   </section>
@@ -141,7 +92,6 @@
 <script src="/assets/countries.js"></script>
 <script src="/assets/airports.js"></script>
 <script src="/assets/combobox.js"></script>
-<script src="/assets/doc-defs.js"></script>
 <script src="/assets/register.js"></script>
 <script>
   I18N.renderLangSwitcher("langSwitch");

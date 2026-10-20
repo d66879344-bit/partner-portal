@@ -730,6 +730,7 @@
   function docTileHtml(ownerType, ownerId, field, label, required, doc) {
     var uid = ownerType + "-" + (ownerId || "x") + "-" + field;
     var hasFile = !!doc;
+    var needsAttention = required && !hasFile;
     var icon = hasFile ? FILE_ICON : UPLOAD_ICON;
     var body = hasFile
       ? '<div class="doc-tile-label">' + esc(label) + '</div>' +
@@ -738,7 +739,7 @@
       : '<div class="doc-tile-label">' + esc(label) + '</div>' +
         (required ? '<span class="doc-required">Required</span>' : '<span class="doc-optional">Optional</span>');
     return '<div class="doc-item">' +
-      '<label class="doc-tile' + (hasFile ? " has-file" : "") + '" for="file-' + uid + '">' +
+      '<label class="doc-tile' + (hasFile ? " has-file" : "") + (needsAttention ? " needed" : "") + '" for="file-' + uid + '">' +
       '<div class="doc-tile-icon">' + icon + '</div>' +
       '<div class="doc-tile-body">' + body + '</div>' +
       '<div class="doc-tile-bar' + (hasFile ? " " + statusBarClass(doc.status) : "") + '"></div>' +
@@ -848,6 +849,32 @@
 
     $("driverCards").innerHTML = data.drivers.map(driverCardHtml).join("") +
       '<div class="fleet-card-add" data-driver-add="1"><span class="fleet-card-add-icon">+</span>Add driver</div>';
+
+    updateDocAlerts();
+  }
+
+  // Whether any required company-document slot still has no approved file
+  // (missing entirely, or uploaded but pending/rejected).
+  function companyDocsNeedAttention(country, docs) {
+    var byField = latestByField(docs);
+    return slotsFor(country, "company").some(function (d) {
+      if (!d.required) return false;
+      var doc = byField[d.id];
+      return !doc || doc.status !== "approved";
+    });
+  }
+
+  // Sidebar dots + Company banner: cleared automatically once an admin approves
+  // the relevant documents (myFleet is reloaded after every upload/review).
+  function updateDocAlerts() {
+    var country = me ? me.country : null;
+    var companyNeeds = companyDocsNeedAttention(country, myFleet.company.documents);
+    var fleetNeeds = !myFleet.vehicles.length || !myFleet.drivers.length ||
+      myFleet.vehicles.some(function (v) { return v.status !== "approved"; }) ||
+      myFleet.drivers.some(function (d) { return d.status !== "approved"; });
+    if ($("companyTabDot")) $("companyTabDot").hidden = !companyNeeds;
+    if ($("fleetTabDot")) $("fleetTabDot").hidden = !fleetNeeds;
+    if ($("companyDocAlert")) $("companyDocAlert").hidden = !companyNeeds;
   }
 
   async function loadFleet() {

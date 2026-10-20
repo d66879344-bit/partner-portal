@@ -38,7 +38,7 @@
       login_email: "Email", login_password: "Password", login_btn: "Sign in",
 
       register_eyebrow: "Partner registration", register_title: "Create your partner account",
-      register_lede_pre: "Register your company, add your vehicles and drivers, and upload the required documents. You can sign in right away — an admin reviews your documents afterward to activate order assignment. Already registered? ",
+      register_lede_pre: "Register your company account below. You'll add your vehicles, drivers and documents from your dashboard right after you sign in. Already registered? ",
       register_lede_link: "Sign in", register_lede_post: ".",
       register_section_account_title: "Company & account", register_section_account_sub: "Used to sign in to your partner dashboard right after you register.",
       register_company_name: "Company name", register_email: "Email", register_phone: "Contact phone number", register_password: "Password",
@@ -49,7 +49,8 @@
       register_driver1_title: "Driver 1", register_driver2_title: "Driver 2", register_driver2_sub: "Only if this company has a second driver — otherwise leave blank.",
       register_driver_name: "Driver name",
       register_other_title: "Other document", register_other_sub: "Optional — anything that doesn't fit above.", register_other_desc: "What is this document?",
-      register_submit_btn: "Submit application",
+      register_submit_btn: "Create account",
+      register_next_note: "Next: sign in and add your vehicles, drivers and documents from the dashboard.",
       register_success_title: "Application submitted", register_goto_login: "Go to sign in",
 
       dash_orders_title: "Orders", dash_orders_sub: "Orders assigned to you by the admin. Accept or decline before someone else is asked.",
@@ -87,6 +88,8 @@
 
       pending_banner_title: "Your documents are still under review.",
       pending_banner_body: "You can use your dashboard, but you won't receive orders until an admin activates your account.",
+      company_doc_alert_title: "Some company documents are still needed",
+      company_doc_alert_body: "Upload them below — this notice clears once an admin approves them.",
     },
     ru: {
       nav_orders: "Заказы", nav_company: "Компания", nav_fleet: "Автопарк", nav_account: "Аккаунт",
@@ -108,7 +111,7 @@
       login_email: "Email", login_password: "Пароль", login_btn: "Войти",
 
       register_eyebrow: "Регистрация партнёра", register_title: "Создайте аккаунт партнёра",
-      register_lede_pre: "Зарегистрируйте компанию, добавьте автомобили и водителей, загрузите необходимые документы. Вы сможете войти сразу — админ проверит документы позже, чтобы включить назначение заказов. Уже зарегистрированы? ",
+      register_lede_pre: "Зарегистрируйте аккаунт компании. Автомобили, водителей и документы вы добавите в личном кабинете сразу после входа. Уже зарегистрированы? ",
       register_lede_link: "Войти", register_lede_post: ".",
       register_section_account_title: "Компания и аккаунт", register_section_account_sub: "Используется для входа в личный кабинет партнёра сразу после регистрации.",
       register_company_name: "Название компании", register_email: "Email", register_phone: "Контактный телефон", register_password: "Пароль",
@@ -119,7 +122,8 @@
       register_driver1_title: "Водитель 1", register_driver2_title: "Водитель 2", register_driver2_sub: "Только если у компании есть второй водитель — иначе оставьте пустым.",
       register_driver_name: "Имя водителя",
       register_other_title: "Другой документ", register_other_sub: "Необязательно — всё, что не подошло выше.", register_other_desc: "Что это за документ?",
-      register_submit_btn: "Отправить заявку",
+      register_submit_btn: "Создать аккаунт",
+      register_next_note: "Далее: войдите и добавьте автомобили, водителей и документы в личном кабинете.",
       register_success_title: "Заявка отправлена", register_goto_login: "Перейти ко входу",
 
       dash_orders_title: "Заказы", dash_orders_sub: "Заказы, назначенные вам админом. Принимайте или отклоняйте до того, как предложат другому.",
@@ -157,6 +161,8 @@
 
       pending_banner_title: "Ваши документы ещё на проверке.",
       pending_banner_body: "Вы можете пользоваться кабинетом, но заказы не будут приходить, пока админ не активирует ваш аккаунт.",
+      company_doc_alert_title: "Не хватает некоторых документов компании",
+      company_doc_alert_body: "Загрузите их ниже — уведомление исчезнет, как только админ их подтвердит.",
     },
     es: {
       nav_orders: "Pedidos", nav_company: "Empresa", nav_fleet: "Flota", nav_account: "Cuenta",
@@ -178,7 +184,7 @@
       login_email: "Correo electrónico", login_password: "Contraseña", login_btn: "Iniciar sesión",
 
       register_eyebrow: "Registro de socio", register_title: "Crea tu cuenta de socio",
-      register_lede_pre: "Registra tu empresa, añade tus vehículos y conductores, y sube los documentos requeridos. Puedes iniciar sesión de inmediato — un administrador revisará tus documentos después para activar la asignación de pedidos. ¿Ya estás registrado? ",
+      register_lede_pre: "Registra la cuenta de tu empresa. Añadirás tus vehículos, conductores y documentos desde tu panel justo después de iniciar sesión. ¿Ya estás registrado? ",
       register_lede_link: "Iniciar sesión", register_lede_post: ".",
       register_section_account_title: "Empresa y cuenta", register_section_account_sub: "Se usa para iniciar sesión en tu panel de socio justo después de registrarte.",
       register_company_name: "Nombre de la empresa", register_email: "Correo electrónico", register_phone: "Teléfono de contacto", register_password: "Contraseña",
@@ -189,7 +195,8 @@
       register_driver1_title: "Conductor 1", register_driver2_title: "Conductor 2", register_driver2_sub: "Solo si esta empresa tiene un segundo conductor — si no, déjalo en blanco.",
       register_driver_name: "Nombre del conductor",
       register_other_title: "Otro documento", register_other_sub: "Opcional — cualquier cosa que no encaje arriba.", register_other_desc: "¿Qué es este documento?",
-      register_submit_btn: "Enviar solicitud",
+      register_submit_btn: "Crear cuenta",
+      register_next_note: "A continuación: inicia sesión y añade tus vehículos, conductores y documentos desde el panel.",
       register_success_title: "Solicitud enviada", register_goto_login: "Ir a iniciar sesión",
 
       dash_orders_title: "Pedidos", dash_orders_sub: "Pedidos que te asignó el administrador. Acepta o rechaza antes de que se le pregunte a otro.",
@@ -227,6 +234,8 @@
 
       pending_banner_title: "Tus documentos todavía están en revisión.",
       pending_banner_body: "Puedes usar tu panel, pero no recibirás pedidos hasta que un administrador active tu cuenta.",
+      company_doc_alert_title: "Todavía faltan algunos documentos de la empresa",
+      company_doc_alert_body: "Súbelos abajo — este aviso desaparecerá cuando un administrador los apruebe.",
     },
     el: {
       nav_orders: "Παραγγελίες", nav_company: "Εταιρεία", nav_fleet: "Στόλος", nav_account: "Λογαριασμός",
@@ -248,7 +257,7 @@
       login_email: "Email", login_password: "Κωδικός πρόσβασης", login_btn: "Σύνδεση",
 
       register_eyebrow: "Εγγραφή συνεργάτη", register_title: "Δημιουργήστε τον λογαριασμό συνεργάτη σας",
-      register_lede_pre: "Καταχωρίστε την εταιρεία σας, προσθέστε οχήματα και οδηγούς και ανεβάστε τα απαιτούμενα έγγραφα. Μπορείτε να συνδεθείτε αμέσως — ένας διαχειριστής θα ελέγξει τα έγγραφά σας αργότερα για να ενεργοποιήσει την ανάθεση παραγγελιών. Έχετε ήδη εγγραφεί; ",
+      register_lede_pre: "Καταχωρίστε τον λογαριασμό της εταιρείας σας. Θα προσθέσετε οχήματα, οδηγούς και έγγραφα από τον πίνακά σας αμέσως μετά τη σύνδεση. Έχετε ήδη εγγραφεί; ",
       register_lede_link: "Σύνδεση", register_lede_post: ".",
       register_section_account_title: "Εταιρεία και λογαριασμός", register_section_account_sub: "Χρησιμοποιείται για σύνδεση στον πίνακα συνεργάτη αμέσως μετά την εγγραφή.",
       register_company_name: "Όνομα εταιρείας", register_email: "Email", register_phone: "Τηλέφωνο επικοινωνίας", register_password: "Κωδικός πρόσβασης",
@@ -259,7 +268,8 @@
       register_driver1_title: "Οδηγός 1", register_driver2_title: "Οδηγός 2", register_driver2_sub: "Μόνο αν η εταιρεία έχει δεύτερο οδηγό — διαφορετικά αφήστε το κενό.",
       register_driver_name: "Όνομα οδηγού",
       register_other_title: "Άλλο έγγραφο", register_other_sub: "Προαιρετικό — οτιδήποτε δεν ταιριάζει παραπάνω.", register_other_desc: "Τι είδους έγγραφο είναι αυτό;",
-      register_submit_btn: "Υποβολή αίτησης",
+      register_submit_btn: "Δημιουργία λογαριασμού",
+      register_next_note: "Επόμενο βήμα: συνδεθείτε και προσθέστε οχήματα, οδηγούς και έγγραφα από τον πίνακα.",
       register_success_title: "Η αίτηση υποβλήθηκε", register_goto_login: "Μετάβαση στη σύνδεση",
 
       dash_orders_title: "Παραγγελίες", dash_orders_sub: "Παραγγελίες που σας ανέθεσε ο διαχειριστής. Αποδεχτείτε ή απορρίψτε πριν ρωτηθεί κάποιος άλλος.",
@@ -297,6 +307,8 @@
 
       pending_banner_title: "Τα έγγραφά σας βρίσκονται ακόμη υπό έλεγχο.",
       pending_banner_body: "Μπορείτε να χρησιμοποιείτε τον πίνακά σας, αλλά δεν θα λαμβάνετε παραγγελίες μέχρι ένας διαχειριστής να ενεργοποιήσει τον λογαριασμό σας.",
+      company_doc_alert_title: "Λείπουν ακόμη ορισμένα έγγραφα εταιρείας",
+      company_doc_alert_body: "Ανεβάστε τα παρακάτω — η ειδοποίηση θα εξαφανιστεί μόλις τα εγκρίνει ένας διαχειριστής.",
     },
     fr: {
       nav_orders: "Commandes", nav_company: "Entreprise", nav_fleet: "Flotte", nav_account: "Compte",
@@ -318,7 +330,7 @@
       login_email: "Email", login_password: "Mot de passe", login_btn: "Se connecter",
 
       register_eyebrow: "Inscription partenaire", register_title: "Créez votre compte partenaire",
-      register_lede_pre: "Inscrivez votre entreprise, ajoutez vos véhicules et chauffeurs, et téléversez les documents requis. Vous pouvez vous connecter immédiatement — un administrateur vérifiera vos documents ensuite pour activer l'attribution des commandes. Déjà inscrit ? ",
+      register_lede_pre: "Inscrivez le compte de votre entreprise. Vous ajouterez vos véhicules, chauffeurs et documents depuis votre tableau de bord juste après connexion. Déjà inscrit ? ",
       register_lede_link: "Se connecter", register_lede_post: ".",
       register_section_account_title: "Entreprise et compte", register_section_account_sub: "Utilisé pour vous connecter à votre tableau de bord partenaire juste après l'inscription.",
       register_company_name: "Nom de l'entreprise", register_email: "Email", register_phone: "Téléphone de contact", register_password: "Mot de passe",
@@ -329,7 +341,8 @@
       register_driver1_title: "Chauffeur 1", register_driver2_title: "Chauffeur 2", register_driver2_sub: "Seulement si l'entreprise a un second chauffeur — sinon laissez vide.",
       register_driver_name: "Nom du chauffeur",
       register_other_title: "Autre document", register_other_sub: "Facultatif — tout ce qui ne correspond pas ci-dessus.", register_other_desc: "De quel document s'agit-il ?",
-      register_submit_btn: "Soumettre la candidature",
+      register_submit_btn: "Créer le compte",
+      register_next_note: "Ensuite : connectez-vous et ajoutez vos véhicules, chauffeurs et documents depuis le tableau de bord.",
       register_success_title: "Candidature envoyée", register_goto_login: "Aller à la connexion",
 
       dash_orders_title: "Commandes", dash_orders_sub: "Commandes qui vous sont attribuées par l'administrateur. Acceptez ou refusez avant qu'un autre partenaire ne soit sollicité.",
@@ -367,6 +380,8 @@
 
       pending_banner_title: "Vos documents sont encore en cours de vérification.",
       pending_banner_body: "Vous pouvez utiliser votre tableau de bord, mais vous ne recevrez pas de commandes tant qu'un administrateur n'a pas activé votre compte.",
+      company_doc_alert_title: "Certains documents de l'entreprise manquent encore",
+      company_doc_alert_body: "Téléversez-les ci-dessous — cet avis disparaîtra une fois qu'un administrateur les aura approuvés.",
     },
     pt: {
       nav_orders: "Pedidos", nav_company: "Empresa", nav_fleet: "Frota", nav_account: "Conta",
@@ -388,7 +403,7 @@
       login_email: "Email", login_password: "Palavra-passe", login_btn: "Iniciar sessão",
 
       register_eyebrow: "Registo de parceiro", register_title: "Crie a sua conta de parceiro",
-      register_lede_pre: "Registe a sua empresa, adicione os seus veículos e motoristas, e carregue os documentos necessários. Pode iniciar sessão de imediato — um administrador revê os seus documentos depois para ativar a atribuição de pedidos. Já está registado? ",
+      register_lede_pre: "Registe a conta da sua empresa. Irá adicionar os seus veículos, motoristas e documentos no seu painel logo após iniciar sessão. Já está registado? ",
       register_lede_link: "Iniciar sessão", register_lede_post: ".",
       register_section_account_title: "Empresa e conta", register_section_account_sub: "Usado para iniciar sessão no seu painel de parceiro logo após o registo.",
       register_company_name: "Nome da empresa", register_email: "Email", register_phone: "Telefone de contacto", register_password: "Palavra-passe",
@@ -399,7 +414,8 @@
       register_driver1_title: "Motorista 1", register_driver2_title: "Motorista 2", register_driver2_sub: "Só se esta empresa tiver um segundo motorista — caso contrário, deixe em branco.",
       register_driver_name: "Nome do motorista",
       register_other_title: "Outro documento", register_other_sub: "Opcional — qualquer coisa que não se enquadre acima.", register_other_desc: "Que documento é este?",
-      register_submit_btn: "Submeter candidatura",
+      register_submit_btn: "Criar conta",
+      register_next_note: "A seguir: inicie sessão e adicione os seus veículos, motoristas e documentos no painel.",
       register_success_title: "Candidatura enviada", register_goto_login: "Ir para iniciar sessão",
 
       dash_orders_title: "Pedidos", dash_orders_sub: "Pedidos atribuídos a si pelo administrador. Aceite ou recuse antes que outro parceiro seja contactado.",
@@ -437,6 +453,8 @@
 
       pending_banner_title: "Os seus documentos ainda estão em análise.",
       pending_banner_body: "Pode usar o seu painel, mas não vai receber pedidos até um administrador ativar a sua conta.",
+      company_doc_alert_title: "Ainda faltam alguns documentos da empresa",
+      company_doc_alert_body: "Carregue-os abaixo — este aviso desaparece assim que um administrador os aprovar.",
     },
   };
 

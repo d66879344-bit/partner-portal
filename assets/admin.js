@@ -306,28 +306,12 @@
   function computeAutoBuffer() {
     return $("opFlight").value.trim() ? 60 : 15;
   }
-  function updateBufferNote() {
-    if (bufferManual) {
-      $("opBufferNote").innerHTML = 'Changed manually. <button type="button" data-buffer-reset style="border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:underline;">Use automatic value</button>';
-    } else {
-      var hasFlight = $("opFlight").value.trim().length > 0;
-      $("opBufferNote").textContent = "Auto-set to " + $("opBuffer").value + " min — " + (hasFlight ? "flight number filled in (airport pickup)" : "no flight number (non-airport pickup)");
-    }
-  }
   function applyAutoBuffer() {
     if (!bufferManual) $("opBuffer").value = computeAutoBuffer();
-    updateBufferNote();
   }
   $("opFlight").addEventListener("input", applyAutoBuffer);
   $("opBuffer").addEventListener("input", function () {
     bufferManual = true;
-    updateBufferNote();
-  });
-  $("opBufferNote").addEventListener("click", function (e) {
-    if (e.target.closest("[data-buffer-reset]")) {
-      bufferManual = false;
-      applyAutoBuffer();
-    }
   });
   applyAutoBuffer();
 
