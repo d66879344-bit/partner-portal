@@ -191,40 +191,88 @@
         <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
       </div>
 
-      <div class="card" style="margin-bottom:18px;">
-        <h2>Create order</h2>
-        <div class="addform">
-          <div class="field"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
-          <div class="field"><label for="opOrderNumber">Order number</label><input type="text" id="opOrderNumber" placeholder="e.g. 17082563-1"></div>
-          <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
-          <div class="field"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
-          <div class="field"><label for="opFlight">Flight number <span class="hint">optional</span></label><input type="text" id="opFlight"></div>
-
-          <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
-          <div class="field"><label for="opFlightTime">Flight arrival time <span class="hint">optional</span></label><input type="time" id="opFlightTime"></div>
-          <div class="field"><label for="opBuffer">Buffer (minutes) <span class="hint">optional</span></label><input type="text" id="opBuffer" inputmode="numeric" placeholder="e.g. 60"></div>
-          <div class="field"><label for="opTime">Pickup time</label><input type="time" id="opTime"></div>
-
-          <div class="field"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
-          <div class="field"><label for="opPassengers">Passengers</label><input type="text" id="opPassengers" inputmode="numeric"></div>
-          <div class="field"><label for="opLuggage">Luggage <span class="hint">optional</span></label><input type="text" id="opLuggage" inputmode="numeric"></div>
-          <div class="field"><label for="opPassengerName">Passenger name</label><input type="text" id="opPassengerName"></div>
-          <div class="field"><label for="opPassengerPhone">Passenger phone</label><input type="text" id="opPassengerPhone"></div>
-
-          <div class="field"><label for="opPrice">Price</label><input type="text" id="opPrice" inputmode="decimal"></div>
-          <div class="field"><label for="opCurrency">Currency</label>
-            <select id="opCurrency">
-              <option value="EUR">EUR — Euro (€)</option>
-              <option value="USD">USD — Dollar ($)</option>
-              <option value="GBP">GBP — Pound (£)</option>
-            </select>
-          </div>
-          <div class="field" style="flex:2 1 260px;"><label for="opMeetGreet">Meet &amp; greet <span class="hint">optional</span></label><input type="text" id="opMeetGreet" placeholder="e.g. Meet at arrival hall with name sign"></div>
-          <div class="field" style="flex:2 1 260px;"><label for="opNotes">Additional instructions <span class="hint">optional</span></label><input type="text" id="opNotes"></div>
-          <button type="button" class="minibtn good" id="createOrderBtn">Create &amp; assign</button>
-        </div>
-        <p class="status" id="createOrderStatus"></p>
+      <div style="margin-bottom:14px;">
+        <h2 style="margin-bottom:4px;">Create order</h2>
+        <p class="sub" style="margin:0;">Fill in the trip, passenger and price details, then create &amp; assign to a partner.</p>
       </div>
+
+      <div class="card">
+        <div class="addform">
+          <div class="field" style="min-width:170px;flex:1 1 170px;"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
+          <div class="field" style="flex:1 1 180px;"><label for="opOrderNumber">Order number</label><input type="text" id="opOrderNumber" placeholder="e.g. 17082563-1"></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-left:4px solid var(--accent);">
+        <div style="display:flex;gap:12px;">
+          <div class="route-track" style="padding-top:22px;">
+            <div class="route-dot"></div>
+            <div class="route-dotted" style="min-height:70px;"></div>
+            <div class="route-dot end"></div>
+          </div>
+          <div style="flex:1;">
+            <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
+            <div class="addform" style="margin-top:8px;">
+              <div class="field"><label for="opFlight">Flight number <span class="hint">optional</span></label><input type="text" id="opFlight"></div>
+              <div class="field"><label for="opFlightTime">Flight arrival <span class="hint">optional</span></label><input type="time" id="opFlightTime"></div>
+            </div>
+            <div class="field" style="margin-top:16px;"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="addform">
+          <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
+          <div class="field"><label for="opTime">Pickup time</label><input type="time" id="opTime"></div>
+          <div class="field"><label for="opBuffer">Buffer (minutes) <span class="hint">optional</span></label><input type="text" id="opBuffer" inputmode="numeric" placeholder="e.g. 60"></div>
+          <div class="field"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:16px;font-weight:600;margin-bottom:4px;text-transform:none;">Passenger &amp; price</h2>
+        <div class="icon-row">
+          <div class="icon-dot"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>
+          <div class="addform" style="flex:1;">
+            <div class="field" style="flex:2 1 160px;"><label for="opPassengerName">Passenger name</label><input type="text" id="opPassengerName"></div>
+            <div class="field" style="flex:1 1 140px;"><label for="opPassengerPhone">Passenger phone</label><input type="text" id="opPassengerPhone"></div>
+          </div>
+        </div>
+        <div class="icon-row">
+          <div class="icon-dot"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2 3 6v5c0 4 3 6.5 7 7 4-.5 7-3 7-7V6l-7-4Z"/></svg></div>
+          <div class="addform" style="flex:1;">
+            <div class="field"><label for="opPassengers">Passengers</label><input type="text" id="opPassengers" inputmode="numeric"></div>
+            <div class="field"><label for="opLuggage">Luggage <span class="hint">optional</span></label><input type="text" id="opLuggage" inputmode="numeric"></div>
+          </div>
+        </div>
+        <div class="icon-row">
+          <div class="icon-dot"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2" y="5" width="16" height="10" rx="2"/><circle cx="10" cy="10" r="2.1" fill="currentColor" stroke="none"/></svg></div>
+          <div class="addform" style="flex:1;">
+            <div class="field" style="flex:2 1 160px;"><label for="opPrice">Price</label><input type="text" id="opPrice" inputmode="decimal"></div>
+            <div class="field" style="flex:1 1 140px;"><label for="opCurrency">Currency</label>
+              <select id="opCurrency">
+                <option value="EUR">EUR — Euro (€)</option>
+                <option value="USD">USD — Dollar ($)</option>
+                <option value="GBP">GBP — Pound (£)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="meetgreet-box" style="margin-top:0;">
+          <label style="font-size:12.5px;font-weight:600;" for="opMeetGreet">Meet &amp; greet <span class="hint">optional</span></label>
+          <input type="text" id="opMeetGreet" placeholder="e.g. Meet at arrival hall with name sign" style="margin-top:5px;">
+          <label style="font-size:12.5px;font-weight:600;margin-top:12px;display:block;" for="opSignText">Sign text <span class="hint">optional</span></label>
+          <input type="text" id="opSignText" placeholder="e.g. Welcome FLORINA GAVRILESCU" style="margin-top:5px;">
+        </div>
+        <div class="field" style="margin-top:14px;margin-bottom:0;"><label for="opNotes">Additional instructions <span class="hint">optional</span></label><input type="text" id="opNotes"></div>
+      </div>
+
+      <button type="button" class="minibtn good" id="createOrderBtn" style="width:100%;margin-top:14px;">Create &amp; assign</button>
+      <p class="status" id="createOrderStatus" style="margin-bottom:18px;"></p>
 
       <div class="tabs" role="tablist" id="orderTabs">
         <button type="button" class="tab" data-order-tab="offered" aria-pressed="true">Not accepted <span class="tab-count" id="countOffered"></span></button>

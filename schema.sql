@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS orders (
   passenger_name TEXT,
   passenger_phone TEXT,
   meet_greet TEXT,
+  sign_text TEXT,         -- free text for a name/greeting sign, typed in full when the order is created (never auto-filled from passenger_name)
   driver_id INTEGER REFERENCES drivers(id),
   vehicle_id INTEGER REFERENCES vehicles(id),
   price TEXT,

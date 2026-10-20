@@ -9,7 +9,7 @@ export async function onRequestGet(context) {
   const { results } = await env.DB.prepare(
     `SELECT o.id, o.order_number, o.pickup, o.dropoff, o.flight_number, o.flight_time, o.buffer_minutes,
             o.order_date, o.order_time, o.vehicle_type,
-            o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet,
+            o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet, o.sign_text,
             o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
             o.price, o.currency, o.notes, o.status, o.trip_stage, o.no_show_type, o.no_show_at, o.created_at, o.responded_at
      FROM orders o
@@ -39,6 +39,7 @@ export async function onRequestGet(context) {
     passengerName: o.passenger_name,
     passengerPhone: o.passenger_phone,
     meetGreet: o.meet_greet,
+    signText: o.sign_text,
     driverId: o.driver_id,
     driverName: o.driver_name,
     vehicleId: o.vehicle_id,

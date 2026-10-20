@@ -36,6 +36,28 @@
       return pad2(dt.getDate()) + "/" + pad2(dt.getMonth() + 1) + "/" + dt.getFullYear();
     } catch (e) { return d; }
   }
+  function copyBtnHtml(value) {
+    if (value == null || value === "") return "";
+    return '<button type="button" class="copy-btn" data-copy="' + esc(value) + '" title="Copy">' +
+      '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="7" width="9" height="9" rx="1.5"/><path d="M4.5 12.5V5A1.5 1.5 0 0 1 6 3.5h7"/></svg>' +
+      "</button>";
+  }
+  async function handleCopyClick(btn) {
+    var val = btn.getAttribute("data-copy") || "";
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(val);
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = val; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+      }
+      var prevHtml = btn.innerHTML;
+      btn.classList.add("copied");
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 8 14.5 16 5.5"/></svg>';
+      setTimeout(function () { btn.classList.remove("copied"); btn.innerHTML = prevHtml; }, 1200);
+    } catch (e) { /* clipboard unavailable; ignore */ }
+  }
   function typeFor(f) {
     if (OK_TYPES[f.type]) return f.type;
     var m = /\.([a-z0-9]+)$/i.exec(f.name || "");
@@ -298,17 +320,17 @@
     if (o.status !== "accepted" && o.status !== "completed" && o.status !== "no_show") return "";
     var missing = !o.driverId || !o.vehicleId;
     var warning = missing && o.status === "accepted"
-      ? '<div class="warn-chip">Please assign a vehicle and driver before the pickup time</div>'
+      ? '<div class="warn-chip" style="margin:8px 0 0;">Please assign a vehicle and driver before the pickup time</div>'
       : "";
-    return '<div class="card">' +
-      '<h2 style="margin:0 0 10px;font-size:14px;">Vehicle &amp; driver</h2>' +
-      warning +
-      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:' + (warning ? "10px" : "0") + ';">' +
-      '<select id="assignVehicle">' + fleetOptionsHtml(myFleet.vehicles, o.vehicleId, "vehicle") + "</select>" +
-      '<select id="assignDriver">' + fleetOptionsHtml(myFleet.drivers, o.driverId, "driver") + "</select>" +
-      '<button type="button" class="minibtn good" data-assign-order="' + o.id + '">Save assignment</button>' +
-      '<p class="status" id="assignStatus" style="margin:0;"></p>' +
-      "</div></div>";
+    return '<div class="card" style="padding:14px 20px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+      '<h2 style="margin:0;font-size:13px;flex:none;">Vehicle &amp; driver</h2>' +
+      '<select id="assignVehicle" style="flex:1 1 140px;min-width:120px;">' + fleetOptionsHtml(myFleet.vehicles, o.vehicleId, "vehicle") + "</select>" +
+      '<select id="assignDriver" style="flex:1 1 120px;min-width:100px;">' + fleetOptionsHtml(myFleet.drivers, o.driverId, "driver") + "</select>" +
+      '<button type="button" class="minibtn good" data-assign-order="' + o.id + '" style="flex:none;">Save</button>' +
+      "</div>" + warning +
+      '<p class="status" id="assignStatus" style="margin:6px 0 0;"></p>' +
+      "</div>";
   }
 
   function stageProgressHtml(o) {
@@ -319,10 +341,11 @@
       var state = i <= currentIndex ? "done" : (i === currentIndex + 1 && o.status === "accepted" ? "next" : "upcoming");
       return '<span class="stage-chip stage-' + state + '">' + (i <= currentIndex ? "✓ " : "") + esc(s.label) + "</span>";
     }).join("");
-    return '<div class="card">' +
-      '<h2 style="margin:0 0 10px;font-size:14px;">Trip progress</h2>' +
+    return '<div class="card" style="padding:14px 20px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+      '<h2 style="margin:0;font-size:13px;flex:none;">Trip progress</h2>' +
       '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + items + "</div>" +
-      "</div>";
+      "</div></div>";
   }
 
   function moreMenuHtml(orderId) {
@@ -361,37 +384,65 @@
     $("odTitle").textContent = "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id);
     $("odStatusBadge").innerHTML = badge(o.status);
 
-    var tripCard = '<div class="card">' +
-      '<h2 style="margin:0 0 12px;font-size:14px;">Trip</h2>' +
+    var tripCard = '<div class="card" style="border-left:4px solid var(--accent);">' +
+      '<h2 style="margin:0 0 14px;font-size:14px;">Trip</h2>' +
+      '<div style="display:flex;gap:12px;margin-bottom:16px;">' +
+      '<div class="route-track" style="padding-top:4px;">' +
+      '<div class="route-dot"></div>' +
+      '<div class="route-dotted" style="min-height:48px;"></div>' +
+      '<div class="route-dot end"></div>' +
+      "</div>" +
+      '<div style="flex:1;min-width:0;">' +
+      '<div class="route-line"><span style="font-weight:700;font-size:14px;">' + esc(o.pickup) + "</span>" + copyBtnHtml(o.pickup) + "</div>" +
+      (o.flightNumber
+        ? '<div class="route-line" style="margin:6px 0;"><span class="badge" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);">Flight ' + esc(o.flightNumber) + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + "</span>" + copyBtnHtml(o.flightNumber) + "</div>"
+        : "") +
+      '<div class="route-line" style="margin-top:' + (o.flightNumber ? "20" : "6") + 'px;"><span style="font-weight:700;font-size:14px;">' + esc(o.dropoff) + "</span>" + copyBtnHtml(o.dropoff) + "</div>" +
+      "</div></div>" +
       '<div class="od-fields">' +
-      '<div class="field"><div class="field-label">Pickup</div><div class="field-val">' + esc(o.pickup) + "</div></div>" +
-      '<div class="field"><div class="field-label">Dropoff</div><div class="field-val">' + esc(o.dropoff) + "</div></div>" +
       '<div class="field"><div class="field-label">Date</div><div class="field-val">' + esc(fmtDay(o.orderDate)) + "</div></div>" +
       '<div class="field"><div class="field-label">Pickup time</div><div class="field-val">' + esc(o.orderTime || "—") + "</div></div>" +
-      (o.flightNumber ? '<div class="field"><div class="field-label">Flight number</div><div class="field-val">' + esc(o.flightNumber) + "</div></div>" : "") +
-      (o.flightTime ? '<div class="field"><div class="field-label">Flight arrival</div><div class="field-val">' + esc(o.flightTime) + "</div></div>" : "") +
       (o.bufferMinutes != null ? '<div class="field"><div class="field-label">Buffer time</div><div class="field-val">' + esc(o.bufferMinutes) + " min</div></div>" : "") +
-      '<div class="field"><div class="field-label">Vehicle type</div><div class="field-val">' + esc(o.vehicleType || "—") + "</div></div>" +
+      '<div class="field"><div class="field-label">Vehicle type</div><div class="field-val">' + esc(o.vehicleType || "—") + copyBtnHtml(o.vehicleType) + "</div></div>" +
       "</div></div>";
 
     var passengerCard = '<div class="card">' +
-      '<h2 style="margin:0 0 12px;font-size:14px;">Passenger &amp; price</h2>' +
-      '<div class="od-fields">' +
-      '<div class="field" style="grid-column:1 / -1;"><div class="field-label">Passenger</div><div class="field-val">' + esc(o.passengerName || "—") + (o.passengerPhone ? " · " + esc(o.passengerPhone) : "") + "</div></div>" +
-      '<div class="field"><div class="field-label">Passengers</div><div class="field-val">' + esc(o.passengers != null ? o.passengers : "—") + "</div></div>" +
-      '<div class="field"><div class="field-label">Luggage</div><div class="field-val">' + esc(o.luggage != null ? o.luggage : "—") + "</div></div>" +
-      (o.meetGreet ? '<div class="field" style="grid-column:1 / -1;"><div class="field-label">Meet &amp; greet</div><div class="field-val">' + esc(o.meetGreet) + "</div></div>" : "") +
-      (o.notes ? '<div class="field" style="grid-column:1 / -1;"><div class="field-label">Additional instructions</div><div class="field-val">' + esc(o.notes) + "</div></div>" : "") +
-      (o.price ? '<div class="field"><div class="field-label">Price</div><div class="field-val" style="font-weight:700;">' + esc(o.price) + " " + esc(o.currency || "") + "</div></div>" : "") +
-      "</div></div>";
+      '<h2 style="margin:0 0 10px;font-size:14px;">Passenger &amp; price</h2>' +
+      '<div class="icon-row">' +
+      '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>' +
+      esc(o.passengerName || "—") + copyBtnHtml(o.passengerName) +
+      "</div>" +
+      '<div class="icon-row">' +
+      '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5.6 2.3c.5-.2 1 0 1.3.4l1.4 2.1c.3.4.2 1-.2 1.4l-1.1 1c-.2.2-.2.5-.1.7.6 1.2 1.6 2.2 2.8 2.8.2.1.5.1.7-.1l1-1.1c.4-.4 1-.5 1.4-.2l2.1 1.4c.5.3.6.9.4 1.3l-.8 1.5c-.3.5-.8.8-1.4.7-4-.6-7.2-3.8-7.8-7.8-.1-.6.2-1.1.7-1.4l1.5-.7Z"/></svg></div>' +
+      esc(o.passengerPhone || "—") + copyBtnHtml(o.passengerPhone) +
+      "</div>" +
+      '<div class="icon-row">' +
+      '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2 3 6v5c0 4 3 6.5 7 7 4-.5 7-3 7-7V6l-7-4Z"/></svg></div>' +
+      esc(o.passengers != null ? o.passengers : "—") + " passengers · " + esc(o.luggage != null ? o.luggage : "—") + " bags" +
+      copyBtnHtml(o.passengers != null ? (o.passengers + " passengers · " + (o.luggage != null ? o.luggage : 0) + " bags") : "") +
+      "</div>" +
+      '<div class="icon-row">' +
+      '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2" y="5" width="16" height="10" rx="2"/><circle cx="10" cy="10" r="2.1" fill="currentColor" stroke="none"/></svg></div>' +
+      (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") +
+      "</div>" +
+      (o.notes ? '<div class="row-meta" style="margin-top:10px;">Instructions: ' + esc(o.notes) + "</div>" : "") +
+      ((o.meetGreet || o.signText)
+        ? '<div class="meetgreet-box">' +
+          (o.meetGreet ? '<div class="route-line"><span class="mg-instruction">' + esc(o.meetGreet) + "</span>" + copyBtnHtml(o.meetGreet) + "</div>" : "") +
+          (o.signText ? '<div class="route-line" style="margin-top:' + (o.meetGreet ? "3" : "0") + 'px;"><span class="mg-sign">' + esc(o.signText) + "</span>" + copyBtnHtml(o.signText) + "</div>" : "") +
+          "</div>"
+        : "") +
+      "</div>";
 
-    var thirdCol = assignBlockHtml(o) + stageProgressHtml(o);
+    var assignBlock = assignBlockHtml(o);
+    var stageBlock = stageProgressHtml(o);
+    var bottomRow = (assignBlock || stageBlock)
+      ? '<div class="od-grid">' + (assignBlock || "<div></div>") + (stageBlock || "<div></div>") + "</div>"
+      : "";
     var actionBar = actionBarHtml(o);
 
-    var body = '<div class="od-grid">' +
-      tripCard + passengerCard +
-      (thirdCol ? '<div style="display:flex;flex-direction:column;">' + thirdCol + "</div>" : "<div></div>") +
-      "</div>" +
+    var body = '<div class="od-grid">' + tripCard + passengerCard + "</div>" +
+      bottomRow +
       (actionBar
         ? '<div class="od-actionbar"><div style="display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap;">' + actionBar + "</div>" +
           '<p class="status" id="omStageStatus" style="margin:0;"></p></div>'
@@ -462,6 +513,8 @@
   }
   $("orderDetailBack").addEventListener("click", closeOrderDetail);
   $("orderDetailView").addEventListener("click", async function (e) {
+    var copyBtn = e.target.closest("[data-copy]");
+    if (copyBtn) { e.stopPropagation(); handleCopyClick(copyBtn); return; }
     var acc = e.target.closest("[data-accept]");
     var dec = e.target.closest("[data-decline]");
     if (!acc && !dec) return;

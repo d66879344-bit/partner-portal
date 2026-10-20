@@ -8,7 +8,7 @@ export async function onRequestGet(context) {
   const { results } = await env.DB.prepare(
     `SELECT o.id, o.order_number, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.flight_time,
             o.buffer_minutes, o.order_date, o.order_time,
-            o.vehicle_type, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet,
+            o.vehicle_type, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet, o.sign_text,
             o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
             o.price, o.currency, o.notes, o.status, o.trip_stage, o.no_show_type, o.no_show_at, o.no_show_review_status,
             o.created_at, o.responded_at
@@ -38,6 +38,7 @@ export async function onRequestGet(context) {
     passengerName: o.passenger_name,
     passengerPhone: o.passenger_phone,
     meetGreet: o.meet_greet,
+    signText: o.sign_text,
     driverId: o.driver_id,
     driverName: o.driver_name,
     vehicleId: o.vehicle_id,
@@ -79,6 +80,7 @@ export async function onRequestPost(context) {
     const passengerName = (body.passengerName || "").toString().trim().slice(0, 120);
     const passengerPhone = (body.passengerPhone || "").toString().trim().slice(0, 40);
     const meetGreet = (body.meetGreet || "").toString().trim().slice(0, 500);
+    const signText = (body.signText || "").toString().trim().slice(0, 200);
     const price = (body.price || "").toString().trim().slice(0, 30);
     const currency = (body.currency || "EUR").toString().trim().slice(0, 10) || "EUR";
     const notes = (body.notes || "").toString().trim().slice(0, 1000);
@@ -106,13 +108,13 @@ export async function onRequestPost(context) {
     const r = await env.DB.prepare(
       `INSERT INTO orders (order_number, partner_id, pickup, dropoff, flight_number, flight_time, buffer_minutes,
                             order_date, order_time, vehicle_type,
-                            passengers, luggage, passenger_name, passenger_phone, meet_greet, driver_id, vehicle_id,
+                            passengers, luggage, passenger_name, passenger_phone, meet_greet, sign_text, driver_id, vehicle_id,
                             price, currency, notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
     ).bind(
       orderNumber, partnerId, pickup, dropoff, flightNumber, flightTime, bufferMinutes,
       orderDate, orderTime, vehicleType,
-      passengers, luggage, passengerName, passengerPhone, meetGreet, driverId, vehicleId,
+      passengers, luggage, passengerName, passengerPhone, meetGreet, signText, driverId, vehicleId,
       price, currency, notes
     ).run();
 

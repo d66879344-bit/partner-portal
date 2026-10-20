@@ -297,11 +297,11 @@
           passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
           passengerName: $("opPassengerName").value.trim(), passengerPhone: $("opPassengerPhone").value.trim(),
           price: $("opPrice").value.trim(), currency: $("opCurrency").value || "EUR",
-          meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim()
+          meetGreet: $("opMeetGreet").value.trim(), signText: $("opSignText").value.trim(), notes: $("opNotes").value.trim()
         })
       });
       ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
-        "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
+        "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opSignText", "opNotes"].forEach(function (id) { $(id).value = ""; });
       $("opCurrency").value = "EUR";
       $("createOrderStatus").textContent = "Order created and assigned.";
       $("createOrderStatus").className = "status ok";
@@ -482,23 +482,73 @@
         '<div class="field" style="min-width:140px;flex:1 1 140px;margin-bottom:0;"><label>Currency</label><select data-reassign-field="currency">' +
         ["EUR", "USD", "GBP"].map(function (c) { return '<option value="' + c + '"' + (c === o.currency ? " selected" : "") + '>' + c + "</option>"; }).join("") +
         "</select></div>" +
+        '<div class="field" style="min-width:200px;flex:2 1 200px;margin-bottom:0;"><label>Sign text</label><input type="text" data-reassign-field="signText" value="' + esc(o.signText || "") + '"></div>' +
         '<div style="flex:1 1 100%;display:flex;align-items:center;gap:10px;">' +
         '<button type="button" class="minibtn good" data-order-reassign="' + o.id + '">Reassign &amp; offer to new partner</button>' +
         '<span class="status" id="reassignStatus-' + o.id + '" style="margin:0;"></span>' +
         "</div></div></details>";
     }
 
+    var dateLine = esc(fmtDay(o.orderDate)) + (o.orderTime ? " · pickup " + esc(o.orderTime) : "") + (o.bufferMinutes != null ? " · buffer " + esc(o.bufferMinutes) + " min" : "");
+
+    var routeBlock =
+      '<div style="display:flex;gap:10px;">' +
+      '<div class="route-track" style="padding-top:3px;">' +
+      '<div class="route-dot"></div>' +
+      '<div class="route-dotted" style="min-height:40px;"></div>' +
+      '<div class="route-dot end"></div>' +
+      "</div>" +
+      '<div style="flex:1;min-width:0;padding-bottom:4px;">' +
+      '<div style="font-weight:700;font-size:14px;">' + esc(o.pickup) + "</div>" +
+      (o.flightNumber
+        ? '<div style="margin:7px 0;"><span class="badge" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);">Flight ' + esc(o.flightNumber) + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + "</span></div>"
+        : "") +
+      '<div style="font-weight:700;font-size:14px;margin-top:' + (o.flightNumber ? "20" : "7") + 'px;">' + esc(o.dropoff) + "</div>" +
+      "</div></div>" +
+      '<div class="row-meta" style="margin-top:6px;">' + dateLine + "</div>";
+
+    var iconRows =
+      '<div class="icon-row" style="margin-top:10px;">' +
+      '<div class="icon-dot"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>' +
+      esc(o.driverName || "Not assigned") + '<span style="margin-left:auto;color:var(--ink-2);">Driver</span>' +
+      "</div>" +
+      '<div class="icon-row">' +
+      '<div class="icon-dot"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 10h11l3 4v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-7Z"/><path d="M6.5 13.5h7"/></svg></div>' +
+      esc([o.vehicleType, o.vehiclePlate].filter(Boolean).join(" · ") || "Not assigned") + '<span style="margin-left:auto;color:var(--ink-2);">Vehicle</span>' +
+      "</div>" +
+      '<div class="icon-row">' +
+      '<div class="icon-dot"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>' +
+      esc(o.passengerName || "—") + (o.passengerPhone ? " · " + esc(o.passengerPhone) : "") + '<span style="margin-left:auto;color:var(--ink-2);">Passenger</span>' +
+      "</div>" +
+      '<div class="icon-row">' +
+      '<div class="icon-dot"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2 3 6v5c0 4 3 6.5 7 7 4-.5 7-3 7-7V6l-7-4Z"/></svg></div>' +
+      esc(o.passengers != null ? o.passengers : "—") + " passengers · " + esc(o.luggage != null ? o.luggage : "—") + " bags" +
+      "</div>" +
+      '<div class="icon-row">' +
+      '<div class="icon-dot"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2" y="5" width="16" height="10" rx="2"/><circle cx="10" cy="10" r="2.1" fill="currentColor" stroke="none"/></svg></div>' +
+      (o.price ? esc(o.price) + " " + esc(o.currency) : "—") +
+      "</div>" +
+      (o.status === "accepted" || o.status === "completed"
+        ? '<div class="row-meta" style="margin-top:8px;">Trip stage: ' + esc(o.tripStage ? STAGE_LABELS[o.tripStage] : "Accepted, not started yet") + "</div>"
+        : "");
+
+    var meetGreetBlock = (o.meetGreet || o.signText)
+      ? '<div class="meetgreet-box">' +
+        '<div style="display:flex;align-items:flex-start;gap:8px;">' +
+        '<svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor" style="margin-top:2px;flex:none;color:var(--warn-ink);" aria-hidden="true"><path d="M3 5h14v2H3zM3 9h14v2H3zM3 13h9v2H3z"/></svg>' +
+        "<div>" +
+        (o.meetGreet ? '<div class="mg-instruction">' + esc(o.meetGreet) + "</div>" : "") +
+        (o.signText ? '<div class="mg-sign" style="margin-top:3px;">' + esc(o.signText) + "</div>" : "") +
+        "</div></div></div>"
+      : "";
+
     el.innerHTML =
       '<div class="block" style="margin-top:0;padding-top:0;border-top:0;">' +
-      '<div class="row-meta">Flight: ' + esc(o.flightNumber || "—") + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + (o.bufferMinutes != null ? " · buffer " + esc(o.bufferMinutes) + " min" : "") + " · pickup " + esc(o.orderTime || "—") + "</div>" +
-      '<div class="row-meta">Passengers: ' + esc(o.passengers != null ? o.passengers : "—") + " · Luggage: " + esc(o.luggage != null ? o.luggage : "—") + "</div>" +
-      '<div class="row-meta">Passenger: ' + esc(o.passengerName || "—") + (o.passengerPhone ? " · " + esc(o.passengerPhone) : "") + "</div>" +
-      (o.status === "accepted" || o.status === "completed"
-        ? '<div class="row-meta">Trip stage: ' + esc(o.tripStage ? STAGE_LABELS[o.tripStage] : "Accepted, not started yet") + "</div>"
-        : "") +
-      (o.meetGreet ? '<div class="row-meta">Meet &amp; greet: ' + esc(o.meetGreet) + "</div>" : "") +
-      (o.notes ? '<div class="row-meta">Instructions: ' + esc(o.notes) + "</div>" : "") +
-      '<div class="row-meta">Created ' + esc(fmtDate(o.createdAt)) + (o.respondedAt ? " · responded " + esc(fmtDate(o.respondedAt)) : "") + "</div>" +
+      routeBlock +
+      iconRows +
+      meetGreetBlock +
+      (o.notes ? '<div class="row-meta" style="margin-top:10px;">Instructions: ' + esc(o.notes) + "</div>" : "") +
+      '<div class="row-meta" style="margin-top:10px;">Created ' + esc(fmtDate(o.createdAt)) + (o.respondedAt ? " · responded " + esc(fmtDate(o.respondedAt)) : "") + "</div>" +
       "</div>" +
       evidenceBlock +
       '<div class="block" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' + actions +
@@ -580,7 +630,8 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: reId, partnerId: Number(fields.partnerId), pickup: fields.pickup, dropoff: fields.dropoff,
-            orderDate: fields.orderDate, orderTime: fields.orderTime, price: fields.price, currency: fields.currency
+            orderDate: fields.orderDate, orderTime: fields.orderTime, price: fields.price, currency: fields.currency,
+            signText: fields.signText
           })
         });
         openOrderId = null;

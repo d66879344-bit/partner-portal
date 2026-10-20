@@ -31,6 +31,7 @@ export async function onRequestPost(context) {
     const orderTime = (body.orderTime || "").toString().trim().slice(0, 10);
     const price = (body.price || "").toString().trim().slice(0, 30);
     const currency = (body.currency || "").toString().trim().slice(0, 10);
+    const signText = body.signText !== undefined ? (body.signText || "").toString().trim().slice(0, 200) : null;
 
     const sets = ["partner_id = ?", "status = 'offered'", "trip_stage = NULL", "responded_at = NULL", "driver_id = NULL", "vehicle_id = NULL"];
     const vals = [partnerId];
@@ -40,6 +41,7 @@ export async function onRequestPost(context) {
     if (orderTime) { sets.push("order_time = ?"); vals.push(orderTime); }
     if (price) { sets.push("price = ?"); vals.push(price); }
     if (currency) { sets.push("currency = ?"); vals.push(currency); }
+    if (signText !== null) { sets.push("sign_text = ?"); vals.push(signText); }
     vals.push(id);
 
     await env.DB.prepare(`UPDATE orders SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
