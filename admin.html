@@ -182,13 +182,19 @@
           <option value="ending">Ending soon</option>
           <option value="ended">Ended</option>
         </select>
+        <select id="fOrganization">
+          <option value="">All organizations</option>
+          <option value="ShuttleDirect">ShuttleDirect</option>
+          <option value="Mozio">Mozio</option>
+          <option value="__none__">Unassigned</option>
+        </select>
       </div>
       <p class="status" id="partnersStatus"></p>
 
       <div class="card table-card">
         <table class="data-table">
           <thead>
-            <tr><th>Company</th><th>Email</th><th>Country</th><th>Registered</th><th>Status</th><th>Trial</th><th></th></tr>
+            <tr><th>Company</th><th>Email</th><th>Country</th><th>Registered</th><th>Status</th><th>Trial</th><th>Organization</th><th></th></tr>
           </thead>
           <tbody id="partnersList"></tbody>
         </table>

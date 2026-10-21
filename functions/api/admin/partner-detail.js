@@ -21,10 +21,20 @@ export async function onRequestGet(context) {
   const id = Number(url.searchParams.get("id"));
   if (!id) return Response.json({ error: "invalid_id" }, { status: 400 });
 
-  const partner = await env.DB.prepare(
-    `SELECT id, email, company_name, contact_name, phone, account_id, covered_airports, service_city, country, country_name, status, admin_note, created_at, activated_at
-     FROM partners WHERE id = ?`
-  ).bind(id).first();
+  // `organization` is a newer column (see migration-partner-organization.sql) — fall back to the
+  // query without it if it hasn't been migrated on this database yet.
+  let partner;
+  try {
+    partner = await env.DB.prepare(
+      `SELECT id, email, company_name, contact_name, phone, account_id, covered_airports, service_city, country, country_name, status, admin_note, created_at, activated_at, organization
+       FROM partners WHERE id = ?`
+    ).bind(id).first();
+  } catch (e) {
+    partner = await env.DB.prepare(
+      `SELECT id, email, company_name, contact_name, phone, account_id, covered_airports, service_city, country, country_name, status, admin_note, created_at, activated_at
+       FROM partners WHERE id = ?`
+    ).bind(id).first();
+  }
   if (!partner) return Response.json({ error: "not_found" }, { status: 404 });
 
   let airports = [];
@@ -66,6 +76,7 @@ export async function onRequestGet(context) {
       adminNote: partner.admin_note,
       createdAt: partner.created_at,
       activatedAt: partner.activated_at,
+      organization: partner.organization || null,
     },
     company: { documents: byOwner("company", null) },
     other: { documents: byOwner("other", null) },

@@ -565,6 +565,7 @@
       (o.notes ? '<div class="row-meta" style="margin-top:10px;">Instructions: ' + esc(o.notes) + "</div>" : "") +
       (o.meetGreet
         ? '<div class="meetgreet-box">' +
+          '<div class="field-label" style="margin-bottom:4px;">' + esc(I18N.t("fl_meet_greet")) + "</div>" +
           '<div class="route-line"><span class="mg-instruction">' + esc(o.meetGreet) + "</span>" + copyBtnHtml(o.meetGreet) + "</div>" +
           "</div>"
         : "") +

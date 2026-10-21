@@ -93,12 +93,16 @@
   }
 
   function matchesPartnerFilter(p) {
-    var fs = $("fStatus").value, fc = $("fCountry").value, ft = $("fTrialState").value;
+    var fs = $("fStatus").value, fc = $("fCountry").value, ft = $("fTrialState").value, fo = $("fOrganization").value;
     if (fs && p.status !== fs) return false;
     if (fc && p.country !== fc) return false;
     if (ft) {
       var info = window.TrialInfo ? TrialInfo.compute(p.trialStartedAt) : { state: "not_started" };
       if (info.state !== ft) return false;
+    }
+    if (fo) {
+      if (fo === "__none__") { if (p.organization) return false; }
+      else if (p.organization !== fo) return false;
     }
     return true;
   }
@@ -136,7 +140,7 @@
 
   function renderPartners() {
     var rows = partners.filter(matchesPartnerFilter);
-    if (!rows.length) { $("partnersList").innerHTML = '<tr><td colspan="7" class="empty-cell">No matching partners.</td></tr>'; return; }
+    if (!rows.length) { $("partnersList").innerHTML = '<tr><td colspan="8" class="empty-cell">No matching partners.</td></tr>'; return; }
     $("partnersList").innerHTML = rows.map(function (p) {
       var isOpen = openId === p.id;
       return '<tr class="data-row" data-toggle="' + p.id + '">' +
@@ -146,9 +150,10 @@
         '<td class="mono">' + esc(fmtDate(p.createdAt)) + "</td>" +
         "<td>" + badge(p.status) + "</td>" +
         "<td>" + trialPillHtml(p.trialStartedAt) + "</td>" +
+        "<td>" + (p.organization ? esc(p.organization) : '<span style="color:var(--ink-2);">—</span>') + "</td>" +
         '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
         "</tr>" +
-        '<tr><td colspan="7" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="detail-' + p.id + '"></div></td></tr>';
+        '<tr><td colspan="8" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="detail-' + p.id + '"></div></td></tr>';
     }).join("");
     if (openId != null) renderDetail(openId);
   }
@@ -205,6 +210,15 @@
       '<div class="row-meta">Registered ' + esc(fmtDate(p.createdAt)) + (p.activatedAt ? " · activated " + esc(fmtDate(p.activatedAt)) : "") + "</div>" +
       (p.status === "pending" ? '<div class="row-meta">Account can sign in, but documents are not yet reviewed — it will not receive orders until activated.</div>' : "") +
       (p.adminNote ? '<div class="row-meta">Note: ' + esc(p.adminNote) + "</div>" : "") +
+      '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<label style="font-size:12.5px;color:var(--ink-2);">Organization' +
+      '<select data-organization-select="' + p.id + '" style="margin-left:6px;">' +
+      '<option value="">—</option>' +
+      '<option value="ShuttleDirect"' + (p.organization === "ShuttleDirect" ? " selected" : "") + '>ShuttleDirect</option>' +
+      '<option value="Mozio"' + (p.organization === "Mozio" ? " selected" : "") + '>Mozio</option>' +
+      "</select></label>" +
+      '<button type="button" class="minibtn" data-organization-save="' + p.id + '">Save</button>' +
+      "</div>" +
       '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
       '<button type="button" class="minibtn good" data-partner-approve="' + p.id + '">Activate account</button>' +
       '<button type="button" class="minibtn crit" data-partner-reject="' + p.id + '">Block account</button>' +
@@ -279,6 +293,28 @@
   $("fStatus").addEventListener("change", renderPartners);
   $("fCountry").addEventListener("change", renderPartners);
   $("fTrialState").addEventListener("change", renderPartners);
+  $("fOrganization").addEventListener("change", renderPartners);
+
+  $("partnersList").addEventListener("click", async function (e) {
+    var saveOrg = e.target.closest("[data-organization-save]");
+    if (!saveOrg) return;
+    e.stopPropagation();
+    var pid = Number(saveOrg.getAttribute("data-organization-save"));
+    var sel = document.querySelector('[data-organization-select="' + pid + '"]');
+    var organization = sel ? sel.value : "";
+    try {
+      await api("/api/admin/partner-organization", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: pid, organization: organization })
+      });
+      var p = partners.filter(function (x) { return x.id === pid; })[0];
+      if (p) p.organization = organization || null;
+      if (detailCache[pid]) detailCache[pid].partner.organization = organization || null;
+      renderPartners();
+    } catch (err) {
+      alert("Could not save the organization. Try again.");
+    }
+  });
 
   /* ---------- orders: create form ---------- */
   function populatePartnerSelect() {
@@ -784,6 +820,7 @@
 
     var meetGreetBlock = o.meetGreet
       ? '<div class="meetgreet-box">' +
+        '<div class="mg-sign">Meet &amp; greet sign</div>' +
         '<div style="display:flex;align-items:flex-start;gap:8px;">' +
         '<svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor" style="margin-top:2px;flex:none;color:var(--warn-ink);" aria-hidden="true"><path d="M3 5h14v2H3zM3 9h14v2H3zM3 13h9v2H3z"/></svg>' +
         '<div class="mg-instruction">' + esc(o.meetGreet) + "</div>" +

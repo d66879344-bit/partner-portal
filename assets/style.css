@@ -215,7 +215,7 @@ textarea { resize: vertical; min-height: 64px; }
 .meetgreet-box { margin-top: 12px; background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: 10px; padding: 11px 13px; }
 .meetgreet-box .route-line + .route-line { margin-top: 3px; }
 .meetgreet-box .mg-instruction { font-size: 12px; color: var(--warn-ink); }
-.meetgreet-box .mg-sign { font-size: 13px; font-weight: 700; }
+.meetgreet-box .mg-sign { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
 .copy-btn { border: 0; background: transparent; padding: 4px; margin-left: auto; cursor: pointer; color: var(--line-strong); border-radius: 6px; display: flex; flex: none; transition: background .12s ease, color .12s ease; }
 .copy-btn:hover { background: var(--surface-2); color: var(--ink-2); }
 .copy-btn.copied { color: var(--good); }

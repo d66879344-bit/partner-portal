@@ -76,7 +76,7 @@
       empty_new: "No new orders right now.", empty_accepted: "Nothing in progress right now.", empty_completed: "No completed orders yet.",
 
       od_trip: "Trip", od_passenger_price: "Passenger & price", od_vehicle_driver: "Vehicle & driver", od_trip_progress: "Trip progress",
-      fl_date: "Date", fl_pickup_time: "Pickup time", fl_buffer_time: "Waiting time", fl_vehicle_type: "Vehicle type",
+      fl_date: "Date", fl_pickup_time: "Pickup time", fl_buffer_time: "Waiting time", fl_vehicle_type: "Vehicle type", fl_meet_greet: "Meet & greet sign",
       btn_accept: "Accept", btn_decline: "Decline", btn_save: "Save", btn_more: "More", btn_back_to_orders: "Back to orders",
       no_show_pending: "Reported as a customer no-show — pending review.",
       report_no_show_btn: "Report customer no-show",
@@ -153,7 +153,7 @@
       empty_new: "Пока нет новых заказов.", empty_accepted: "Сейчас ничего не в работе.", empty_completed: "Завершённых заказов пока нет.",
 
       od_trip: "Поездка", od_passenger_price: "Пассажир и цена", od_vehicle_driver: "Авто и водитель", od_trip_progress: "Статус поездки",
-      fl_date: "Дата", fl_pickup_time: "Время подачи", fl_buffer_time: "Время ожидания", fl_vehicle_type: "Тип авто",
+      fl_date: "Дата", fl_pickup_time: "Время подачи", fl_buffer_time: "Время ожидания", fl_vehicle_type: "Тип авто", fl_meet_greet: "Табличка для встречи",
       btn_accept: "Принять", btn_decline: "Отклонить", btn_save: "Сохранить", btn_more: "Ещё", btn_back_to_orders: "Назад к заказам",
       no_show_pending: "Заявлено как неявка пассажира — ожидает проверки.",
       report_no_show_btn: "Сообщить о неявке пассажира",
@@ -230,7 +230,7 @@
       empty_new: "No hay pedidos nuevos ahora mismo.", empty_accepted: "Nada en curso ahora mismo.", empty_completed: "Aún no hay pedidos completados.",
 
       od_trip: "Viaje", od_passenger_price: "Pasajero y precio", od_vehicle_driver: "Vehículo y conductor", od_trip_progress: "Progreso del viaje",
-      fl_date: "Fecha", fl_pickup_time: "Hora de recogida", fl_buffer_time: "Tiempo de espera", fl_vehicle_type: "Tipo de vehículo",
+      fl_date: "Fecha", fl_pickup_time: "Hora de recogida", fl_buffer_time: "Tiempo de espera", fl_vehicle_type: "Tipo de vehículo", fl_meet_greet: "Cartel de bienvenida",
       btn_accept: "Aceptar", btn_decline: "Rechazar", btn_save: "Guardar", btn_more: "Más", btn_back_to_orders: "Volver a pedidos",
       no_show_pending: "Reportado como no presentación del pasajero — pendiente de revisión.",
       report_no_show_btn: "Reportar no presentación del pasajero",
@@ -307,7 +307,7 @@
       empty_new: "Καμία νέα παραγγελία αυτή τη στιγμή.", empty_accepted: "Τίποτα σε εξέλιξη αυτή τη στιγμή.", empty_completed: "Καμία ολοκληρωμένη παραγγελία ακόμα.",
 
       od_trip: "Διαδρομή", od_passenger_price: "Επιβάτης & τιμή", od_vehicle_driver: "Όχημα & οδηγός", od_trip_progress: "Πρόοδος διαδρομής",
-      fl_date: "Ημερομηνία", fl_pickup_time: "Ώρα παραλαβής", fl_buffer_time: "Χρόνος αναμονής", fl_vehicle_type: "Τύπος οχήματος",
+      fl_date: "Ημερομηνία", fl_pickup_time: "Ώρα παραλαβής", fl_buffer_time: "Χρόνος αναμονής", fl_vehicle_type: "Τύπος οχήματος", fl_meet_greet: "Πινακίδα υποδοχής",
       btn_accept: "Αποδοχή", btn_decline: "Απόρριψη", btn_save: "Αποθήκευση", btn_more: "Περισσότερα", btn_back_to_orders: "Πίσω στις παραγγελίες",
       no_show_pending: "Αναφέρθηκε ως μη εμφάνιση επιβάτη — σε αναμονή ελέγχου.",
       report_no_show_btn: "Αναφορά μη εμφάνισης επιβάτη",
@@ -384,7 +384,7 @@
       empty_new: "Aucune nouvelle commande pour le moment.", empty_accepted: "Rien en cours pour le moment.", empty_completed: "Aucune commande terminée pour le moment.",
 
       od_trip: "Trajet", od_passenger_price: "Passager & prix", od_vehicle_driver: "Véhicule & chauffeur", od_trip_progress: "Progression du trajet",
-      fl_date: "Date", fl_pickup_time: "Heure de prise en charge", fl_buffer_time: "Temps d'attente", fl_vehicle_type: "Type de véhicule",
+      fl_date: "Date", fl_pickup_time: "Heure de prise en charge", fl_buffer_time: "Temps d'attente", fl_vehicle_type: "Type de véhicule", fl_meet_greet: "Pancarte d'accueil",
       btn_accept: "Accepter", btn_decline: "Refuser", btn_save: "Enregistrer", btn_more: "Plus", btn_back_to_orders: "Retour aux commandes",
       no_show_pending: "Signalé comme no-show du passager — en attente de vérification.",
       report_no_show_btn: "Signaler un no-show du passager",
@@ -461,7 +461,7 @@
       empty_new: "Sem pedidos novos neste momento.", empty_accepted: "Nada em curso neste momento.", empty_completed: "Ainda não há pedidos concluídos.",
 
       od_trip: "Viagem", od_passenger_price: "Passageiro e preço", od_vehicle_driver: "Veículo e motorista", od_trip_progress: "Progresso da viagem",
-      fl_date: "Data", fl_pickup_time: "Hora de recolha", fl_buffer_time: "Tempo de espera", fl_vehicle_type: "Tipo de veículo",
+      fl_date: "Data", fl_pickup_time: "Hora de recolha", fl_buffer_time: "Tempo de espera", fl_vehicle_type: "Tipo de veículo", fl_meet_greet: "Placa de boas-vindas",
       btn_accept: "Aceitar", btn_decline: "Recusar", btn_save: "Guardar", btn_more: "Mais", btn_back_to_orders: "Voltar aos pedidos",
       no_show_pending: "Reportado como não comparência do passageiro — a aguardar revisão.",
       report_no_show_btn: "Reportar não comparência do passageiro",
