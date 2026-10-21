@@ -118,7 +118,10 @@
     try {
       if (!window.TrialInfo || !$("trialCard") || !$("trialChip")) return;
       var info = TrialInfo.compute(startedAt);
-      if (info.state === "not_started") {
+      // Once the trial has ended, the partner stops seeing this altogether —
+      // no "Ended" state lingering on their own dashboard. The admin side
+      // still shows it (so the admin can track who's past their trial).
+      if (info.state === "not_started" || info.state === "ended") {
         $("trialCard").hidden = true;
         $("trialChip").hidden = true;
         return;
@@ -126,17 +129,17 @@
       $("trialCard").hidden = false;
       $("trialDayLabel").textContent = "Day " + info.dayNumber + " / " + TrialInfo.TRIAL_DAYS;
       $("trialBadge").innerHTML = '<span class="badge badge-' + info.state + '">' +
-        (info.state === "ended" ? "Ended" : info.daysLeft + " day" + (info.daysLeft === 1 ? "" : "s") + " left") + "</span>";
+        info.daysLeft + " day" + (info.daysLeft === 1 ? "" : "s") + " left</span>";
       var pct = Math.max(0, Math.min(100, Math.round((info.dayNumber / TrialInfo.TRIAL_DAYS) * 100)));
       var fill = $("trialBarFill");
       fill.style.width = pct + "%";
-      fill.className = "trial-bar-fill" + (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "");
+      fill.className = "trial-bar-fill" + (info.state === "ending" ? " ending" : "");
       $("trialStartDate").textContent = fmtShortDate(info.start);
       $("trialEndDate").textContent = fmtShortDate(info.end);
 
       $("trialChip").hidden = false;
-      $("trialChip").className = "trial-chip" + (info.state === "ending" ? " ending" : info.state === "ended" ? " ended" : "");
-      $("trialChip").textContent = info.state === "ended" ? "Trial ended" : "Trial: " + info.daysLeft + "d left";
+      $("trialChip").className = "trial-chip" + (info.state === "ending" ? " ending" : "");
+      $("trialChip").textContent = "Trial: " + info.daysLeft + "d left";
     } catch (e) { /* never let a trial-display glitch blank the rest of the dashboard */ }
   }
 

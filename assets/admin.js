@@ -680,6 +680,40 @@
       }
     }
 
+    // Edit order: available regardless of status (new, accepted, completed, declined,
+    // cancelled, no-show — anything). Updates the same order in place; never creates a
+    // new one and never touches status, trip stage, or driver/vehicle assignment.
+    var vehicleTypeOpts = (window.VEHICLE_TYPES || []).map(function (t) {
+      return '<option value="' + esc(t) + '"' + (t === o.vehicleType ? " selected" : "") + '>' + esc(t) + "</option>";
+    }).join("");
+    var editBlock =
+      '<details class="block">' +
+      '<summary class="minibtn" style="display:inline-block;">Edit order</summary>' +
+      '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">' +
+      '<div class="field" style="min-width:160px;flex:1 1 160px;margin-bottom:0;"><label>Order number</label><input type="text" data-edit-field="orderNumber" value="' + esc(o.orderNumber || "") + '"></div>' +
+      '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Pickup</label><input type="text" data-edit-field="pickup" value="' + esc(o.pickup) + '"></div>' +
+      '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Dropoff</label><input type="text" data-edit-field="dropoff" value="' + esc(o.dropoff) + '"></div>' +
+      '<div class="field" style="min-width:120px;flex:1 1 120px;margin-bottom:0;"><label>Flight number</label><input type="text" data-edit-field="flightNumber" value="' + esc(o.flightNumber || "") + '"></div>' +
+      '<div class="field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Flight arrival</label><input type="time" data-edit-field="flightTime" value="' + esc(o.flightTime || "") + '"></div>' +
+      '<div class="field" style="min-width:130px;flex:1 1 130px;margin-bottom:0;"><label>Date</label><input type="date" data-edit-field="orderDate" value="' + esc(o.orderDate) + '"></div>' +
+      '<div class="field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Pickup time</label><input type="time" data-edit-field="orderTime" value="' + esc(o.orderTime || "") + '"></div>' +
+      '<div class="field" style="min-width:120px;flex:1 1 120px;margin-bottom:0;"><label>Waiting time <span class="hint">min</span></label><input type="text" inputmode="numeric" data-edit-field="bufferMinutes" value="' + esc(o.bufferMinutes != null ? o.bufferMinutes : "") + '"></div>' +
+      '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Vehicle type</label><select data-edit-field="vehicleType">' + vehicleTypeOpts + "</select></div>" +
+      '<div class="field" style="min-width:100px;flex:1 1 100px;margin-bottom:0;"><label>Passengers</label><input type="text" inputmode="numeric" data-edit-field="passengers" value="' + esc(o.passengers != null ? o.passengers : "") + '"></div>' +
+      '<div class="field" style="min-width:100px;flex:1 1 100px;margin-bottom:0;"><label>Luggage</label><input type="text" inputmode="numeric" data-edit-field="luggage" value="' + esc(o.luggage != null ? o.luggage : "") + '"></div>' +
+      '<div class="field" style="min-width:160px;flex:1 1 160px;margin-bottom:0;"><label>Passenger name</label><input type="text" data-edit-field="passengerName" value="' + esc(o.passengerName || "") + '"></div>' +
+      '<div class="field" style="min-width:140px;flex:1 1 140px;margin-bottom:0;"><label>Passenger phone</label><input type="text" data-edit-field="passengerPhone" value="' + esc(o.passengerPhone || "") + '"></div>' +
+      '<div class="field" style="min-width:100px;flex:1 1 100px;margin-bottom:0;"><label>Price</label><input type="text" inputmode="decimal" data-edit-field="price" value="' + esc(o.price || "") + '"></div>' +
+      '<div class="field" style="min-width:120px;flex:1 1 120px;margin-bottom:0;"><label>Currency</label><select data-edit-field="currency">' +
+      ["EUR", "USD", "GBP"].map(function (c) { return '<option value="' + c + '"' + (c === o.currency ? " selected" : "") + '>' + c + "</option>"; }).join("") +
+      "</select></div>" +
+      '<div class="field" style="min-width:220px;flex:1 1 220px;margin-bottom:0;"><label>Meet &amp; greet</label><input type="text" data-edit-field="meetGreet" value="' + esc(o.meetGreet || "") + '"></div>' +
+      '<div class="field" style="min-width:220px;flex:1 1 220px;margin-bottom:0;"><label>Additional instructions</label><input type="text" data-edit-field="notes" value="' + esc(o.notes || "") + '"></div>' +
+      '<div style="flex:1 1 100%;display:flex;align-items:center;gap:10px;">' +
+      '<button type="button" class="minibtn good" data-order-edit-save="' + o.id + '">Save changes</button>' +
+      '<span class="status" id="editStatus-' + o.id + '" style="margin:0;"></span>' +
+      "</div></div></details>";
+
     var reassignBlock = "";
     if (CLOSED_STATUSES.indexOf(o.status) !== -1) {
       var activePartners = partners.filter(function (p) { return p.status === "active"; });
@@ -769,6 +803,7 @@
       '<button type="button" class="minibtn ghost-crit" data-order-hide="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
       '<button type="button" class="linkbtn-crit" data-order-delete="' + o.id + '" title="Permanently deletes this order from the database. Use only for cleaning up test data.">Delete permanently</button>' +
       "</div>" +
+      editBlock +
       reassignBlock;
   }
 
@@ -779,10 +814,11 @@
     var hide = e.target.closest("[data-order-hide]");
     var del = e.target.closest("[data-order-delete]");
     var reassign = e.target.closest("[data-order-reassign]");
+    var editSave = e.target.closest("[data-order-edit-save]");
     var noshowConfirm = e.target.closest("[data-noshow-confirm]");
     var noshowReject = e.target.closest("[data-noshow-reject]");
 
-    if (toggle && !complete && !cancel && !hide && !del && !reassign && !noshowConfirm && !noshowReject) {
+    if (toggle && !complete && !cancel && !hide && !del && !reassign && !editSave && !noshowConfirm && !noshowReject) {
       var id = Number(toggle.getAttribute("data-order-toggle"));
       openOrderId = openOrderId === id ? null : id;
       renderOrders();
@@ -852,6 +888,44 @@
       } catch (err) {
         if (statusEl) { statusEl.textContent = "Could not reassign. Try again."; statusEl.className = "status err"; }
         reassign.disabled = false;
+      }
+      return;
+    }
+    if (editSave) {
+      e.stopPropagation();
+      var editId = Number(editSave.getAttribute("data-order-edit-save"));
+      var editForm = editSave.closest("details");
+      var editStatusEl = $("editStatus-" + editId);
+      var editFields = {};
+      editForm.querySelectorAll("[data-edit-field]").forEach(function (f) { editFields[f.getAttribute("data-edit-field")] = f.value; });
+      if (!editFields.orderNumber || !editFields.pickup || !editFields.dropoff || !editFields.orderDate) {
+        if (editStatusEl) { editStatusEl.textContent = "Order number, pickup, dropoff and date are required."; editStatusEl.className = "status err"; }
+        return;
+      }
+      editSave.disabled = true;
+      if (editStatusEl) { editStatusEl.textContent = "Saving…"; editStatusEl.className = "status"; }
+      try {
+        await api("/api/admin/order-edit", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: editId, orderNumber: editFields.orderNumber, pickup: editFields.pickup, dropoff: editFields.dropoff,
+            flightNumber: editFields.flightNumber, flightTime: editFields.flightTime, bufferMinutes: editFields.bufferMinutes,
+            orderDate: editFields.orderDate, orderTime: editFields.orderTime, vehicleType: editFields.vehicleType,
+            passengers: editFields.passengers, luggage: editFields.luggage,
+            passengerName: editFields.passengerName, passengerPhone: editFields.passengerPhone,
+            price: editFields.price, currency: editFields.currency || "EUR",
+            meetGreet: editFields.meetGreet, notes: editFields.notes
+          })
+        });
+        // The reload below re-renders this same detail panel (it stays open,
+        // since openOrderId is unchanged) with the freshly saved values —
+        // that's the visible confirmation, so there's no separate "Saved"
+        // message that would just be overwritten by it anyway.
+        await loadOrders(true);
+      } catch (err) {
+        var editMsg = (err && err.message === "order_number_taken") ? "This order number is already in use." : "Could not save. Try again.";
+        if (editStatusEl) { editStatusEl.textContent = editMsg; editStatusEl.className = "status err"; }
+        editSave.disabled = false;
       }
       return;
     }
