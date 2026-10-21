@@ -14,7 +14,13 @@
 */
 (function (global) {
   var STORAGE_KEY = "pp_lang";
-  var LANGS = ["en", "ru", "es", "el", "fr", "pt"];
+  // "ru" stays translated in DICT below (so nothing breaks if it's ever
+  // re-enabled) but is deliberately left out of LANGS: that's what drives the
+  // language switcher's options and auto-detection eligibility, so leaving it
+  // out removes it from the selectable list and stops the site from
+  // auto-selecting it for Russian-language browsers (they fall back to
+  // English instead, same as any other unsupported browser language).
+  var LANGS = ["en", "es", "el", "fr", "pt"];
   var LANG_NAMES = { en: "English", ru: "Русский", es: "Español", el: "Ελληνικά", fr: "Français", pt: "Português" };
 
   var DICT = {
