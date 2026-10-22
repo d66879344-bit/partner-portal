@@ -533,6 +533,7 @@
             orderNumber: $("opOrderNumber").value.trim(), partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
             flightNumber: $("opFlight").value.trim(), flightTime: $("opFlightTime").value, bufferMinutes: $("opBuffer").value.trim(),
             orderTime: $("opTime").value, vehicleType: $("opVehicleType").value,
+            vehiclesNeeded: $("opVehiclesNeeded").value.trim() || "1",
             passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
             passengerName: $("opPassengerName").value.trim(), passengerPhone: $("opPassengerPhone").value.trim(),
             price: $("opPrice").value.trim(), currency: $("opCurrency").value || "EUR",
@@ -542,6 +543,7 @@
         ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
           "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
         $("opCurrency").value = "EUR";
+        $("opVehiclesNeeded").value = "1";
         orderNumberManual = false;
         bufferManual = false;
         regenerateOrderNumberForSelectedPartner();
@@ -735,6 +737,7 @@
       '<div class="field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Pickup time</label><input type="time" data-edit-field="orderTime" value="' + esc(o.orderTime || "") + '"></div>' +
       '<div class="field" style="min-width:120px;flex:1 1 120px;margin-bottom:0;"><label>Waiting time <span class="hint">min</span></label><input type="text" inputmode="numeric" data-edit-field="bufferMinutes" value="' + esc(o.bufferMinutes != null ? o.bufferMinutes : "") + '"></div>' +
       '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Vehicle type</label><select data-edit-field="vehicleType">' + vehicleTypeOpts + "</select></div>" +
+      '<div class="field" style="min-width:90px;flex:1 1 90px;margin-bottom:0;"><label>Vehicles needed</label><input type="number" min="1" max="20" data-edit-field="vehiclesNeeded" value="' + esc(o.vehiclesNeeded != null ? o.vehiclesNeeded : 1) + '"></div>' +
       '<div class="field" style="min-width:100px;flex:1 1 100px;margin-bottom:0;"><label>Passengers</label><input type="text" inputmode="numeric" data-edit-field="passengers" value="' + esc(o.passengers != null ? o.passengers : "") + '"></div>' +
       '<div class="field" style="min-width:100px;flex:1 1 100px;margin-bottom:0;"><label>Luggage</label><input type="text" inputmode="numeric" data-edit-field="luggage" value="' + esc(o.luggage != null ? o.luggage : "") + '"></div>' +
       '<div class="field" style="min-width:160px;flex:1 1 160px;margin-bottom:0;"><label>Passenger name</label><input type="text" data-edit-field="passengerName" value="' + esc(o.passengerName || "") + '"></div>' +
@@ -948,6 +951,7 @@
             id: editId, orderNumber: editFields.orderNumber, pickup: editFields.pickup, dropoff: editFields.dropoff,
             flightNumber: editFields.flightNumber, flightTime: editFields.flightTime, bufferMinutes: editFields.bufferMinutes,
             orderDate: editFields.orderDate, orderTime: editFields.orderTime, vehicleType: editFields.vehicleType,
+            vehiclesNeeded: editFields.vehiclesNeeded || "1",
             passengers: editFields.passengers, luggage: editFields.luggage,
             passengerName: editFields.passengerName, passengerPhone: editFields.passengerPhone,
             price: editFields.price, currency: editFields.currency || "EUR",

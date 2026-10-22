@@ -34,6 +34,9 @@ export async function onRequestPost(context) {
     const bufferMinutes = body.bufferMinutes ? Number(body.bufferMinutes) : null;
     const orderTime = (body.orderTime || "").toString().trim().slice(0, 10);
     const vehicleType = (body.vehicleType || "").toString().trim().slice(0, 80);
+    let vehiclesNeeded = body.vehiclesNeeded ? Number(body.vehiclesNeeded) : 1;
+    if (!Number.isFinite(vehiclesNeeded) || vehiclesNeeded < 1) vehiclesNeeded = 1;
+    vehiclesNeeded = Math.min(Math.round(vehiclesNeeded), 20);
     const passengers = body.passengers ? Number(body.passengers) : null;
     const luggage = body.luggage ? Number(body.luggage) : null;
     const passengerName = (body.passengerName || "").toString().trim().slice(0, 120);
@@ -46,12 +49,12 @@ export async function onRequestPost(context) {
     await env.DB.prepare(
       `UPDATE orders SET
          order_number = ?, pickup = ?, dropoff = ?, flight_number = ?, flight_time = ?, buffer_minutes = ?,
-         order_date = ?, order_time = ?, vehicle_type = ?, passengers = ?, luggage = ?,
+         order_date = ?, order_time = ?, vehicle_type = ?, vehicles_needed = ?, passengers = ?, luggage = ?,
          passenger_name = ?, passenger_phone = ?, meet_greet = ?, price = ?, currency = ?, notes = ?
        WHERE id = ?`
     ).bind(
       orderNumber, pickup, dropoff, flightNumber, flightTime, bufferMinutes,
-      orderDate, orderTime, vehicleType, passengers, luggage,
+      orderDate, orderTime, vehicleType, vehiclesNeeded, passengers, luggage,
       passengerName, passengerPhone, meetGreet, price, currency, notes,
       id
     ).run();

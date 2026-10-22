@@ -80,11 +80,28 @@
     return data;
   }
 
-  /* ---------- tabs ---------- */
+  /* ---------- tabs ----------
+     Switching tabs always resets whatever detail view was left open (an open
+     order, an open vehicle/driver card) back to that tab's main/list screen,
+     and silently re-fetches that tab's data in the background — no visible
+     reload or spinner, and it never overwrites a field the user is actively
+     typing in (see refreshMeSilently). */
+  function resetPanelDetailViews() {
+    closeOrderDetail();
+    closeVehicleForm();
+    closeDriverForm();
+  }
+  function refreshTabDataSilently(tabKey) {
+    if (tabKey === "orders" || tabKey === "finance") loadOrders(true).catch(function () {});
+    if (tabKey === "fleet" || tabKey === "company") loadFleet().catch(function () {});
+    if (tabKey === "company" || tabKey === "account") refreshMeSilently().catch(function () {});
+  }
   $("mainTabs").querySelectorAll(".tab").forEach(function (tab) {
     tab.addEventListener("click", function () {
       $("mainTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
       document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === "panel-" + tab.getAttribute("data-tab")); });
+      resetPanelDetailViews();
+      refreshTabDataSilently(tab.getAttribute("data-tab"));
     });
   });
 
@@ -143,6 +160,113 @@
     } catch (e) { /* never let a trial-display glitch blank the rest of the dashboard */ }
   }
 
+  /* ---------- ride pool ----------
+     Visual mock only, for now: locally generated "available" ride requests
+     shaped from the partner's own service city/country and covered airports,
+     with a live-looking, periodically changing count. Nothing here is a real
+     order or comes from the server — the cards are intentionally
+     non-interactive, and the pool stays locked behind the trial-period
+     notice until the real matching/booking logic is built. */
+  var RP_HOTEL_WORDS = ["Grand", "Royal", "Central", "Riviera", "Marina", "Plaza", "Palace", "Garden", "Seaside", "Metropol"];
+  var RP_PLACE_WORDS = ["Hotel", "Resort", "Suites", "Inn", "Residence"];
+  var rpTimer = null;
+  var rpCount = 0;
+
+  function rpRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function rpRandomInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+
+  function rpAirportsForMe() {
+    var all = (window.AIRPORTS_BY_COUNTRY && me && window.AIRPORTS_BY_COUNTRY[me.country]) || [];
+    if (!all.length) return [];
+    var codes = (me && me.airports) || [];
+    if (!codes.length) return all;
+    var picked = all.filter(function (a) { return codes.indexOf(a[0]) !== -1; });
+    return picked.length ? picked : all;
+  }
+
+  function rpLandmarkName(city) {
+    return rpRandom(RP_HOTEL_WORDS) + " " + rpRandom(RP_PLACE_WORDS) + (city ? ", " + city : "");
+  }
+
+  // Minimum number of the partner's own completed orders (with a usable price)
+  // before we start sampling the pool's prices from their real history — below
+  // that, a couple of real values would repeat too obviously, so we fall back
+  // to the fixed default range instead.
+  var RP_MIN_PRICE_HISTORY = 3;
+  var RP_DEFAULT_CURRENCIES = ["EUR", "USD", "GBP"];
+
+  function rpPriceSample() {
+    var pool = lastOrders.filter(function (o) {
+      var p = parseFloat(o.price);
+      return o.status === "completed" && o.price != null && o.price !== "" && !isNaN(p) && p > 0;
+    });
+    if (pool.length < RP_MIN_PRICE_HISTORY) {
+      return { price: rpRandomInt(28, 190), currency: rpRandom(RP_DEFAULT_CURRENCIES) };
+    }
+    var sample = rpRandom(pool);
+    var base = parseFloat(sample.price);
+    var jitter = 0.82 + Math.random() * 0.36; // real price, roughly ±18%
+    var price = Math.max(1, Math.round(base * jitter));
+    return { price: price, currency: sample.currency || "EUR" };
+  }
+
+  function rpGenerateTrip() {
+    var airports = rpAirportsForMe();
+    var city = (me && me.serviceCity) || (airports[0] && airports[0][2]) || "the city";
+    var vehicles = (window.VEHICLE_TYPES && window.VEHICLE_TYPES.length) ? window.VEHICLE_TYPES : ["Economy Sedan"];
+    var airport = airports.length ? rpRandom(airports) : null;
+    var airportLabel = airport ? (airport[1] + " (" + airport[0] + ")") : "the airport";
+    var toAirport = Math.random() < 0.5;
+    var from = toAirport ? rpLandmarkName(city) : airportLabel;
+    var to = toAirport ? airportLabel : rpLandmarkName(city);
+    var d = new Date();
+    d.setDate(d.getDate() + rpRandomInt(0, 6));
+    var priced = rpPriceSample();
+    return {
+      from: from, to: to,
+      date: fmtDay(d), time: pad2(rpRandomInt(5, 22)) + ":" + rpRandom(["00", "15", "30", "45"]),
+      vehicle: rpRandom(vehicles), pax: rpRandomInt(1, 6),
+      price: priced.price, currency: priced.currency,
+    };
+  }
+
+  function rpRowHtml(t) {
+    return '<div class="rp-row">' +
+      '<div class="rp-row-top">' +
+        '<div><span class="rp-pulse-dot"></span><span class="rp-row-route">' + esc(t.from) + " &rarr; " + esc(t.to) + "</span>" +
+        '<div class="rp-row-meta">' + esc(t.date) + " &middot; " + esc(t.time) + " &middot; " + esc(t.vehicle) + " &middot; " + t.pax + " pax</div></div>" +
+        '<div class="rp-row-price">' + t.price + " " + esc(t.currency) + "</div>" +
+      "</div>" +
+    "</div>";
+  }
+
+  function rpRenderList(n) {
+    if (!$("ridePoolList")) return;
+    var rows = [];
+    for (var i = 0; i < n; i++) rows.push(rpGenerateTrip());
+    $("ridePoolList").innerHTML = rows.map(rpRowHtml).join("");
+  }
+
+  function rpSetBadge(n) {
+    var el = $("ridePoolTabBadge");
+    if (!el) return;
+    el.textContent = String(n);
+    el.classList.add("bump");
+    setTimeout(function () { el.classList.remove("bump"); }, 220);
+  }
+
+  function initRidePool() {
+    if (!$("ridePoolList") || rpTimer) return;
+    rpCount = rpRandomInt(7, 20);
+    rpRenderList(rpCount);
+    rpSetBadge(rpCount);
+    rpTimer = setInterval(function () {
+      rpCount = rpRandomInt(7, 20);
+      rpRenderList(rpCount);
+      rpSetBadge(rpCount);
+    }, 300000);
+  }
+
   async function loadMe() {
     var data = await api("/api/partner/me");
     me = data.partner;
@@ -161,6 +285,7 @@
     }
 
     renderTrial(me.trialStartedAt);
+    initRidePool();
 
     $("whoCompany").textContent = me.companyName;
     $("acctId").textContent = me.accountId || "—";
@@ -199,6 +324,37 @@
           if (acctAirportPicker) acctAirportPicker.setCity(city || null);
         },
       });
+    }
+  }
+
+  // Lightweight background refresh used when switching to the Company/Account
+  // tabs: re-reads /api/partner/me and updates the display-only bits (status,
+  // trial chip, pending banner) plus company name/phone, but skips any field
+  // the user is actively typing in right now, and never touches the airport
+  // picker / city combobox (those aren't live-shared data, and rebuilding them
+  // mid-edit would wipe out an in-progress selection).
+  async function refreshMeSilently() {
+    var data = await api("/api/partner/me");
+    var fresh = data.partner;
+    if (!fresh || !me) return;
+
+    me.status = fresh.status;
+    me.trialStartedAt = fresh.trialStartedAt;
+    renderTrial(me.trialStartedAt);
+    $("acctStatus").innerHTML = badge(fresh.status);
+    $("pendingBanner").hidden = fresh.status === "active";
+
+    if (document.activeElement !== $("coCompanyName")) {
+      me.companyName = fresh.companyName;
+      if ($("coCompanyName")) $("coCompanyName").value = fresh.companyName || "";
+      $("whoCompany").textContent = fresh.companyName;
+      $("acctCompany").textContent = fresh.companyName;
+      if ($("whoCompanyFoot")) $("whoCompanyFoot").textContent = fresh.companyName;
+      if ($("whoAvatar")) $("whoAvatar").textContent = (fresh.companyName || "?").trim().charAt(0).toUpperCase() || "?";
+    }
+    if (document.activeElement !== $("acctPhone")) {
+      me.phone = fresh.phone;
+      $("acctPhone").value = fresh.phone || "";
     }
   }
 
@@ -541,6 +697,7 @@
       '<div class="field"><div class="field-label">' + esc(I18N.t("fl_pickup_time")) + '</div><div class="field-val">' + esc(o.orderTime || "—") + "</div></div>" +
       (o.bufferMinutes != null ? '<div class="field"><div class="field-label">' + esc(I18N.t("fl_buffer_time")) + '</div><div class="field-val">' + esc(o.bufferMinutes) + " min</div></div>" : "") +
       '<div class="field"><div class="field-label">' + esc(I18N.t("fl_vehicle_type")) + '</div><div class="field-val">' + esc(o.vehicleType || "—") + copyBtnHtml(o.vehicleType) + "</div></div>" +
+      '<div class="field"><div class="field-label">' + esc(I18N.t("fl_vehicles_needed")) + '</div><div class="field-val">' + esc(o.vehiclesNeeded != null ? o.vehiclesNeeded : 1) + "</div></div>" +
       "</div></div>";
 
     var passengerCard = '<div class="card">' +

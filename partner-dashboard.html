@@ -226,6 +226,43 @@
   .alert-banner strong { display: block; font-size: 14px; }
   .alert-banner p { margin: 2px 0 0; font-size: 13px; color: #7A2318; }
 
+  /* ---------- ride pool nav badge (live "available now" count) ---------- */
+  .dash-nav .tab-badge {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px;
+    border-radius: 999px; background: rgba(242,183,5,.22); color: #F2B705; font-size: 11px; font-weight: 700;
+    font-family: var(--font-mono); margin-left: auto; transition: background .25s, transform .15s;
+  }
+  .dash-nav .tab[aria-pressed="true"] .tab-badge { background: rgba(242,183,5,.32); }
+  .dash-nav .tab-badge.bump { transform: scale(1.18); }
+
+  /* ---------- ride pool: locked live-feed list ---------- */
+  .ridepool-wrap { position: relative; }
+  .ridepool-list { display: flex; flex-direction: column; gap: 10px; filter: saturate(.5) blur(.3px); opacity: .6; user-select: none; }
+  .rp-row { border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; background: var(--surface); cursor: default; }
+  .rp-row-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .rp-row-route { font-weight: 600; }
+  .rp-row-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+  .rp-row-price { font-family: var(--font-mono); font-weight: 600; color: var(--ink-2); }
+  .rp-pulse-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 999px; background: var(--good);
+    margin-right: 7px; animation: rp-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes rp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+  .ridepool-lock {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 10px; padding: 32px; background: rgba(244,246,248,.5); backdrop-filter: blur(2px);
+  }
+  .ridepool-lock-icon {
+    width: 46px; height: 46px; border-radius: 999px; background: var(--ink); color: #fff;
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .ridepool-lock-card {
+    max-width: 380px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(16,24,40,.14); padding: 22px 26px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .ridepool-lock-card h3 { margin: 0; font-size: 15.5px; text-transform: none; }
+  .ridepool-lock-card p { margin: 0; font-size: 13px; color: var(--ink-2); max-width: 36ch; }
+
   @media (max-width: 860px) {
     /* Below this width the sidebar becomes a horizontal top bar, so the page scrolls as a whole again. */
     .dash-shell { height: auto; overflow: visible; }
@@ -255,7 +292,12 @@
     <nav class="dash-nav" id="mainTabs">
       <button type="button" class="tab" data-tab="orders" aria-pressed="true">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
-        <span data-i18n="nav_orders">Orders</span>
+        <span data-i18n="nav_orders">Your Orders</span>
+      </button>
+      <button type="button" class="tab" data-tab="ridepool" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.6 2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span data-i18n="nav_ridepool">Ride Pool</span>
+        <span class="tab-badge" id="ridePoolTabBadge">0</span>
       </button>
       <button type="button" class="tab" data-tab="company" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 2h7l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/></svg>
@@ -504,6 +546,26 @@
           </thead>
           <tbody id="financeList"></tbody>
         </table>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-ridepool">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_ridepool_title">Ride Pool</h1>
+        <p class="sub" data-i18n="dash_ridepool_sub">A live feed of nearby ride requests in your coverage area.</p>
+      </div>
+
+      <div class="ridepool-wrap">
+        <div class="ridepool-list" id="ridePoolList"></div>
+        <div class="ridepool-lock">
+          <div class="ridepool-lock-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4.5" y="9" width="11" height="8" rx="1.6"/><path d="M6.5 9V6.5a3.5 3.5 0 0 1 7 0V9" stroke-linecap="round"/></svg>
+          </div>
+          <div class="ridepool-lock-card">
+            <h3 data-i18n="ridepool_locked_title">Pool access is locked during your trial</h3>
+            <p data-i18n="ridepool_locked_body">The open ride pool unlocks once your 30-day trial period ends. Until then, you'll only receive orders assigned to you directly.</p>
+          </div>
+        </div>
       </div>
     </section>
 

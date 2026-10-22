@@ -25,7 +25,7 @@
 
   var DICT = {
     en: {
-      nav_orders: "Orders", nav_company: "Company", nav_fleet: "Fleet", nav_finance: "Finance", nav_account: "Account",
+      nav_orders: "Your Orders", nav_company: "Company", nav_fleet: "Fleet", nav_finance: "Finance", nav_ridepool: "Ride Pool", nav_account: "Account",
       logout: "Log out",
 
       home_eyebrow: "Partner portal", home_title: "Fleet Partner Portal",
@@ -64,6 +64,11 @@
       dash_fleet_title: "Fleet", dash_fleet_sub: "Manage your vehicles and drivers. Click a card to edit details and documents.",
       dash_finance_title: "Finance", dash_finance_sub: "Your completed trips and earnings. Every completed order (including confirmed no-shows) counts here automatically.",
       fin_export_csv: "Export CSV", fin_print: "Print", fin_th_route: "Route", fin_th_price: "Price",
+
+      dash_ridepool_title: "Ride Pool", dash_ridepool_sub: "A live feed of nearby ride requests in your coverage area.",
+      ridepool_locked_title: "Pool access is locked during your trial",
+      ridepool_locked_body: "The open ride pool unlocks once your 30-day trial period ends. Until then, you'll only receive orders assigned to you directly.",
+      ridepool_available_label: "available now",
       trial_title: "Trial period", trial_sub: "Starts automatically with your first completed order and runs for 30 days.",
       fin_stat_noshows: "No-shows (confirmed)",
       dash_account_title: "Account", dash_account_sub: "Your company's details on file",
@@ -76,7 +81,7 @@
       empty_new: "No new orders right now.", empty_accepted: "Nothing in progress right now.", empty_completed: "No completed orders yet.",
 
       od_trip: "Trip", od_passenger_price: "Passenger & price", od_vehicle_driver: "Vehicle & driver", od_trip_progress: "Trip progress",
-      fl_date: "Date", fl_pickup_time: "Pickup time", fl_buffer_time: "Waiting time", fl_vehicle_type: "Vehicle type", fl_meet_greet: "Meet & greet sign",
+      fl_date: "Date", fl_pickup_time: "Pickup time", fl_buffer_time: "Waiting time", fl_vehicle_type: "Vehicle type", fl_vehicles_needed: "Vehicles needed", fl_meet_greet: "Meet & greet sign",
       btn_accept: "Accept", btn_decline: "Decline", btn_save: "Save", btn_more: "More", btn_back_to_orders: "Back to orders",
       no_show_pending: "Reported as a customer no-show — pending review.",
       report_no_show_btn: "Report customer no-show",
@@ -102,7 +107,7 @@
       company_doc_alert_body: "Upload them below — this notice clears once an admin approves them.",
     },
     ru: {
-      nav_orders: "Заказы", nav_company: "Компания", nav_fleet: "Автопарк", nav_finance: "Финансы", nav_account: "Аккаунт",
+      nav_orders: "Мои заказы", nav_company: "Компания", nav_fleet: "Автопарк", nav_finance: "Финансы", nav_ridepool: "Пул поездок", nav_account: "Аккаунт",
       logout: "Выйти",
 
       home_eyebrow: "Портал партнёров", home_title: "Портал партнёров автопарка",
@@ -141,6 +146,11 @@
       dash_fleet_title: "Автопарк", dash_fleet_sub: "Управляйте автомобилями и водителями. Нажмите на карточку, чтобы изменить данные и документы.",
       dash_finance_title: "Финансы", dash_finance_sub: "Ваши завершённые поездки и заработок. Каждый завершённый заказ (включая подтверждённые no-show) учитывается здесь автоматически.",
       fin_export_csv: "Экспорт CSV", fin_print: "Печать", fin_th_route: "Маршрут", fin_th_price: "Цена",
+
+      dash_ridepool_title: "Пул поездок", dash_ridepool_sub: "Лента заявок на поездки в зоне вашего покрытия.",
+      ridepool_locked_title: "Доступ к пулу заблокирован на время триала",
+      ridepool_locked_body: "Открытый пул поездок станет доступен после окончания 30-дневного триала. А пока вы получаете только заказы, назначенные вам напрямую.",
+      ridepool_available_label: "доступно сейчас",
       trial_title: "Триал-период", trial_sub: "Начинается автоматически с вашего первого завершённого заказа и длится 30 дней.",
       fin_stat_noshows: "Неявки (подтверждённые)",
       dash_account_title: "Аккаунт", dash_account_sub: "Данные вашей компании в системе",
@@ -153,7 +163,7 @@
       empty_new: "Пока нет новых заказов.", empty_accepted: "Сейчас ничего не в работе.", empty_completed: "Завершённых заказов пока нет.",
 
       od_trip: "Поездка", od_passenger_price: "Пассажир и цена", od_vehicle_driver: "Авто и водитель", od_trip_progress: "Статус поездки",
-      fl_date: "Дата", fl_pickup_time: "Время подачи", fl_buffer_time: "Время ожидания", fl_vehicle_type: "Тип авто", fl_meet_greet: "Табличка для встречи",
+      fl_date: "Дата", fl_pickup_time: "Время подачи", fl_buffer_time: "Время ожидания", fl_vehicle_type: "Тип авто", fl_vehicles_needed: "Количество машин", fl_meet_greet: "Табличка для встречи",
       btn_accept: "Принять", btn_decline: "Отклонить", btn_save: "Сохранить", btn_more: "Ещё", btn_back_to_orders: "Назад к заказам",
       no_show_pending: "Заявлено как неявка пассажира — ожидает проверки.",
       report_no_show_btn: "Сообщить о неявке пассажира",
@@ -179,7 +189,7 @@
       company_doc_alert_body: "Загрузите их ниже — уведомление исчезнет, как только админ их подтвердит.",
     },
     es: {
-      nav_orders: "Pedidos", nav_company: "Empresa", nav_fleet: "Flota", nav_finance: "Finanzas", nav_account: "Cuenta",
+      nav_orders: "Mis pedidos", nav_company: "Empresa", nav_fleet: "Flota", nav_finance: "Finanzas", nav_ridepool: "Grupo de viajes", nav_account: "Cuenta",
       logout: "Cerrar sesión",
 
       home_eyebrow: "Portal de socios", home_title: "Portal de socios de flota",
@@ -218,6 +228,11 @@
       dash_fleet_title: "Flota", dash_fleet_sub: "Gestiona tus vehículos y conductores. Haz clic en una tarjeta para editar los detalles y documentos.",
       dash_finance_title: "Finanzas", dash_finance_sub: "Tus viajes completados y ganancias. Cada pedido completado (incluidos los no-shows confirmados) se contabiliza aquí automáticamente.",
       fin_export_csv: "Exportar CSV", fin_print: "Imprimir", fin_th_route: "Ruta", fin_th_price: "Precio",
+
+      dash_ridepool_title: "Grupo de viajes", dash_ridepool_sub: "Un feed en vivo de solicitudes de viaje cercanas en tu zona de cobertura.",
+      ridepool_locked_title: "El acceso al grupo está bloqueado durante tu prueba",
+      ridepool_locked_body: "El grupo abierto de viajes se desbloquea al finalizar tu período de prueba de 30 días. Hasta entonces, solo recibirás los pedidos asignados directamente a ti.",
+      ridepool_available_label: "disponibles ahora",
       trial_title: "Período de prueba", trial_sub: "Comienza automáticamente con tu primer pedido completado y dura 30 días.",
       fin_stat_noshows: "No-shows (confirmados)",
       dash_account_title: "Cuenta", dash_account_sub: "Los datos de tu empresa registrados",
@@ -230,7 +245,7 @@
       empty_new: "No hay pedidos nuevos ahora mismo.", empty_accepted: "Nada en curso ahora mismo.", empty_completed: "Aún no hay pedidos completados.",
 
       od_trip: "Viaje", od_passenger_price: "Pasajero y precio", od_vehicle_driver: "Vehículo y conductor", od_trip_progress: "Progreso del viaje",
-      fl_date: "Fecha", fl_pickup_time: "Hora de recogida", fl_buffer_time: "Tiempo de espera", fl_vehicle_type: "Tipo de vehículo", fl_meet_greet: "Cartel de bienvenida",
+      fl_date: "Fecha", fl_pickup_time: "Hora de recogida", fl_buffer_time: "Tiempo de espera", fl_vehicle_type: "Tipo de vehículo", fl_vehicles_needed: "Vehículos necesarios", fl_meet_greet: "Cartel de bienvenida",
       btn_accept: "Aceptar", btn_decline: "Rechazar", btn_save: "Guardar", btn_more: "Más", btn_back_to_orders: "Volver a pedidos",
       no_show_pending: "Reportado como no presentación del pasajero — pendiente de revisión.",
       report_no_show_btn: "Reportar no presentación del pasajero",
@@ -256,7 +271,7 @@
       company_doc_alert_body: "Súbelos abajo — este aviso desaparecerá cuando un administrador los apruebe.",
     },
     el: {
-      nav_orders: "Παραγγελίες", nav_company: "Εταιρεία", nav_fleet: "Στόλος", nav_finance: "Οικονομικά", nav_account: "Λογαριασμός",
+      nav_orders: "Οι παραγγελίες μου", nav_company: "Εταιρεία", nav_fleet: "Στόλος", nav_finance: "Οικονομικά", nav_ridepool: "Δεξαμενή διαδρομών", nav_account: "Λογαριασμός",
       logout: "Αποσύνδεση",
 
       home_eyebrow: "Πύλη συνεργατών", home_title: "Πύλη συνεργατών στόλου",
@@ -295,6 +310,11 @@
       dash_fleet_title: "Στόλος", dash_fleet_sub: "Διαχειριστείτε τα οχήματα και τους οδηγούς σας. Κάντε κλικ σε μια κάρτα για να επεξεργαστείτε στοιχεία και έγγραφα.",
       dash_finance_title: "Οικονομικά", dash_finance_sub: "Οι ολοκληρωμένες διαδρομές και τα κέρδη σας. Κάθε ολοκληρωμένη παραγγελία (συμπεριλαμβανομένων των επιβεβαιωμένων no-show) προσμετράται εδώ αυτόματα.",
       fin_export_csv: "Εξαγωγή CSV", fin_print: "Εκτύπωση", fin_th_route: "Διαδρομή", fin_th_price: "Τιμή",
+
+      dash_ridepool_title: "Δεξαμενή διαδρομών", dash_ridepool_sub: "Ζωντανή ροή αιτημάτων διαδρομών κοντά στην περιοχή κάλυψής σας.",
+      ridepool_locked_title: "Η πρόσβαση στη δεξαμενή είναι κλειδωμένη κατά τη διάρκεια της δοκιμαστικής περιόδου",
+      ridepool_locked_body: "Η ανοιχτή δεξαμενή διαδρομών ξεκλειδώνει μόλις ολοκληρωθεί η 30ήμερη δοκιμαστική περίοδος. Μέχρι τότε, θα λαμβάνετε μόνο παραγγελίες που σας ανατίθενται απευθείας.",
+      ridepool_available_label: "διαθέσιμες τώρα",
       trial_title: "Δοκιμαστική περίοδος", trial_sub: "Ξεκινά αυτόματα με την πρώτη ολοκληρωμένη παραγγελία σας και διαρκεί 30 ημέρες.",
       fin_stat_noshows: "Μη εμφανίσεις (επιβεβαιωμένες)",
       dash_account_title: "Λογαριασμός", dash_account_sub: "Τα καταχωρημένα στοιχεία της εταιρείας σας",
@@ -307,7 +327,7 @@
       empty_new: "Καμία νέα παραγγελία αυτή τη στιγμή.", empty_accepted: "Τίποτα σε εξέλιξη αυτή τη στιγμή.", empty_completed: "Καμία ολοκληρωμένη παραγγελία ακόμα.",
 
       od_trip: "Διαδρομή", od_passenger_price: "Επιβάτης & τιμή", od_vehicle_driver: "Όχημα & οδηγός", od_trip_progress: "Πρόοδος διαδρομής",
-      fl_date: "Ημερομηνία", fl_pickup_time: "Ώρα παραλαβής", fl_buffer_time: "Χρόνος αναμονής", fl_vehicle_type: "Τύπος οχήματος", fl_meet_greet: "Πινακίδα υποδοχής",
+      fl_date: "Ημερομηνία", fl_pickup_time: "Ώρα παραλαβής", fl_buffer_time: "Χρόνος αναμονής", fl_vehicle_type: "Τύπος οχήματος", fl_vehicles_needed: "Απαιτούμενα οχήματα", fl_meet_greet: "Πινακίδα υποδοχής",
       btn_accept: "Αποδοχή", btn_decline: "Απόρριψη", btn_save: "Αποθήκευση", btn_more: "Περισσότερα", btn_back_to_orders: "Πίσω στις παραγγελίες",
       no_show_pending: "Αναφέρθηκε ως μη εμφάνιση επιβάτη — σε αναμονή ελέγχου.",
       report_no_show_btn: "Αναφορά μη εμφάνισης επιβάτη",
@@ -333,7 +353,7 @@
       company_doc_alert_body: "Ανεβάστε τα παρακάτω — η ειδοποίηση θα εξαφανιστεί μόλις τα εγκρίνει ένας διαχειριστής.",
     },
     fr: {
-      nav_orders: "Commandes", nav_company: "Entreprise", nav_fleet: "Flotte", nav_finance: "Finances", nav_account: "Compte",
+      nav_orders: "Mes commandes", nav_company: "Entreprise", nav_fleet: "Flotte", nav_finance: "Finances", nav_ridepool: "Pool de courses", nav_account: "Compte",
       logout: "Déconnexion",
 
       home_eyebrow: "Portail partenaires", home_title: "Portail partenaires flotte",
@@ -372,6 +392,11 @@
       dash_fleet_title: "Flotte", dash_fleet_sub: "Gérez vos véhicules et chauffeurs. Cliquez sur une carte pour modifier les détails et documents.",
       dash_finance_title: "Finances", dash_finance_sub: "Vos trajets terminés et vos revenus. Chaque commande terminée (y compris les no-shows confirmés) est comptabilisée ici automatiquement.",
       fin_export_csv: "Exporter en CSV", fin_print: "Imprimer", fin_th_route: "Trajet", fin_th_price: "Prix",
+
+      dash_ridepool_title: "Pool de courses", dash_ridepool_sub: "Un flux en direct des demandes de course à proximité de votre zone de couverture.",
+      ridepool_locked_title: "L'accès au pool est verrouillé pendant votre période d'essai",
+      ridepool_locked_body: "Le pool ouvert de courses se débloque à la fin de votre période d'essai de 30 jours. D'ici là, vous ne recevrez que les commandes qui vous sont assignées directement.",
+      ridepool_available_label: "disponibles maintenant",
       trial_title: "Période d'essai", trial_sub: "Commence automatiquement avec votre première commande terminée et dure 30 jours.",
       fin_stat_noshows: "No-shows (confirmés)",
       dash_account_title: "Compte", dash_account_sub: "Les informations de votre entreprise en dossier",
@@ -384,7 +409,7 @@
       empty_new: "Aucune nouvelle commande pour le moment.", empty_accepted: "Rien en cours pour le moment.", empty_completed: "Aucune commande terminée pour le moment.",
 
       od_trip: "Trajet", od_passenger_price: "Passager & prix", od_vehicle_driver: "Véhicule & chauffeur", od_trip_progress: "Progression du trajet",
-      fl_date: "Date", fl_pickup_time: "Heure de prise en charge", fl_buffer_time: "Temps d'attente", fl_vehicle_type: "Type de véhicule", fl_meet_greet: "Pancarte d'accueil",
+      fl_date: "Date", fl_pickup_time: "Heure de prise en charge", fl_buffer_time: "Temps d'attente", fl_vehicle_type: "Type de véhicule", fl_vehicles_needed: "Véhicules nécessaires", fl_meet_greet: "Pancarte d'accueil",
       btn_accept: "Accepter", btn_decline: "Refuser", btn_save: "Enregistrer", btn_more: "Plus", btn_back_to_orders: "Retour aux commandes",
       no_show_pending: "Signalé comme no-show du passager — en attente de vérification.",
       report_no_show_btn: "Signaler un no-show du passager",
@@ -410,7 +435,7 @@
       company_doc_alert_body: "Téléversez-les ci-dessous — cet avis disparaîtra une fois qu'un administrateur les aura approuvés.",
     },
     pt: {
-      nav_orders: "Pedidos", nav_company: "Empresa", nav_fleet: "Frota", nav_finance: "Finanças", nav_account: "Conta",
+      nav_orders: "Meus pedidos", nav_company: "Empresa", nav_fleet: "Frota", nav_finance: "Finanças", nav_ridepool: "Grupo de viagens", nav_account: "Conta",
       logout: "Sair",
 
       home_eyebrow: "Portal de parceiros", home_title: "Portal de parceiros da frota",
@@ -449,6 +474,11 @@
       dash_fleet_title: "Frota", dash_fleet_sub: "Faça a gestão dos seus veículos e motoristas. Clique num cartão para editar detalhes e documentos.",
       dash_finance_title: "Finanças", dash_finance_sub: "As suas viagens concluídas e ganhos. Cada pedido concluído (incluindo no-shows confirmados) é contabilizado aqui automaticamente.",
       fin_export_csv: "Exportar CSV", fin_print: "Imprimir", fin_th_route: "Trajeto", fin_th_price: "Preço",
+
+      dash_ridepool_title: "Grupo de viagens", dash_ridepool_sub: "Um feed em tempo real de pedidos de viagem perto da sua área de cobertura.",
+      ridepool_locked_title: "O acesso ao grupo está bloqueado durante o seu período de teste",
+      ridepool_locked_body: "O grupo aberto de viagens é desbloqueado quando o seu período de teste de 30 dias terminar. Até lá, só receberá pedidos atribuídos diretamente a si.",
+      ridepool_available_label: "disponíveis agora",
       trial_title: "Período de teste", trial_sub: "Começa automaticamente com o seu primeiro pedido concluído e dura 30 dias.",
       fin_stat_noshows: "Não comparências (confirmadas)",
       dash_account_title: "Conta", dash_account_sub: "Os dados da sua empresa em registo",
@@ -461,7 +491,7 @@
       empty_new: "Sem pedidos novos neste momento.", empty_accepted: "Nada em curso neste momento.", empty_completed: "Ainda não há pedidos concluídos.",
 
       od_trip: "Viagem", od_passenger_price: "Passageiro e preço", od_vehicle_driver: "Veículo e motorista", od_trip_progress: "Progresso da viagem",
-      fl_date: "Data", fl_pickup_time: "Hora de recolha", fl_buffer_time: "Tempo de espera", fl_vehicle_type: "Tipo de veículo", fl_meet_greet: "Placa de boas-vindas",
+      fl_date: "Data", fl_pickup_time: "Hora de recolha", fl_buffer_time: "Tempo de espera", fl_vehicle_type: "Tipo de veículo", fl_vehicles_needed: "Veículos necessários", fl_meet_greet: "Placa de boas-vindas",
       btn_accept: "Aceitar", btn_decline: "Recusar", btn_save: "Guardar", btn_more: "Mais", btn_back_to_orders: "Voltar aos pedidos",
       no_show_pending: "Reportado como não comparência do passageiro — a aguardar revisão.",
       report_no_show_btn: "Reportar não comparência do passageiro",

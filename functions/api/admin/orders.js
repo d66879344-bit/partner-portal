@@ -8,7 +8,7 @@ export async function onRequestGet(context) {
   const { results } = await env.DB.prepare(
     `SELECT o.id, o.order_number, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.flight_time,
             o.buffer_minutes, o.order_date, o.order_time,
-            o.vehicle_type, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet, o.sign_text,
+            o.vehicle_type, o.vehicles_needed, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet, o.sign_text,
             o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
             o.price, o.currency, o.notes, o.status, o.trip_stage, o.no_show_type, o.no_show_at, o.no_show_review_status,
             o.created_at, o.responded_at
@@ -33,6 +33,7 @@ export async function onRequestGet(context) {
     orderDate: o.order_date,
     orderTime: o.order_time,
     vehicleType: o.vehicle_type,
+    vehiclesNeeded: o.vehicles_needed != null ? o.vehicles_needed : 1,
     passengers: o.passengers,
     luggage: o.luggage,
     passengerName: o.passenger_name,
@@ -75,6 +76,9 @@ export async function onRequestPost(context) {
     const orderDate = (body.orderDate || "").toString().trim().slice(0, 20);
     const orderTime = (body.orderTime || "").toString().trim().slice(0, 10);
     const vehicleType = (body.vehicleType || "").toString().trim().slice(0, 80);
+    let vehiclesNeeded = body.vehiclesNeeded ? Number(body.vehiclesNeeded) : 1;
+    if (!Number.isFinite(vehiclesNeeded) || vehiclesNeeded < 1) vehiclesNeeded = 1;
+    vehiclesNeeded = Math.min(Math.round(vehiclesNeeded), 20);
     const passengers = body.passengers ? Number(body.passengers) : null;
     const luggage = body.luggage ? Number(body.luggage) : null;
     const passengerName = (body.passengerName || "").toString().trim().slice(0, 120);
@@ -110,13 +114,13 @@ export async function onRequestPost(context) {
 
     const r = await env.DB.prepare(
       `INSERT INTO orders (order_number, partner_id, pickup, dropoff, flight_number, flight_time, buffer_minutes,
-                            order_date, order_time, vehicle_type,
+                            order_date, order_time, vehicle_type, vehicles_needed,
                             passengers, luggage, passenger_name, passenger_phone, meet_greet, sign_text, driver_id, vehicle_id,
                             price, currency, notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
     ).bind(
       orderNumber, partnerId, pickup, dropoff, flightNumber, flightTime, bufferMinutes,
-      orderDate, orderTime, vehicleType,
+      orderDate, orderTime, vehicleType, vehiclesNeeded,
       passengers, luggage, passengerName, passengerPhone, meetGreet, signText, driverId, vehicleId,
       price, currency, notes
     ).run();

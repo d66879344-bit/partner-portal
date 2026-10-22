@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS orders (
   order_date TEXT NOT NULL,
   order_time TEXT,        -- pickup time
   vehicle_type TEXT,
+  vehicles_needed INTEGER NOT NULL DEFAULT 1, -- how many vehicles this order needs sent out together; informational only
   passengers INTEGER,
   luggage INTEGER,
   passenger_name TEXT,
