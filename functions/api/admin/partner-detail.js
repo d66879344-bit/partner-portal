@@ -110,6 +110,7 @@ export async function onRequestGet(context) {
     company: { documents: byOwner("company", null) },
     other: { documents: byOwner("other", null) },
     contract: { documents: byOwner("contract", null) },
+    priceList: { documents: byOwner("price_list", null) },
     invoice: invoice
       ? {
           id: invoice.id,

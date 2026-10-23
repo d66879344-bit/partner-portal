@@ -46,6 +46,17 @@
   function downloadUrl(id) {
     return fileUrl(id) + "&dl=1";
   }
+  // A plain <input type="file"> renders its "Choose file" button and
+  // "No file chosen" placeholder in the BROWSER's own UI language (not the
+  // page's), so on a Russian-locale browser it shows "Обзор…" regardless of
+  // this panel being English-only. This hides the native input and shows our
+  // own English label + filename instead, wired up by the shared change
+  // listener below (search "file-chooser-name").
+  function fileChooserHtml(id, dataAttr, dataVal, accept) {
+    return '<label class="minibtn" for="' + id + '" style="cursor:pointer;">Choose file</label>' +
+      '<input type="file" id="' + id + '" ' + dataAttr + '="' + dataVal + '" accept="' + accept + '" hidden>' +
+      '<span style="font-size:12.5px;color:var(--ink-2);" data-file-chooser-name="' + id + '">No file chosen</span>';
+  }
 
   async function api(path, opts) {
     var sep = path.indexOf("?") === -1 ? "?" : "&";
@@ -269,8 +280,14 @@
       '<div class="block"><div class="block-title">Contract</div>' +
       (d.contract.documents.length ? docList(d.contract.documents) : '<p class="docrow" style="color:var(--ink-2);">Not uploaded yet.</p>') +
       '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-      '<input type="file" data-contract-file="' + p.id + '" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="font-size:12.5px;">' +
+      fileChooserHtml("contract-file-" + p.id, "data-contract-file", p.id, ".pdf,.doc,.docx,.jpg,.jpeg,.png") +
       '<button type="button" class="minibtn" data-contract-upload="' + p.id + '">Upload contract</button>' +
+      "</div></div>" +
+      '<div class="block"><div class="block-title">Price list</div>' +
+      (d.priceList.documents.length ? docList(d.priceList.documents) : '<p class="docrow" style="color:var(--ink-2);">Not uploaded yet.</p>') +
+      '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      fileChooserHtml("price-list-file-" + p.id, "data-price-list-file", p.id, ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png") +
+      '<button type="button" class="minibtn" data-price-list-upload="' + p.id + '">Upload price list</button>' +
       "</div></div>" +
       (d.invoice
         ? '<div class="block"><div class="block-title">Invoice</div>' +
@@ -390,8 +407,9 @@
   $("partnersList").addEventListener("click", async function (e) {
     var saveBilling = e.target.closest("[data-billing-save]");
     var uploadContract = e.target.closest("[data-contract-upload]");
+    var uploadPriceList = e.target.closest("[data-price-list-upload]");
     var saveInvoiceStatus = e.target.closest("[data-invoice-status-save]");
-    if (!saveBilling && !uploadContract && !saveInvoiceStatus) return;
+    if (!saveBilling && !uploadContract && !uploadPriceList && !saveInvoiceStatus) return;
     e.stopPropagation();
 
     if (saveBilling) {
@@ -425,6 +443,25 @@
         renderDetail(cpid);
       } catch (err) {
         alert("Could not upload the contract. Try again.");
+      }
+      return;
+    }
+
+    if (uploadPriceList) {
+      var plpid = Number(uploadPriceList.getAttribute("data-price-list-upload"));
+      var plFileInput = document.querySelector('[data-price-list-file="' + plpid + '"]');
+      var plFile = plFileInput && plFileInput.files && plFileInput.files[0];
+      if (!plFile) { alert("Choose a file first."); return; }
+      var plFd = new FormData();
+      plFd.append("partnerId", String(plpid));
+      plFd.append("file", plFile);
+      try {
+        await api("/api/admin/price-list-upload", { method: "POST", body: plFd });
+        delete detailCache[plpid];
+        renderDetail(plpid);
+        await loadPartners();
+      } catch (err) {
+        alert("Could not upload the price list. Try again.");
       }
       return;
     }
@@ -465,6 +502,17 @@
     }
   });
 
+  // Updates the filename text next to any custom file-chooser label (see
+  // fileChooserHtml) as soon as a file is picked.
+  $("partnersList").addEventListener("change", function (e) {
+    var fileInput = e.target.closest('input[type="file"][id]');
+    if (!fileInput) return;
+    var nameEl = document.querySelector('[data-file-chooser-name="' + fileInput.id + '"]');
+    if (!nameEl) return;
+    var f = fileInput.files && fileInput.files[0];
+    nameEl.textContent = f ? f.name : "No file chosen";
+  });
+
   /* ---------- orders: create form ---------- */
   function populatePartnerSelect() {
     var active = partners.filter(function (p) { return p.status === "active"; });
@@ -472,6 +520,22 @@
       ? active.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
       : '<option value="">No active partners yet</option>';
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
+    renderOpPriceListLink();
+  }
+
+  // Link to the selected partner's attached price list, shown at the top of
+  // the Create Order form — opens in a new tab, and is simply left out when
+  // that partner has no price list on file.
+  function renderOpPriceListLink() {
+    var el = $("opPriceListLink");
+    if (!el) return;
+    var partnerId = Number($("opPartner").value);
+    var p = partners.filter(function (x) { return x.id === partnerId; })[0];
+    if (!p || !p.priceListDocId) { el.innerHTML = ""; return; }
+    el.innerHTML = '<a href="' + fileUrl(p.priceListDocId) + '" target="_blank" rel="noopener" class="minibtn" ' +
+      'style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">' +
+      '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 5H5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3M12 3h5v5M9 11l8-8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      esc(p.companyName) + " — price list</a>";
   }
 
   /* ---------- order number: auto-generate [city code][4 digits][2 letters][4 digits] ---------- */
@@ -506,6 +570,7 @@
   }
   $("opPartner").addEventListener("change", function () {
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
+    renderOpPriceListLink();
   });
   $("opOrderNumber").addEventListener("input", function () {
     orderNumberManual = true;
