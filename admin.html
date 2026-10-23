@@ -116,6 +116,23 @@
     .panel { display: none !important; }
     .panel.active { display: block !important; }
   }
+
+  /* ---------- pagination bar (assets/paginate.js renders this markup) ---------- */
+  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 10px; padding-bottom: 6px; }
+  .pager-label { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- invoice status / billing / contract / trial-simulate (partner detail) ---------- */
+  .badge-generated { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-strong); }
+  .badge-sent { background: var(--accent-soft); color: var(--accent); }
+  .badge-received { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
+  .badge-processing { background: #FDF0CC; color: #7A5B00; }
+  .badge-paid { background: var(--good-bg); color: var(--good); }
+  .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex: none; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-switch .slider { position: absolute; inset: 0; background: var(--line-strong); border-radius: 999px; cursor: pointer; transition: background .15s; }
+  .toggle-switch .slider:before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 999px; transition: transform .15s; }
+  .toggle-switch input:checked + .slider { background: var(--accent-warm); }
+  .toggle-switch input:checked + .slider:before { transform: translateX(18px); }
 </style>
 </head>
 <body>
@@ -206,6 +223,7 @@
           </thead>
           <tbody id="partnersList"></tbody>
         </table>
+        <div id="partnersPager"></div>
       </div>
     </section>
 
@@ -241,6 +259,7 @@
           </thead>
           <tbody id="financeList"></tbody>
         </table>
+        <div id="financePager"></div>
       </div>
     </section>
 
@@ -363,6 +382,7 @@
           </thead>
           <tbody id="ordersList"></tbody>
         </table>
+        <div id="ordersPager"></div>
       </div>
     </section>
   </main>
@@ -371,6 +391,7 @@
 <script src="/assets/order-defs.js"></script>
 <script src="/assets/city-codes.js"></script>
 <script src="/assets/trial.js"></script>
+<script src="/assets/paginate.js"></script>
 <script src="/assets/admin.js"></script>
 </body>
 </html>

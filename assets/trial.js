@@ -18,7 +18,10 @@ window.TrialInfo = (function () {
 
   // startedAt: the partner's trial_started_at string from the API (UTC,
   // "YYYY-MM-DD HH:MM:SS" style), or null/empty if the trial hasn't started.
-  function compute(startedAt) {
+  // forceEnded: testing-only override (partner's trialSimulateEnded flag) —
+  // when true, the trial always computes as ended regardless of the real
+  // date, with no change to daysLeft/dayNumber math otherwise.
+  function compute(startedAt, forceEnded) {
     if (!startedAt) {
       return { state: "not_started", daysLeft: null, dayNumber: null, start: null, end: null };
     }
@@ -30,6 +33,10 @@ window.TrialInfo = (function () {
     var daysLeft = Math.max(TRIAL_DAYS - elapsedDays, 0);
     var dayNumber = Math.min(TRIAL_DAYS, Math.max(1, elapsedDays + 1));
     var state = daysLeft <= 0 ? "ended" : (daysLeft <= 3 ? "ending" : "active");
+    if (forceEnded && state !== "ended") {
+      state = "ended";
+      daysLeft = 0;
+    }
     return { state: state, daysLeft: daysLeft, dayNumber: dayNumber, start: start, end: end };
   }
 

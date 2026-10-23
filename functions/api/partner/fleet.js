@@ -66,6 +66,7 @@ export async function onRequestGet(context) {
     ok: true,
     company: { documents: byOwner("company", null) },
     other: { documents: byOwner("other", null) },
+    contract: { documents: byOwner("contract", null) },
     vehicles,
     drivers,
   });

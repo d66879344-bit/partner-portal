@@ -278,6 +278,62 @@
     .dash-sidebar, .toolbar { display: none !important; }
     .dash-shell, .dash-main { height: auto !important; overflow: visible !important; }
   }
+
+  /* ---------- pagination bar (assets/paginate.js renders this markup) ---------- */
+  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+  .pager-label { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- invoice: status badges, compact card, modal ---------- */
+  .badge-generated { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-strong); }
+  .badge-sent { background: var(--accent-soft); color: var(--focus); }
+  .badge-received { background: var(--accent-soft); color: var(--focus); border: 1px solid var(--focus); }
+  .badge-processing { background: #FDF0CC; color: #7A5B00; }
+  .badge-paid { background: var(--good-bg); color: var(--good); }
+  .invoice-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+  .invoice-card-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .invoice-card-num { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-2); }
+  .invoice-card-note { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .invoice-modal-overlay {
+    position: fixed; inset: 0; background: rgba(16,24,40,.5); display: flex; align-items: center;
+    justify-content: center; padding: 24px; z-index: 50; overflow-y: auto;
+  }
+  .invoice-modal { border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; box-shadow: 0 14px 40px rgba(16,24,40,.3); background: var(--surface); max-width: 760px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; }
+  .invoice-modal-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line); font: 600 12.5px var(--font-body); color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; flex: none; }
+  .invoice-modal-close { border: 0; background: transparent; font-size: 20px; line-height: 1; color: var(--ink-2); cursor: pointer; padding: 2px 7px; border-radius: 6px; }
+  .invoice-modal-close:hover { background: var(--line); }
+  .invoice-modal-body { padding: 22px 26px; overflow-y: auto; flex: 1; }
+  .invoice-modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 18px; background: var(--surface-2); border-top: 1px solid var(--line); flex: none; }
+  .invoice-head { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 2px solid var(--ink); margin-bottom: 16px; }
+  .invoice-issuer-name { font-weight: 700; font-size: 15px; }
+  .invoice-issuer-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; max-width: 32ch; }
+  .invoice-title { font-family: var(--font-display); font-weight: 700; font-size: 20px; text-transform: uppercase; text-align: right; }
+  .invoice-meta { margin-top: 6px; font-size: 12.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 3px; text-align: right; }
+  .invoice-parties { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 18px; }
+  .invoice-party { flex: 1 1 220px; }
+  .invoice-party-label { font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+  .invoice-party-name { font-weight: 600; font-size: 13.5px; }
+  .invoice-party-line { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+  .invoice-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .invoice-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-2); padding: 8px 6px; border-bottom: 1px solid var(--line-strong); }
+  .invoice-table td { padding: 9px 6px; border-bottom: 1px solid var(--line); }
+  .invoice-table .num { text-align: right; font-family: var(--font-mono); }
+  .invoice-total-row td { border-bottom: 0; border-top: 2px solid var(--ink); font-weight: 700; padding-top: 12px; }
+  .invoice-foot { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: 11.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 3px; }
+
+  /* ---------- Contract / Referrals: document row, referral link + list ---------- */
+  .doc-row { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .doc-icon { width: 38px; height: 38px; border-radius: 8px; background: var(--accent-soft); color: var(--focus); display: flex; align-items: center; justify-content: center; flex: none; }
+  .doc-meta { flex: 1; min-width: 0; }
+  .doc-name { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .doc-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  .ref-link-row { display: flex; gap: 10px; }
+  .ref-link-row input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 13px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-2); padding: 9px 12px; }
+  .ref-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 0; border-top: 1px solid var(--line); }
+  .ref-row:first-of-type { border-top: 0; }
+  .ref-name { font-weight: 600; font-size: 13.5px; }
+  .ref-sub { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
+  .ref-amount { font-size: 14px; font-weight: 600; text-align: right; }
+  .ref-amount-label { font-size: 11px; color: var(--ink-2); text-align: right; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -316,6 +372,14 @@
       <button type="button" class="tab" data-tab="account" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
         <span data-i18n="nav_account">Account</span>
+      </button>
+      <button type="button" class="tab" data-tab="contract" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 2.5h7l3 3v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z"/><path d="M6.5 8h7M6.5 10.5h5" stroke-linecap="round"/><path d="M6.5 14.2c1-.6 1.6-.6 2.2 0s1.2.6 2.2 0 1.6-.6 2.6 0" stroke-linecap="round"/></svg>
+        <span data-i18n="nav_contract">Contract</span>
+      </button>
+      <button type="button" class="tab" data-tab="referrals" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 12a4 4 0 0 1 0-5.6l2-2a4 4 0 0 1 5.6 5.6l-1 1" stroke-linecap="round"/><path d="M12 8a4 4 0 0 1 0 5.6l-2 2a4 4 0 0 1-5.6-5.6l1-1" stroke-linecap="round"/></svg>
+        <span data-i18n="nav_referrals">Referrals</span>
       </button>
     </nav>
 
@@ -381,6 +445,7 @@
             </thead>
             <tbody id="ordersList"></tbody>
           </table>
+          <div id="ordersPager"></div>
         </div>
       </div>
 
@@ -524,20 +589,11 @@
       <div class="toolbar">
         <label class="toolbar-field">From <input type="date" id="finDateFrom"></label>
         <label class="toolbar-field">To <input type="date" id="finDateTo"></label>
-        <div style="flex:1;"></div>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="minibtn" id="finExportBtn">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:6px;vertical-align:-2px;"><path d="M10 4v9M6.5 9.5 10 13l3.5-3.5"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
-            <span data-i18n="fin_export_csv">Export CSV</span>
-          </button>
-          <button type="button" class="minibtn" id="finPrintBtn">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:6px;vertical-align:-2px;"><path d="M6 8V3h8v5M6 17h8v-4H6v4Z"/><path d="M4 8h12a1 1 0 0 1 1 1v4h-2M5 13H3V9a1 1 0 0 1 1-1Z"/></svg>
-            <span data-i18n="fin_print">Print</span>
-          </button>
-        </div>
       </div>
 
       <div class="stat-grid" id="finStatGrid"></div>
+
+      <div class="card invoice-card" id="invoiceCard" hidden></div>
 
       <div class="card table-card">
         <table class="data-table">
@@ -546,6 +602,7 @@
           </thead>
           <tbody id="financeList"></tbody>
         </table>
+        <div id="financePager"></div>
       </div>
     </section>
 
@@ -616,8 +673,79 @@
         <button type="button" class="btn" id="acctSaveBtn" style="width:auto;" data-i18n="save_changes_btn">Save changes</button>
         <p class="status" id="acctStatus2" role="status" aria-live="polite"></p>
       </div>
+
+      <div class="card section-card" style="margin-top:18px;">
+        <h2 data-i18n="pay_details_title">Payment details</h2>
+        <p class="sub" data-i18n="pay_details_sub">Used to fill in "pay to" on your trial invoice — fill these in before generating it, under Finance.</p>
+        <div class="field-row">
+          <div class="field">
+            <label for="payHolder" data-i18n="pay_holder_label">Account holder name</label>
+            <input type="text" id="payHolder" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="payBank" data-i18n="pay_bank_label">Bank name</label>
+            <input type="text" id="payBank" autocomplete="off">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="payAccount" data-i18n="pay_account_label">IBAN / account number</label>
+            <input type="text" id="payAccount" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="paySwift" data-i18n="pay_swift_label">SWIFT / BIC</label>
+            <input type="text" id="paySwift" autocomplete="off">
+          </div>
+          <div class="field" style="flex:1 1 100px;">
+            <label for="payCurrency" data-i18n="pay_currency_label">Currency</label>
+            <input type="text" id="payCurrency" autocomplete="off" maxlength="10">
+          </div>
+        </div>
+        <button type="button" class="btn" id="paySaveBtn" style="width:auto;" data-i18n="save_changes_btn">Save changes</button>
+        <p class="status" id="payStatus" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-contract">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_contract_title">Contract</h1>
+        <p class="sub" data-i18n="dash_contract_sub">Your cooperation agreement with us, once it's been signed by both sides.</p>
+      </div>
+      <div class="card section-card" id="contractCard"></div>
+    </section>
+
+    <section class="panel" id="panel-referrals">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_referrals_title">Referrals</h1>
+        <p class="sub" data-i18n="dash_referrals_sub">Invite other fleets to join us. While their account stays active, you earn 7% of their completed-order value as a bonus.</p>
+      </div>
+      <div class="card section-card">
+        <div class="block-title" data-i18n="ref_link_title" style="margin-bottom:10px;">Your referral link</div>
+        <div class="ref-link-row">
+          <input type="text" id="refLinkInput" readonly>
+          <button type="button" class="minibtn" id="refCopyBtn" data-i18n="copy_btn">Copy</button>
+        </div>
+      </div>
+      <div class="card section-card">
+        <div class="block-title" data-i18n="ref_list_title" style="margin-bottom:6px;">Your referrals</div>
+        <div id="refList"></div>
+      </div>
     </section>
   </main>
+</div>
+
+<div class="invoice-modal-overlay" id="invoiceModal" hidden>
+  <div class="invoice-modal">
+    <div class="invoice-modal-bar">
+      <span data-i18n="invoice_modal_title">Invoice preview</span>
+      <button type="button" class="invoice-modal-close" id="invoiceModalCloseX" aria-label="Close">&times;</button>
+    </div>
+    <div class="invoice-modal-body" id="invoiceModalBody"></div>
+    <div class="invoice-modal-actions">
+      <button type="button" class="minibtn" id="invoiceModalCloseBtn" data-i18n="btn_close">Close</button>
+      <button type="button" class="minibtn good" id="invoiceSendBtn" data-i18n="btn_send_invoice">Send Invoice</button>
+    </div>
+  </div>
 </div>
 
 <script src="/assets/i18n.js"></script>
@@ -625,6 +753,7 @@
 <script src="/assets/airports.js"></script>
 <script src="/assets/combobox.js"></script>
 <script src="/assets/trial.js"></script>
+<script src="/assets/paginate.js"></script>
 <script src="/assets/partner-dashboard.js"></script>
 </body>
 </html>

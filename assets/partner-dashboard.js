@@ -8,7 +8,13 @@
 
   var me = null;
   var lastOrders = [];
-  var myFleet = { company: { documents: [] }, other: { documents: [] }, vehicles: [], drivers: [] };
+  var myFleet = { company: { documents: [] }, other: { documents: [] }, contract: { documents: [] }, vehicles: [], drivers: [] };
+  var PAGE_SIZE = 20;
+  var ordersPage = 1;
+  var financePage = 1;
+  var lastInvoice = null;
+  var trialEnded = false;
+  var lastReferrals = { accountId: null, bonusByCurrency: {}, referredPartners: [] };
   var STAGES = [
     { key: "on_the_way" },
     { key: "arrived" },
@@ -90,11 +96,14 @@
     closeOrderDetail();
     closeVehicleForm();
     closeDriverForm();
+    closeInvoiceModal();
   }
   function refreshTabDataSilently(tabKey) {
     if (tabKey === "orders" || tabKey === "finance") loadOrders(true).catch(function () {});
-    if (tabKey === "fleet" || tabKey === "company") loadFleet().catch(function () {});
+    if (tabKey === "finance") loadInvoice().catch(function () {});
+    if (tabKey === "fleet" || tabKey === "company" || tabKey === "contract") loadFleet().catch(function () {});
     if (tabKey === "company" || tabKey === "account") refreshMeSilently().catch(function () {});
+    if (tabKey === "referrals") loadReferrals().catch(function () {});
   }
   $("mainTabs").querySelectorAll(".tab").forEach(function (tab) {
     tab.addEventListener("click", function () {
@@ -111,12 +120,31 @@
     tab.addEventListener("click", function () {
       $("orderTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
       orderTab = tab.getAttribute("data-order-tab");
+      ordersPage = 1;
       renderOrders(lastOrders);
     });
   });
-  $("fDateFrom").addEventListener("change", function () { renderOrders(lastOrders); });
-  $("fDateTo").addEventListener("change", function () { renderOrders(lastOrders); });
-  $("fSort").addEventListener("change", function () { renderOrders(lastOrders); });
+  $("fDateFrom").addEventListener("change", function () { ordersPage = 1; renderOrders(lastOrders); });
+  $("fDateTo").addEventListener("change", function () { ordersPage = 1; renderOrders(lastOrders); });
+  $("fSort").addEventListener("change", function () { ordersPage = 1; renderOrders(lastOrders); });
+
+  /* ---------- pagination (shared helper, see assets/paginate.js) ---------- */
+  function pagerLabels() {
+    return window.I18N
+      ? { prevLabel: I18N.t("pager_prev"), nextLabel: I18N.t("pager_next"), pageLabel: I18N.t("pager_label") }
+      : { prevLabel: "← Prev", nextLabel: "Next →", pageLabel: "Page {page} of {pages}" };
+  }
+  function wirePagerContainer(containerId, getPage, setPage, rerender) {
+    var el = $(containerId);
+    if (!el || el.__wired) return;
+    el.__wired = true;
+    el.addEventListener("click", function (e) {
+      if (e.target.closest("[data-pager-prev]")) { setPage(Math.max(1, getPage() - 1)); rerender(); }
+      else if (e.target.closest("[data-pager-next]")) { setPage(getPage() + 1); rerender(); }
+    });
+  }
+  wirePagerContainer("ordersPager", function () { return ordersPage; }, function (p) { ordersPage = p; }, function () { renderOrders(lastOrders); });
+  wirePagerContainer("financePager", function () { return financePage; }, function (p) { financePage = p; }, function () { renderFinance(lastOrders); });
 
   /* ---------- account / nav ---------- */
   var acctAirportPicker = null;
@@ -127,14 +155,14 @@
     if (!d) return "";
     return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear();
   }
-  function renderTrial(startedAt) {
+  function renderTrial(startedAt, forceEnded) {
     // Defensive on purpose: this is a secondary display, and must never be
     // able to take down the rest of the account/orders/fleet rendering if
     // something here is missing or unexpected (e.g. mid-rollout of a schema
     // change on the server).
     try {
       if (!window.TrialInfo || !$("trialCard") || !$("trialChip")) return;
-      var info = TrialInfo.compute(startedAt);
+      var info = TrialInfo.compute(startedAt, forceEnded);
       // Once the trial has ended, the partner stops seeing this altogether —
       // no "Ended" state lingering on their own dashboard. The admin side
       // still shows it (so the admin can track who's past their trial).
@@ -284,7 +312,7 @@
       renderFinance(lastOrders);
     }
 
-    renderTrial(me.trialStartedAt);
+    renderTrial(me.trialStartedAt, me.trialSimulateEnded);
     initRidePool();
 
     $("whoCompany").textContent = me.companyName;
@@ -301,6 +329,12 @@
 
     $("acctPhone").value = me.phone || "";
     acctLastCity = me.serviceCity || null;
+
+    if (document.activeElement !== $("payHolder")) $("payHolder").value = me.payAccountHolder || "";
+    if (document.activeElement !== $("payBank")) $("payBank").value = me.payBankName || "";
+    if (document.activeElement !== $("payAccount")) $("payAccount").value = me.payAccountNumber || "";
+    if (document.activeElement !== $("paySwift")) $("paySwift").value = me.paySwift || "";
+    if (document.activeElement !== $("payCurrency")) $("payCurrency").value = me.payCurrency || "";
 
     if (window.AirportPicker && $("acctAirports")) {
       acctAirportPicker = window.AirportPicker.create($("acctAirports"), {
@@ -340,7 +374,8 @@
 
     me.status = fresh.status;
     me.trialStartedAt = fresh.trialStartedAt;
-    renderTrial(me.trialStartedAt);
+    me.trialSimulateEnded = fresh.trialSimulateEnded;
+    renderTrial(me.trialStartedAt, me.trialSimulateEnded);
     $("acctStatus").innerHTML = badge(fresh.status);
     $("pendingBanner").hidden = fresh.status === "active";
 
@@ -389,6 +424,31 @@
       statusEl.className = "status err";
     } finally {
       $("acctSaveBtn").disabled = false;
+    }
+  });
+
+  $("paySaveBtn").addEventListener("click", async function () {
+    var statusEl = $("payStatus");
+    var payload = {
+      payAccountHolder: $("payHolder").value.trim(),
+      payBankName: $("payBank").value.trim(),
+      payAccountNumber: $("payAccount").value.trim(),
+      paySwift: $("paySwift").value.trim(),
+      payCurrency: $("payCurrency").value.trim(),
+    };
+    this.disabled = true;
+    statusEl.textContent = "";
+    statusEl.className = "status";
+    try {
+      await api("/api/partner/billing-update", { method: "POST", json: true, body: JSON.stringify(payload) });
+      Object.assign(me, payload);
+      statusEl.textContent = window.I18N ? I18N.t("saved_label") : "Saved.";
+      statusEl.className = "status ok";
+    } catch (e) {
+      statusEl.textContent = "Something went wrong. Please try again.";
+      statusEl.className = "status err";
+    } finally {
+      this.disabled = false;
     }
   });
 
@@ -473,9 +533,14 @@
     if (!orders.length) {
       $("ordersStatus").textContent = "";
       $("ordersList").innerHTML = '<tr><td colspan="9" class="empty-cell">' + esc(emptyMessage(orderTab)) + "</td></tr>";
+      $("ordersPager").innerHTML = "";
       return;
     }
     $("ordersStatus").textContent = "";
+    var pageResult = window.Paginate ? Paginate.slice(orders, ordersPage, PAGE_SIZE) : { page: 1, pages: 1, items: orders };
+    ordersPage = pageResult.page;
+    $("ordersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages, pagerLabels()) : "";
+    orders = pageResult.items;
     $("ordersList").innerHTML = orders.map(function (o) {
       var stageObj = o.status === "accepted" && o.tripStage ? STAGES.filter(function (s) { return s.key === o.tripStage; })[0] : null;
       var action = o.status === "offered"
@@ -519,21 +584,16 @@
     if (open) openOrderDetail(Number(open.getAttribute("data-order-open")));
   });
 
-  /* ---------- finance ---------- */
-  function csvCell(v) {
-    var s = String(v == null ? "" : v);
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  }
-  function downloadCsv(filename, rows) {
-    var csv = rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
-    var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-  }
+  /* ---------- finance ----------
+     CSV export and print were removed from the partner's Finance tab once
+     real invoice generation shipped (the admin's Finance tab keeps both). */
   var lastFinanceOrders = [];
+  function bonusLabel(byCurrency) {
+    var parts = Object.keys(byCurrency || {}).sort().map(function (cur) {
+      return byCurrency[cur].toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + cur;
+    });
+    return parts.length ? parts.join(" + ") : "0";
+  }
   function renderFinance(allOrders) {
     var orders = (allOrders || []).filter(function (o) { return o.status === "completed"; });
     var from = $("finDateFrom").value, to = $("finDateTo").value;
@@ -564,13 +624,23 @@
     });
     cards += '<div class="card stat-card"><div class="stat-label">' +
       esc(window.I18N ? I18N.t("fin_stat_noshows") : "No-shows (confirmed)") + '</div><div class="stat-value mono">' + noShowCount + "</div></div>";
+    if (lastReferrals.referredPartners.length) {
+      cards += '<div class="card stat-card"><div class="stat-label">' +
+        esc(window.I18N ? I18N.t("fin_stat_referral_bonus") : "Referral bonus") + '</div><div class="stat-value mono">' +
+        esc(bonusLabel(lastReferrals.bonusByCurrency)) + "</div></div>";
+    }
     $("finStatGrid").innerHTML = cards;
 
     if (!orders.length) {
       $("financeList").innerHTML = '<tr><td colspan="4" class="empty-cell">' + esc(emptyMessage("completed")) + "</td></tr>";
+      $("financePager").innerHTML = "";
       return;
     }
-    $("financeList").innerHTML = orders.map(function (o) {
+    var pageResult = window.Paginate ? Paginate.slice(orders, financePage, PAGE_SIZE) : { page: 1, pages: 1, items: orders };
+    financePage = pageResult.page;
+    $("financePager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages, pagerLabels()) : "";
+    var pageOrders = pageResult.items;
+    $("financeList").innerHTML = pageOrders.map(function (o) {
       var tag = o.noShowReviewStatus === "confirmed"
         ? ' <span class="badge" style="background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-ink);">no-show</span>'
         : "";
@@ -582,19 +652,159 @@
         "</tr>";
     }).join("");
   }
-  $("finDateFrom").addEventListener("change", function () { renderFinance(lastOrders); });
-  $("finDateTo").addEventListener("change", function () { renderFinance(lastOrders); });
-  $("finExportBtn").addEventListener("click", function () {
-    var rows = [["Order #", "Date", "Pickup", "Dropoff", "No-show", "Price", "Currency"]];
-    lastFinanceOrders.forEach(function (o) {
-      rows.push([
-        o.orderNumber || o.id, o.orderDate, o.pickup, o.dropoff,
-        o.noShowReviewStatus === "confirmed" ? "yes" : "", o.price || "", o.currency || "",
-      ]);
-    });
-    downloadCsv("finance-" + (me ? me.companyName || "partner" : "partner") + ".csv", rows);
+  $("finDateFrom").addEventListener("change", function () { financePage = 1; renderFinance(lastOrders); });
+  $("finDateTo").addEventListener("change", function () { financePage = 1; renderFinance(lastOrders); });
+
+  /* ---------- invoice ----------
+     The Finance screen only ever shows a compact card (status badge +
+     invoice number + a Generate/View button) — the full invoice document
+     only appears inside the modal overlay, opened by that button. Line
+     items are never stored server-side; they're computed here from the
+     partner's own already-loaded completed orders inside the invoice's
+     [periodStart, periodEnd] window — same philosophy as Finance/Ride-Pool
+     elsewhere on this dashboard. */
+  function invStatusLabel(status) {
+    var key = "invoice_status_" + status;
+    return window.I18N ? I18N.t(key) : status;
+  }
+  function renderInvoiceCard() {
+    var el = $("invoiceCard");
+    if (!el) return;
+    el.hidden = false;
+    if (!trialEnded) {
+      el.innerHTML =
+        '<div class="invoice-card-left"><span class="badge badge-generated">' + esc(window.I18N ? I18N.t("invoice_during_trial") : "During trial") + "</span></div>" +
+        '<div><button type="button" class="minibtn" disabled>' + esc(window.I18N ? I18N.t("btn_generate_invoice") : "Generate Invoice") + "</button>" +
+        '<div class="invoice-card-note">' + esc(window.I18N ? I18N.t("invoice_note_trial") : "Available once your trial period ends.") + "</div></div>";
+      return;
+    }
+    if (!lastInvoice) {
+      el.innerHTML =
+        '<div class="invoice-card-left"><span class="badge badge-generated">' + esc(window.I18N ? I18N.t("invoice_trial_ended") : "Trial ended") + "</span></div>" +
+        '<div><button type="button" class="minibtn good" id="invoiceGenerateBtn">' + esc(window.I18N ? I18N.t("btn_generate_invoice") : "Generate Invoice") + "</button>" +
+        '<div class="invoice-card-note">' + esc(window.I18N ? I18N.t("invoice_note_needs_details") : "Needs your payment details saved first, under Account.") + "</div>" +
+        '<p class="status" id="invoiceCardStatus"></p></div>';
+      var genBtn = $("invoiceGenerateBtn");
+      if (genBtn) genBtn.addEventListener("click", generateInvoice);
+      return;
+    }
+    el.innerHTML =
+      '<div class="invoice-card-left"><span class="badge badge-' + esc(lastInvoice.status) + '">' + esc(invStatusLabel(lastInvoice.status)) + '</span>' +
+      '<span class="invoice-card-num">' + esc(lastInvoice.invoiceNumber || "") + "</span></div>" +
+      '<div><button type="button" class="minibtn" id="invoiceViewBtn">' + esc(window.I18N ? I18N.t("btn_view_invoice") : "View Invoice") + "</button></div>";
+    var viewBtn = $("invoiceViewBtn");
+    if (viewBtn) viewBtn.addEventListener("click", function () { openInvoiceModal(); });
+  }
+
+  async function loadInvoice() {
+    try {
+      var data = await api("/api/partner/invoice");
+      trialEnded = !!data.trialEnded;
+      lastInvoice = data.invoice || null;
+      renderInvoiceCard();
+    } catch (e) { /* non-critical secondary panel */ }
+  }
+
+  async function generateInvoice() {
+    var btn = $("invoiceGenerateBtn");
+    var statusEl = $("invoiceCardStatus");
+    if (btn) btn.disabled = true;
+    if (statusEl) { statusEl.textContent = ""; statusEl.className = "status"; }
+    try {
+      var data = await api("/api/partner/invoice", { method: "POST", json: true, body: JSON.stringify({ action: "generate" }) });
+      lastInvoice = data.invoice;
+      renderInvoiceCard();
+      openInvoiceModal();
+    } catch (e) {
+      var key = e && e.data && e.data.error === "missing_billing_details" ? "invoice_err_missing_billing"
+        : e && e.data && e.data.error === "missing_payment_details" ? "invoice_err_missing_payment"
+        : "invoice_err_generic";
+      if (statusEl) {
+        statusEl.textContent = window.I18N ? I18N.t(key) : "Could not generate the invoice.";
+        statusEl.className = "status err";
+      }
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function invoiceLineItemsHtml() {
+    if (!lastInvoice) return "";
+    var start = lastInvoice.periodStart, end = lastInvoice.periodEnd;
+    var trips = lastOrders.filter(function (o) {
+      return o.status === "completed" && o.orderDate >= start && o.orderDate <= end;
+    }).slice().sort(function (a, b) { return (a.orderDate || "") < (b.orderDate || "") ? -1 : 1; });
+
+    var totals = {};
+    var rows = trips.map(function (o) {
+      var amt = o.price ? Number(o.price) : 0;
+      var cur = o.currency || "";
+      if (o.price) totals[cur] = (totals[cur] || 0) + amt;
+      return "<tr><td>" + esc(fmtDay(o.orderDate)) + "</td><td>" + esc(o.pickup) + " → " + esc(o.dropoff) + "</td><td>" +
+        esc(o.vehicleType || "—") + '</td><td class="num">' + (o.price ? esc(o.price) : "—") + "</td></tr>";
+    }).join("");
+    var totalLabel = Object.keys(totals).sort().map(function (cur) {
+      return totals[cur].toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + cur;
+    }).join(" + ") || "—";
+
+    return '<table class="invoice-table"><thead><tr><th>' +
+      esc(window.I18N ? I18N.t("th_date") : "Date") + "</th><th>" + esc(window.I18N ? I18N.t("invoice_th_trip") : "Trip") + "</th><th>" +
+      esc(window.I18N ? I18N.t("th_vehicle") : "Vehicle") + '</th><th class="num">' + esc(window.I18N ? I18N.t("invoice_th_amount") : "Amount") + "</th></tr></thead><tbody>" +
+      (rows || '<tr><td colspan="4" class="empty-cell">' + esc(window.I18N ? I18N.t("invoice_no_trips") : "No completed trips in this period.") + "</td></tr>") +
+      '<tr class="invoice-total-row"><td colspan="3">' + esc(window.I18N ? I18N.t("invoice_total") : "Total") + '</td><td class="num">' + esc(totalLabel) + "</td></tr>" +
+      "</tbody></table>";
+  }
+
+  function openInvoiceModal() {
+    if (!lastInvoice) return;
+    var inv = lastInvoice;
+    var body =
+      '<div class="invoice-head">' +
+        "<div><div class=\"invoice-issuer-name\">" + esc(inv.billingCompany || "") + "</div></div>" +
+        '<div><div class="invoice-title">' + esc(window.I18N ? I18N.t("invoice_modal_title") : "Invoice") + '</div>' +
+        '<div class="invoice-meta">' +
+          "<div>" + esc(window.I18N ? I18N.t("invoice_status_label") : "Status") + ' <span class="badge badge-' + esc(inv.status) + '">' + esc(invStatusLabel(inv.status)) + "</span></div>" +
+          "<div>" + esc(window.I18N ? I18N.t("invoice_no_label") : "No.") + " <b>" + esc(inv.invoiceNumber || "") + "</b></div>" +
+          "<div>" + esc(window.I18N ? I18N.t("invoice_issued_label") : "Issued") + " <b>" + esc(fmtDay(inv.generatedAt)) + "</b></div>" +
+          "<div>" + esc(window.I18N ? I18N.t("invoice_period_label") : "Period") + " <b>" + esc(fmtDay(inv.periodStart)) + "–" + esc(fmtDay(inv.periodEnd)) + "</b></div>" +
+          "<div>" + esc(window.I18N ? I18N.t("invoice_sent_to_label") : "Sent to") + " <b>" + esc(inv.billingEmail || "") + "</b></div>" +
+        "</div></div>" +
+      "</div>" +
+      '<div class="invoice-parties">' +
+        '<div class="invoice-party"><div class="invoice-party-label">' + esc(window.I18N ? I18N.t("invoice_party_summary") : "Trial period summary") + '</div>' +
+          '<div class="invoice-party-name">' + esc(me ? me.companyName : "") + '</div>' +
+          '<div class="invoice-party-line">' + esc(window.I18N ? I18N.t("invoice_party_account") : "Partner account") + " · " + esc(me ? me.accountId || "" : "") + "</div>" +
+        "</div>" +
+        '<div class="invoice-party"><div class="invoice-party-label">' + esc(window.I18N ? I18N.t("invoice_party_payto") : "Pay to") + '</div>' +
+          '<div class="invoice-party-name">' + esc(inv.payAccountHolder || "") + '</div>' +
+          '<div class="invoice-party-line">' + esc(inv.payBankName || "") + " · " + esc(inv.payAccountNumber || "") + "</div>" +
+          '<div class="invoice-party-line">' + (inv.paySwift ? "SWIFT " + esc(inv.paySwift) + " · " : "") + esc(inv.payCurrency || "") + "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div style="overflow-x:auto;">' + invoiceLineItemsHtml() + "</div>" +
+      '<div class="invoice-foot">' +
+        "<span>" + esc(window.I18N ? I18N.t("invoice_foot_processing") : "Typically processed within 3–7 business days.") + "</span>" +
+        "<span>" + esc(window.I18N ? I18N.t("invoice_foot_after_trial") : "Trips completed after the trial period are not included on this invoice.") + "</span>" +
+      "</div>";
+    $("invoiceModalBody").innerHTML = body;
+    $("invoiceSendBtn").hidden = inv.status !== "generated";
+    $("invoiceModal").hidden = false;
+  }
+  function closeInvoiceModal() {
+    if ($("invoiceModal")) $("invoiceModal").hidden = true;
+  }
+  $("invoiceModalCloseX").addEventListener("click", closeInvoiceModal);
+  $("invoiceModalCloseBtn").addEventListener("click", closeInvoiceModal);
+  $("invoiceSendBtn").addEventListener("click", async function () {
+    this.disabled = true;
+    try {
+      var data = await api("/api/partner/invoice", { method: "POST", json: true, body: JSON.stringify({ action: "send" }) });
+      lastInvoice = data.invoice;
+      renderInvoiceCard();
+      openInvoiceModal();
+    } catch (e) {
+      this.disabled = false;
+    }
   });
-  $("finPrintBtn").addEventListener("click", function () { window.print(); });
 
   /* ---------- order detail (full-page view) ---------- */
   function fleetOptionsHtml(list, selectedId, kind) {
@@ -1155,12 +1365,90 @@
 
   async function loadFleet() {
     var data = await api("/api/partner/fleet");
-    myFleet = { company: data.company, other: data.other, vehicles: data.vehicles || [], drivers: data.drivers || [] };
+    myFleet = { company: data.company, other: data.other, contract: data.contract || { documents: [] }, vehicles: data.vehicles || [], drivers: data.drivers || [] };
     renderFleetList();
+    renderContractPanel();
     if (currentForm && currentForm.id) {
       if (currentForm.type === "vehicle") renderVehicleForm();
       else renderDriverForm();
     }
+  }
+
+  /* ---------- contract ----------
+     The contract itself is sent to the partner and signed outside the
+     portal; once it's signed by both sides, admin uploads the final file
+     (functions/api/admin/contract-upload.js), stored as a regular document
+     with owner_type='contract' — surfaced here via /api/partner/fleet. */
+  function renderContractPanel() {
+    var el = $("contractCard");
+    if (!el) return;
+    var doc = (myFleet.contract && myFleet.contract.documents && myFleet.contract.documents[0]) || null;
+    if (!doc) {
+      el.innerHTML = '<p class="sub" style="margin:0;" data-i18n="contract_none">' +
+        (window.I18N ? esc(I18N.t("contract_none")) : "Your contract hasn't been uploaded yet.") + "</p>";
+      return;
+    }
+    el.innerHTML = '<div class="doc-row">' +
+      '<div class="doc-icon">' + FILE_ICON + "</div>" +
+      '<div class="doc-meta"><div class="doc-name">' + esc(doc.filename || "contract") + '</div>' +
+      '<div class="doc-sub">' + esc(window.I18N ? I18N.t("contract_uploaded_on") : "Uploaded") + " " + esc(fmtDate(doc.uploadedAt)) + "</div></div>" +
+      '<a class="minibtn" href="/api/partner/file?id=' + doc.id + '" target="_blank" rel="noopener">' + esc(window.I18N ? I18N.t("btn_download") : "Download") + "</a>" +
+      "</div>";
+  }
+
+  /* ---------- referrals ----------
+     7% of every completed order amount earned by a partner this partner
+     referred, accrued as a running cumulative total — see
+     functions/api/partner/referrals.js. The link itself is just
+     "<origin>/register?ref=<accountId>"; registration (functions/api/register.js)
+     reads that ?ref= and stores it as referred_by_partner_id. */
+  function refBadgeHtml(p) {
+    if (p.status !== "active") {
+      return '<span class="badge badge-not_started">' + esc(window.I18N ? I18N.t("ref_awaiting_review") : "Awaiting document review") + "</span>";
+    }
+    var info = window.TrialInfo ? TrialInfo.compute(p.trialStartedAt, p.trialSimulateEnded) : { state: "not_started" };
+    if (info.state === "active" || info.state === "ending") {
+      return '<span class="badge badge-pending">' + esc((window.I18N ? I18N.t("ref_trial_day") : "Trial · day") + " " + info.dayNumber + "/" + (window.TrialInfo ? TrialInfo.TRIAL_DAYS : 30)) + "</span>";
+    }
+    return '<span class="badge badge-active">' + esc(window.I18N ? I18N.t("ref_active") : "Active") + "</span>";
+  }
+  function renderReferrals() {
+    var linkInput = $("refLinkInput");
+    if (linkInput) linkInput.value = lastReferrals.accountId ? (window.location.origin + "/register?ref=" + lastReferrals.accountId) : "";
+
+    var list = $("refList");
+    if (!list) return;
+    if (!lastReferrals.referredPartners.length) {
+      list.innerHTML = '<p class="sub" style="margin:0;">' + esc(window.I18N ? I18N.t("ref_none") : "No one yet — share your link above.") + "</p>";
+      return;
+    }
+    list.innerHTML = lastReferrals.referredPartners.map(function (p) {
+      var earned = bonusLabel(p.bonusByCurrency);
+      return '<div class="ref-row"><div><div class="ref-name">' + esc(p.companyName) + "</div><div class=\"ref-sub\">" + refBadgeHtml(p) + "</div></div>" +
+        '<div><div class="ref-amount mono">' + esc(earned) + '</div><div class="ref-amount-label">' +
+        esc(window.I18N ? I18N.t("ref_earned_label") : "earned") + "</div></div></div>";
+    }).join("");
+  }
+  async function loadReferrals() {
+    try {
+      var data = await api("/api/partner/referrals");
+      lastReferrals = { accountId: data.accountId, bonusByCurrency: data.bonusByCurrency || {}, referredPartners: data.referredPartners || [] };
+      renderReferrals();
+      renderFinance(lastOrders);
+    } catch (e) { /* non-critical secondary panel */ }
+  }
+  var refCopyBtn = $("refCopyBtn");
+  if (refCopyBtn) {
+    refCopyBtn.addEventListener("click", async function () {
+      var val = $("refLinkInput").value;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(val);
+        var prev = this.textContent;
+        this.textContent = window.I18N ? I18N.t("copied_label") : "Copied!";
+        var self = this;
+        setTimeout(function () { self.textContent = prev; }, 1200);
+      } catch (e) { /* clipboard unavailable; ignore */ }
+    });
   }
 
   /* ---------- fleet sub-tabs (Company / Vehicles / Drivers) ---------- */
@@ -1455,6 +1743,8 @@
       loadMe().catch(function (e) {}),
       loadOrders().catch(function (e) {}),
       loadFleet().catch(function (e) {}),
+      loadInvoice().catch(function (e) {}),
+      loadReferrals().catch(function (e) {}),
     ]);
   })();
 

@@ -18,6 +18,7 @@ export async function onRequestPost(context) {
     const company = String(body.company || "").trim();
     const phone = String(body.phone || "").trim().slice(0, 50);
     const serviceCity = String(body.serviceCity || "").trim().slice(0, 150);
+    const refAccountId = String(body.ref || "").trim();
 
     let airports = [];
     if (Array.isArray(body.airports)) {
@@ -44,13 +45,19 @@ export async function onRequestPost(context) {
     const existing = await env.DB.prepare("SELECT id FROM partners WHERE email = ?").bind(email).first();
     if (existing) return Response.json({ error: "email_taken" }, { status: 409 });
 
+    let referredBy = null;
+    if (refAccountId) {
+      const referrer = await env.DB.prepare("SELECT id FROM partners WHERE account_id = ?").bind(refAccountId).first();
+      if (referrer) referredBy = referrer.id;
+    }
+
     const { hash, salt } = await hashPassword(password);
     const accountId = await generateUniqueAccountId(env);
 
     const partnerInsert = await env.DB.prepare(
-      `INSERT INTO partners (email, password_hash, password_salt, company_name, phone, account_id, covered_airports, service_city, country, country_name, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
-    ).bind(email, hash, salt, company.slice(0, 200), phone, accountId, JSON.stringify(airports), serviceCity || null, country, countryName || country).run();
+      `INSERT INTO partners (email, password_hash, password_salt, company_name, phone, account_id, covered_airports, service_city, country, country_name, status, referred_by_partner_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+    ).bind(email, hash, salt, company.slice(0, 200), phone, accountId, JSON.stringify(airports), serviceCity || null, country, countryName || country, referredBy).run();
     const partnerId = partnerInsert.meta.last_row_id;
 
     return Response.json({ ok: true, id: partnerId });

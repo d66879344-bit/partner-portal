@@ -9,6 +9,13 @@
   var STAGE_LABELS = { on_the_way: "On the way", arrived: "Arrived at pickup", in_car: "Passenger on board", dropped_off: "Dropped off" };
   var orderNumberManual = false;
   var bufferManual = false;
+  var PAGE_SIZE = 20;
+  var partnersPage = 1;
+  var ordersPage = 1;
+  var financePage = 1;
+  var BILLING_COMPANIES = ["PartnerRelay Ltd", "PartnerRelay Americas LLC", "PartnerRelay EU B.V."];
+  var INVOICE_STATUSES = ["generated", "sent", "received", "processing", "paid"];
+  var TRIAL_SIMULATE_ACCOUNT_ID = "id656888"; // testing-only toggle, restricted to this one account
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -63,6 +70,7 @@
     tab.addEventListener("click", function () {
       $("orderTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
       orderTab = tab.getAttribute("data-order-tab");
+      ordersPage = 1;
       renderOrders();
     });
   });
@@ -97,7 +105,7 @@
     if (fs && p.status !== fs) return false;
     if (fc && p.country !== fc) return false;
     if (ft) {
-      var info = window.TrialInfo ? TrialInfo.compute(p.trialStartedAt) : { state: "not_started" };
+      var info = window.TrialInfo ? TrialInfo.compute(p.trialStartedAt, p.trialSimulateEnded) : { state: "not_started" };
       if (info.state !== ft) return false;
     }
     if (fo) {
@@ -107,9 +115,9 @@
     return true;
   }
 
-  function trialPillHtml(startedAt) {
+  function trialPillHtml(startedAt, forceEnded) {
     if (!window.TrialInfo) return "—";
-    var info = TrialInfo.compute(startedAt);
+    var info = TrialInfo.compute(startedAt, forceEnded);
     if (info.state === "not_started") {
       return '<span class="badge badge-not_started">Not started</span>';
     }
@@ -140,8 +148,14 @@
 
   function renderPartners() {
     var rows = partners.filter(matchesPartnerFilter);
-    if (!rows.length) { $("partnersList").innerHTML = '<tr><td colspan="8" class="empty-cell">No matching partners.</td></tr>'; return; }
-    $("partnersList").innerHTML = rows.map(function (p) {
+    if (!rows.length) {
+      $("partnersList").innerHTML = '<tr><td colspan="8" class="empty-cell">No matching partners.</td></tr>';
+      $("partnersPager").innerHTML = "";
+      return;
+    }
+    var pageResult = window.Paginate ? Paginate.slice(rows, partnersPage, PAGE_SIZE) : { page: 1, pages: 1, items: rows };
+    partnersPage = pageResult.page;
+    $("partnersList").innerHTML = pageResult.items.map(function (p) {
       var isOpen = openId === p.id;
       return '<tr class="data-row" data-toggle="' + p.id + '">' +
         '<td class="col-main">' + esc(p.companyName) + "</td>" +
@@ -149,12 +163,13 @@
         "<td>" + esc(p.countryName || p.country) + "</td>" +
         '<td class="mono">' + esc(fmtDate(p.createdAt)) + "</td>" +
         "<td>" + badge(p.status) + "</td>" +
-        "<td>" + trialPillHtml(p.trialStartedAt) + "</td>" +
+        "<td>" + trialPillHtml(p.trialStartedAt, p.trialSimulateEnded) + "</td>" +
         "<td>" + (p.organization ? esc(p.organization) : '<span style="color:var(--ink-2);">—</span>') + "</td>" +
         '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
         "</tr>" +
         '<tr><td colspan="8" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="detail-' + p.id + '"></div></td></tr>';
     }).join("");
+    $("partnersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
     if (openId != null) renderDetail(openId);
   }
 
@@ -224,6 +239,51 @@
       '<button type="button" class="minibtn crit" data-partner-reject="' + p.id + '">Block account</button>' +
       '<button type="button" class="minibtn ghost-crit" data-partner-delete="' + p.id + '" data-partner-name="' + esc(p.companyName) + '" style="margin-left:auto;">Delete partner</button>' +
       "</div></div>" +
+      '<div class="block"><div class="block-title">Billing &amp; payment</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
+      '<label style="font-size:12.5px;color:var(--ink-2);">Billing company' +
+      '<select data-billing-company="' + p.id + '" style="margin-left:6px;">' +
+      '<option value="">—</option>' +
+      BILLING_COMPANIES.map(function (c) {
+        return '<option value="' + esc(c) + '"' + (p.billingCompany === c ? " selected" : "") + ">" + esc(c) + "</option>";
+      }).join("") +
+      "</select></label>" +
+      '<label style="font-size:12.5px;color:var(--ink-2);">Invoice email' +
+      '<input type="email" data-billing-email="' + p.id + '" value="' + esc(p.billingEmail || "") + '" placeholder="billing@partner.com" style="margin-left:6px;width:200px;">' +
+      "</label>" +
+      '<button type="button" class="minibtn" data-billing-save="' + p.id + '">Save</button>' +
+      "</div>" +
+      '<div class="row-meta">Payment details from partner: ' +
+      (p.payAccountHolder || p.payBankName || p.payAccountNumber
+        ? esc(p.payAccountHolder || "—") + " · " + esc(p.payBankName || "—") + " · " + esc(p.payAccountNumber || "—") +
+          (p.paySwift ? " · SWIFT " + esc(p.paySwift) : "") + (p.payCurrency ? " · " + esc(p.payCurrency) : "")
+        : "Not provided yet.") +
+      "</div>" +
+      (p.accountId === TRIAL_SIMULATE_ACCOUNT_ID
+        ? '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">' +
+          '<label class="toggle-switch"><input type="checkbox" data-trial-simulate="' + p.id + '"' + (p.trialSimulateEnded ? " checked" : "") + '><span class="slider"></span></label>' +
+          '<span style="font-size:12.5px;color:var(--ink-2);">Simulate trial ended (testing only — this account)</span>' +
+          "</div>"
+        : "") +
+      "</div>" +
+      '<div class="block"><div class="block-title">Contract</div>' +
+      (d.contract.documents.length ? docList(d.contract.documents) : '<p class="docrow" style="color:var(--ink-2);">Not uploaded yet.</p>') +
+      '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<input type="file" data-contract-file="' + p.id + '" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="font-size:12.5px;">' +
+      '<button type="button" class="minibtn" data-contract-upload="' + p.id + '">Upload contract</button>' +
+      "</div></div>" +
+      (d.invoice
+        ? '<div class="block"><div class="block-title">Invoice</div>' +
+          '<div class="row-meta">' + esc(d.invoice.invoiceNumber) + " · " + esc(fmtDay(d.invoice.periodStart)) + "–" + esc(fmtDay(d.invoice.periodEnd)) + " · " + badge(d.invoice.status) + "</div>" +
+          '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<select data-invoice-status="' + d.invoice.id + '">' +
+          INVOICE_STATUSES.map(function (s) {
+            return '<option value="' + s + '"' + (d.invoice.status === s ? " selected" : "") + ">" + esc(s) + "</option>";
+          }).join("") +
+          "</select>" +
+          '<button type="button" class="minibtn" data-invoice-status-save="' + d.invoice.id + '">Save</button>' +
+          "</div></div>"
+        : "") +
       '<div class="block"><div class="block-title">Company documents</div>' + docList(d.company.documents) + "</div>" +
       vehicleBlocks +
       driverBlocks +
@@ -290,10 +350,21 @@
     }
   });
 
-  $("fStatus").addEventListener("change", renderPartners);
-  $("fCountry").addEventListener("change", renderPartners);
-  $("fTrialState").addEventListener("change", renderPartners);
-  $("fOrganization").addEventListener("change", renderPartners);
+  function wirePagerContainer(containerId, getPage, setPage, rerender) {
+    var el = $(containerId);
+    if (!el || el.__wired) return;
+    el.__wired = true;
+    el.addEventListener("click", function (e) {
+      if (e.target.closest("[data-pager-prev]")) { setPage(Math.max(1, getPage() - 1)); rerender(); }
+      else if (e.target.closest("[data-pager-next]")) { setPage(getPage() + 1); rerender(); }
+    });
+  }
+  wirePagerContainer("partnersPager", function () { return partnersPage; }, function (p) { partnersPage = p; }, renderPartners);
+
+  $("fStatus").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
+  $("fCountry").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
+  $("fTrialState").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
+  $("fOrganization").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
 
   $("partnersList").addEventListener("click", async function (e) {
     var saveOrg = e.target.closest("[data-organization-save]");
@@ -313,6 +384,84 @@
       renderPartners();
     } catch (err) {
       alert("Could not save the organization. Try again.");
+    }
+  });
+
+  $("partnersList").addEventListener("click", async function (e) {
+    var saveBilling = e.target.closest("[data-billing-save]");
+    var uploadContract = e.target.closest("[data-contract-upload]");
+    var saveInvoiceStatus = e.target.closest("[data-invoice-status-save]");
+    if (!saveBilling && !uploadContract && !saveInvoiceStatus) return;
+    e.stopPropagation();
+
+    if (saveBilling) {
+      var bpid = Number(saveBilling.getAttribute("data-billing-save"));
+      var companySel = document.querySelector('[data-billing-company="' + bpid + '"]');
+      var emailInput = document.querySelector('[data-billing-email="' + bpid + '"]');
+      try {
+        await api("/api/admin/billing-settings", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: bpid, billingCompany: companySel ? companySel.value : "", billingEmail: emailInput ? emailInput.value.trim() : "" })
+        });
+        delete detailCache[bpid];
+        renderDetail(bpid);
+      } catch (err) {
+        alert("Could not save billing settings. Try again.");
+      }
+      return;
+    }
+
+    if (uploadContract) {
+      var cpid = Number(uploadContract.getAttribute("data-contract-upload"));
+      var fileInput = document.querySelector('[data-contract-file="' + cpid + '"]');
+      var file = fileInput && fileInput.files && fileInput.files[0];
+      if (!file) { alert("Choose a file first."); return; }
+      var fd = new FormData();
+      fd.append("partnerId", String(cpid));
+      fd.append("file", file);
+      try {
+        await api("/api/admin/contract-upload", { method: "POST", body: fd });
+        delete detailCache[cpid];
+        renderDetail(cpid);
+      } catch (err) {
+        alert("Could not upload the contract. Try again.");
+      }
+      return;
+    }
+
+    if (saveInvoiceStatus) {
+      var invId = Number(saveInvoiceStatus.getAttribute("data-invoice-status-save"));
+      var statusSel = document.querySelector('[data-invoice-status="' + invId + '"]');
+      try {
+        await api("/api/admin/invoice-status", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: invId, status: statusSel ? statusSel.value : "" })
+        });
+        delete detailCache[openId];
+        renderDetail(openId);
+      } catch (err) {
+        alert("Could not save the invoice status. Try again.");
+      }
+    }
+  });
+
+  $("partnersList").addEventListener("change", async function (e) {
+    var toggle = e.target.closest("[data-trial-simulate]");
+    if (!toggle) return;
+    var tpid = Number(toggle.getAttribute("data-trial-simulate"));
+    var on = toggle.checked;
+    try {
+      await api("/api/admin/trial-simulate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: tpid, on: on })
+      });
+      var tp = partners.filter(function (x) { return x.id === tpid; })[0];
+      if (tp) tp.trialSimulateEnded = on;
+      if (detailCache[tpid]) detailCache[tpid].partner.trialSimulateEnded = on;
+      renderPartners();
+    } catch (err) {
+      toggle.checked = !on;
+      alert("Could not save. Try again.");
     }
   });
 
@@ -437,10 +586,13 @@
 
     if (!rows.length) {
       $("financeList").innerHTML = '<tr><td colspan="5" class="empty-cell">No completed orders match these filters.</td></tr>';
+      $("financePager").innerHTML = "";
       return;
     }
 
     // Group by partner, each group sorted by date desc, with a subtotal row, then a grand total.
+    // Pagination paginates the PARTNER GROUPS (one "page" = up to PAGE_SIZE partners), but the
+    // grand-total row always reflects every filtered order, not just the page shown.
     var byPartner = {};
     rows.forEach(function (o) {
       (byPartner[o.partnerId] = byPartner[o.partnerId] || []).push(o);
@@ -449,9 +601,22 @@
       var na = byPartner[a][0].companyName || "", nb = byPartner[b][0].companyName || "";
       return na.localeCompare(nb);
     });
-    var html = "";
+
     var grandTotals = {};
     partnerIds.forEach(function (pid) {
+      byPartner[pid].forEach(function (o) {
+        if (o.price) {
+          var cur = o.currency || "—";
+          grandTotals[cur] = (grandTotals[cur] || 0) + Number(o.price);
+        }
+      });
+    });
+
+    var pageResult = window.Paginate ? Paginate.slice(partnerIds, financePage, PAGE_SIZE) : { page: 1, pages: 1, items: partnerIds };
+    financePage = pageResult.page;
+
+    var html = "";
+    pageResult.items.forEach(function (pid) {
       var group = byPartner[pid].slice().sort(function (a, b) {
         var ka = (a.orderDate || "") + " " + (a.orderTime || "");
         var kb = (b.orderDate || "") + " " + (b.orderTime || "");
@@ -472,7 +637,6 @@
         if (o.price) {
           var cur = o.currency || "—";
           subtotals[cur] = (subtotals[cur] || 0) + Number(o.price);
-          grandTotals[cur] = (grandTotals[cur] || 0) + Number(o.price);
         }
       });
       var subtotalText = Object.keys(subtotals).sort().map(function (cur) {
@@ -487,14 +651,16 @@
       return grandTotals[cur].toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + cur;
     }).join(" · ") || "—";
     html += '<tr class="grand-row" style="background:var(--surface-2);border-top:2px solid var(--line-strong);">' +
-      '<td colspan="4" style="font-weight:700;">Grand total</td>' +
+      '<td colspan="4" style="font-weight:700;">Grand total (all pages)</td>' +
       '<td class="mono" style="font-weight:700;">' + esc(grandText) + "</td>" +
       "</tr>";
     $("financeList").innerHTML = html;
+    $("financePager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
   }
-  $("finPartner").addEventListener("change", renderFinance);
-  $("finDateFrom").addEventListener("change", renderFinance);
-  $("finDateTo").addEventListener("change", renderFinance);
+  wirePagerContainer("financePager", function () { return financePage; }, function (p) { financePage = p; }, renderFinance);
+  $("finPartner").addEventListener("change", function () { financePage = 1; renderFinance(); });
+  $("finDateFrom").addEventListener("change", function () { financePage = 1; renderFinance(); });
+  $("finDateTo").addEventListener("change", function () { financePage = 1; renderFinance(); });
   $("finExportBtn").addEventListener("click", function () {
     var rows = [["Partner", "Order #", "Date", "Pickup", "Dropoff", "No-show", "Price", "Currency"]];
     lastFinanceOrders.forEach(function (o) {
@@ -660,8 +826,14 @@
       var kb = (b.orderDate || "") + " " + (b.orderTime || "");
       return ka < kb ? -dir : ka > kb ? dir : 0;
     });
-    if (!rows.length) { $("ordersList").innerHTML = '<tr><td colspan="7" class="empty-cell">' + EMPTY_ORDER_MESSAGE[orderTab] + "</td></tr>"; return; }
-    $("ordersList").innerHTML = rows.map(function (o) {
+    if (!rows.length) {
+      $("ordersList").innerHTML = '<tr><td colspan="7" class="empty-cell">' + EMPTY_ORDER_MESSAGE[orderTab] + "</td></tr>";
+      $("ordersPager").innerHTML = "";
+      return;
+    }
+    var pageResult = window.Paginate ? Paginate.slice(rows, ordersPage, PAGE_SIZE) : { page: 1, pages: 1, items: rows };
+    ordersPage = pageResult.page;
+    $("ordersList").innerHTML = pageResult.items.map(function (o) {
       var isOpen = openOrderId === o.id;
       return '<tr class="data-row" data-order-toggle="' + o.id + '">' +
         '<td class="mono col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
@@ -674,6 +846,7 @@
         "</tr>" +
         '<tr><td colspan="7" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="orderdetail-' + o.id + '"></div></td></tr>';
     }).join("");
+    $("ordersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
     if (openOrderId != null) renderOrderDetail(openOrderId);
   }
 
@@ -1023,11 +1196,12 @@
     }
   });
 
-  $("fOrderSearch").addEventListener("input", renderOrders);
-  $("fOrderPartner").addEventListener("change", renderOrders);
-  $("fDateFrom").addEventListener("change", renderOrders);
-  $("fDateTo").addEventListener("change", renderOrders);
-  $("fSort").addEventListener("change", renderOrders);
+  wirePagerContainer("ordersPager", function () { return ordersPage; }, function (p) { ordersPage = p; }, renderOrders);
+  $("fOrderSearch").addEventListener("input", function () { ordersPage = 1; renderOrders(); });
+  $("fOrderPartner").addEventListener("change", function () { ordersPage = 1; renderOrders(); });
+  $("fDateFrom").addEventListener("change", function () { ordersPage = 1; renderOrders(); });
+  $("fDateTo").addEventListener("change", function () { ordersPage = 1; renderOrders(); });
+  $("fSort").addEventListener("change", function () { ordersPage = 1; renderOrders(); });
 
   /* ---------- gate ---------- */
   function showGate() {

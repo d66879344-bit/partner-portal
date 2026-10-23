@@ -24,7 +24,43 @@ CREATE TABLE IF NOT EXISTS partners (
   admin_note TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   activated_at TEXT,
-  trial_started_at TEXT -- set once, automatically, when this partner's first order reaches status 'completed'; trial runs 30 days from here
+  trial_started_at TEXT, -- set once, automatically, when this partner's first order reaches status 'completed'; trial runs 30 days from here
+  trial_simulate_ended INTEGER NOT NULL DEFAULT 0, -- testing-only override: when 1, the trial always displays as ended regardless of trial_started_at
+  referred_by_partner_id INTEGER REFERENCES partners(id), -- set at registration from a ?ref=<accountId> link; who gets the referral bonus on this partner's completed orders
+  billing_company TEXT,  -- which of our own billing entities issues this partner's invoice (admin-set, fixed list — see functions/api/admin/billing-settings.js)
+  billing_email TEXT,    -- address the invoice is emailed to (admin-set)
+  pay_account_holder TEXT,  -- partner's own payment details, entered by the partner, used to fill in "pay to" on their invoice
+  pay_bank_name TEXT,
+  pay_account_number TEXT, -- IBAN or account number
+  pay_swift TEXT,
+  pay_currency TEXT
+);
+
+-- One invoice per partner, covering their 30-day trial period only (trips
+-- after the trial are never invoiced through this table). Billing company /
+-- email and the partner's payment details are snapshotted here at the moment
+-- the invoice is generated, so editing partners.billing_* or pay_* later
+-- never changes an invoice that already exists. Trip line items are NOT
+-- stored here — the dashboard computes them client-side from the partner's
+-- own completed orders inside [period_start, period_end], same as the rest
+-- of the site's Finance/Ride-Pool screens.
+CREATE TABLE IF NOT EXISTS invoices (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  partner_id INTEGER NOT NULL REFERENCES partners(id),
+  invoice_number TEXT UNIQUE,
+  period_start TEXT NOT NULL,
+  period_end TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'generated', -- generated | sent | received | processing | paid
+  billing_company TEXT,
+  billing_email TEXT,
+  pay_account_holder TEXT,
+  pay_bank_name TEXT,
+  pay_account_number TEXT,
+  pay_swift TEXT,
+  pay_currency TEXT,
+  generated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  sent_at TEXT,
+  status_updated_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS vehicles (
@@ -104,6 +140,7 @@ CREATE TABLE IF NOT EXISTS orders (
   hidden_from_admin INTEGER NOT NULL DEFAULT 0 -- hides the order from the admin view only; the partner still sees it
 );
 
+CREATE INDEX IF NOT EXISTS idx_invoices_partner ON invoices(partner_id);
 CREATE INDEX IF NOT EXISTS idx_vehicles_partner ON vehicles(partner_id);
 CREATE INDEX IF NOT EXISTS idx_drivers_partner ON drivers(partner_id);
 CREATE INDEX IF NOT EXISTS idx_documents_partner ON documents(partner_id);

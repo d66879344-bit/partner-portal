@@ -7,6 +7,10 @@
   var airportPicker = null;
   var countryCombo = null;
   var cityCombo = null;
+  var refCode = (function () {
+    try { return new URLSearchParams(window.location.search).get("ref") || ""; }
+    catch (e) { return ""; }
+  })();
 
   function setStatus(t, k) {
     var s = $("status");
@@ -75,6 +79,7 @@
           phone: phone,
           serviceCity: state.serviceCity || "",
           airports: airportPicker ? airportPicker.getSelected() : [],
+          ref: refCode || "",
         }),
       });
       var data = await res.json().catch(function () { return {}; });
