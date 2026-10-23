@@ -207,6 +207,7 @@
     var d = detailCache[id];
     var p = d.partner;
 
+
     function docList(docs) {
       if (!docs.length) return '<p class="docrow" style="color:var(--ink-2);">No documents.</p>';
       return docs.map(function (doc) {
@@ -307,6 +308,27 @@
       (d.other.documents.length ? '<div class="block"><div class="block-title">Other</div>' + docList(d.other.documents) + "</div>" : "");
   }
 
+  // Re-fetches a partner's detail data after some change (approving a
+  // document, saving billing info, uploading a file, ...) WITHOUT blanking
+  // the open panel to "Loading…" first. Deleting the cache and calling
+  // renderDetail() directly used to do that, and since the panel is nested
+  // inside the scrolling .dash-main, briefly collapsing it down to one line
+  // of text shrinks the scroll container mid-fetch, which makes the browser
+  // clamp the admin's scroll position back up — this is the "approving a
+  // document scrolls me to the top" bug. Keeping the stale content on screen
+  // until the fresh data is ready (then swapping in one go) avoids that
+  // collapse entirely.
+  async function refreshDetail(id) {
+    var el = $("detail-" + id);
+    if (!el) return;
+    try {
+      detailCache[id] = await api("/api/admin/partner-detail?id=" + id);
+    } catch (e) {
+      return; // keep showing the stale content rather than erroring out
+    }
+    if (openId === id) renderDetail(id); // re-renders from the now-fresh cache, no extra network call
+  }
+
   $("partnersList").addEventListener("click", async function (e) {
     var approveDoc = e.target.closest("[data-doc-approve]");
     var rejectDoc = e.target.closest("[data-doc-reject]");
@@ -349,18 +371,22 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: Number(docId), status: approveDoc ? "approved" : "rejected" })
         });
-        delete detailCache[openId];
-        renderDetail(openId);
+        refreshDetail(openId);
       } else {
         var pid = Number((approveP || rejectP).getAttribute(approveP ? "data-partner-approve" : "data-partner-reject"));
         await api("/api/admin/partner-status", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: pid, status: approveP ? "active" : "blocked" })
         });
-        delete detailCache[pid];
-        await loadPartners();
+        // Leave detailCache[pid] alone (its panel was already open, so it's
+        // already populated) rather than deleting it — loadPartners() below
+        // rebuilds the table and would otherwise re-render this partner's
+        // open detail panel from an empty cache, blanking it to "Loading…"
+        // for a moment and yanking the admin's scroll position. refreshDetail
+        // then quietly swaps in the truly fresh copy once it's fetched.
         openId = pid;
-        renderPartners();
+        await loadPartners();
+        refreshDetail(pid);
       }
     } catch (err) {
       alert("Could not update. Try again.");
@@ -421,8 +447,7 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: bpid, billingCompany: companySel ? companySel.value : "", billingEmail: emailInput ? emailInput.value.trim() : "" })
         });
-        delete detailCache[bpid];
-        renderDetail(bpid);
+        refreshDetail(bpid);
       } catch (err) {
         alert("Could not save billing settings. Try again.");
       }
@@ -439,8 +464,7 @@
       fd.append("file", file);
       try {
         await api("/api/admin/contract-upload", { method: "POST", body: fd });
-        delete detailCache[cpid];
-        renderDetail(cpid);
+        refreshDetail(cpid);
       } catch (err) {
         alert("Could not upload the contract. Try again.");
       }
@@ -457,9 +481,8 @@
       plFd.append("file", plFile);
       try {
         await api("/api/admin/price-list-upload", { method: "POST", body: plFd });
-        delete detailCache[plpid];
-        renderDetail(plpid);
         await loadPartners();
+        refreshDetail(plpid);
       } catch (err) {
         alert("Could not upload the price list. Try again.");
       }
@@ -474,8 +497,7 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: invId, status: statusSel ? statusSel.value : "" })
         });
-        delete detailCache[openId];
-        renderDetail(openId);
+        refreshDetail(openId);
       } catch (err) {
         alert("Could not save the invoice status. Try again.");
       }
