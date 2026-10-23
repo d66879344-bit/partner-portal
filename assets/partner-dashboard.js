@@ -102,7 +102,7 @@
     if (tabKey === "orders" || tabKey === "finance") loadOrders(true).catch(function () {});
     if (tabKey === "finance") loadInvoice().catch(function () {});
     if (tabKey === "fleet" || tabKey === "company" || tabKey === "contract") loadFleet().catch(function () {});
-    if (tabKey === "company" || tabKey === "account") refreshMeSilently().catch(function () {});
+    if (tabKey === "company" || tabKey === "account" || tabKey === "ridepool") refreshMeSilently().catch(function () {});
     if (tabKey === "referrals") loadReferrals().catch(function () {});
   }
   $("mainTabs").querySelectorAll(".tab").forEach(function (tab) {
@@ -193,8 +193,11 @@
      shaped from the partner's own service city/country and covered airports,
      with a live-looking, periodically changing count. Nothing here is a real
      order or comes from the server — the cards are intentionally
-     non-interactive, and the pool stays locked behind the trial-period
-     notice until the real matching/booking logic is built. */
+     non-interactive (no click handler anywhere on a row), and the trial-lock
+     overlay/blur only reflects the partner's trial state: shown while the
+     trial is running, removed once it has ended (real trial end, or the
+     admin's testing-only simulate-ended override). The cards stay
+     non-interactive either way until the real matching/booking logic is built. */
   var RP_HOTEL_WORDS = ["Grand", "Royal", "Central", "Riviera", "Marina", "Plaza", "Palace", "Garden", "Seaside", "Metropol"];
   var RP_PLACE_WORDS = ["Hotel", "Resort", "Suites", "Inn", "Residence"];
   var rpTimer = null;
@@ -283,6 +286,16 @@
     setTimeout(function () { el.classList.remove("bump"); }, 220);
   }
 
+  // Shows/hides the trial-lock overlay and blur on the ride pool list. The
+  // cards themselves have no click handler either way — this only controls
+  // whether they're legible or hidden behind the "locked during your trial"
+  // notice.
+  function rpSetUnlocked(unlocked) {
+    var wrap = $("ridePoolWrap");
+    if (!wrap) return;
+    wrap.classList.toggle("unlocked", !!unlocked);
+  }
+
   function initRidePool() {
     if (!$("ridePoolList") || rpTimer) return;
     rpCount = rpRandomInt(7, 20);
@@ -313,6 +326,10 @@
     }
 
     renderTrial(me.trialStartedAt, me.trialSimulateEnded);
+    try {
+      var rpInfo = window.TrialInfo ? TrialInfo.compute(me.trialStartedAt, me.trialSimulateEnded) : { state: "not_started" };
+      rpSetUnlocked(rpInfo.state === "ended");
+    } catch (e) { /* never let this block the rest of loadMe */ }
     initRidePool();
 
     $("whoCompany").textContent = me.companyName;
@@ -376,6 +393,10 @@
     me.trialStartedAt = fresh.trialStartedAt;
     me.trialSimulateEnded = fresh.trialSimulateEnded;
     renderTrial(me.trialStartedAt, me.trialSimulateEnded);
+    try {
+      var rpInfo = window.TrialInfo ? TrialInfo.compute(me.trialStartedAt, me.trialSimulateEnded) : { state: "not_started" };
+      rpSetUnlocked(rpInfo.state === "ended");
+    } catch (e) { /* never let this block the rest of refreshMeSilently */ }
     $("acctStatus").innerHTML = badge(fresh.status);
     $("pendingBanner").hidden = fresh.status === "active";
 

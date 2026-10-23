@@ -3,7 +3,7 @@ import { checkAdminSecret } from "../../_lib/auth.js";
 // Admin sets, per partner, which of our own billing entities issues their
 // invoice and the address it's emailed to. Read by functions/api/partner/invoice.js
 // at the moment an invoice is generated (snapshotted onto the invoice row).
-const BILLING_COMPANIES = ["PartnerRelay Ltd", "PartnerRelay Americas LLC", "PartnerRelay EU B.V."];
+const BILLING_COMPANIES = ["ShuttleDirect", "Mozio"];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function onRequestPost(context) {

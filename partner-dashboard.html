@@ -238,6 +238,11 @@
   /* ---------- ride pool: locked live-feed list ---------- */
   .ridepool-wrap { position: relative; }
   .ridepool-list { display: flex; flex-direction: column; gap: 10px; filter: saturate(.5) blur(.3px); opacity: .6; user-select: none; }
+  /* Once the trial has ended (real end, or the admin's testing-only simulate-ended
+     override), the lock overlay/blur goes away — the cards are still not clickable
+     (no click handler exists on a row either way), just no longer hidden behind the notice. */
+  .ridepool-wrap.unlocked .ridepool-list { filter: none; opacity: 1; }
+  .ridepool-wrap.unlocked .ridepool-lock { display: none; }
   .rp-row { border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; background: var(--surface); cursor: default; }
   .rp-row-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
   .rp-row-route { font-weight: 600; }
@@ -369,10 +374,6 @@
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M3 8h14M7 12h2" stroke-linecap="round"/></svg>
         <span data-i18n="nav_finance">Finance</span>
       </button>
-      <button type="button" class="tab" data-tab="account" aria-pressed="false">
-        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
-        <span data-i18n="nav_account">Account</span>
-      </button>
       <button type="button" class="tab" data-tab="contract" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 2.5h7l3 3v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z"/><path d="M6.5 8h7M6.5 10.5h5" stroke-linecap="round"/><path d="M6.5 14.2c1-.6 1.6-.6 2.2 0s1.2.6 2.2 0 1.6-.6 2.6 0" stroke-linecap="round"/></svg>
         <span data-i18n="nav_contract">Contract</span>
@@ -380,6 +381,10 @@
       <button type="button" class="tab" data-tab="referrals" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 12a4 4 0 0 1 0-5.6l2-2a4 4 0 0 1 5.6 5.6l-1 1" stroke-linecap="round"/><path d="M12 8a4 4 0 0 1 0 5.6l-2 2a4 4 0 0 1-5.6-5.6l1-1" stroke-linecap="round"/></svg>
         <span data-i18n="nav_referrals">Referrals</span>
+      </button>
+      <button type="button" class="tab" data-tab="account" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
+        <span data-i18n="nav_account">Account</span>
       </button>
     </nav>
 
@@ -612,7 +617,7 @@
         <p class="sub" data-i18n="dash_ridepool_sub">A live feed of nearby ride requests in your coverage area.</p>
       </div>
 
-      <div class="ridepool-wrap">
+      <div class="ridepool-wrap" id="ridePoolWrap">
         <div class="ridepool-list" id="ridePoolList"></div>
         <div class="ridepool-lock">
           <div class="ridepool-lock-icon">

@@ -13,7 +13,7 @@
   var partnersPage = 1;
   var ordersPage = 1;
   var financePage = 1;
-  var BILLING_COMPANIES = ["PartnerRelay Ltd", "PartnerRelay Americas LLC", "PartnerRelay EU B.V."];
+  var BILLING_COMPANIES = ["ShuttleDirect", "Mozio"];
   var INVOICE_STATUSES = ["generated", "sent", "received", "processing", "paid"];
   var TRIAL_SIMULATE_ACCOUNT_ID = "id656888"; // testing-only toggle, restricted to this one account
 
@@ -227,7 +227,7 @@
       (p.adminNote ? '<div class="row-meta">Note: ' + esc(p.adminNote) + "</div>" : "") +
       '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
       '<label style="font-size:12.5px;color:var(--ink-2);">Organization' +
-      '<select data-organization-select="' + p.id + '" style="margin-left:6px;">' +
+      '<select data-organization-select="' + p.id + '" style="margin-left:6px;width:170px;">' +
       '<option value="">—</option>' +
       '<option value="ShuttleDirect"' + (p.organization === "ShuttleDirect" ? " selected" : "") + '>ShuttleDirect</option>' +
       '<option value="Mozio"' + (p.organization === "Mozio" ? " selected" : "") + '>Mozio</option>' +
@@ -242,7 +242,7 @@
       '<div class="block"><div class="block-title">Billing &amp; payment</div>' +
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
       '<label style="font-size:12.5px;color:var(--ink-2);">Billing company' +
-      '<select data-billing-company="' + p.id + '" style="margin-left:6px;">' +
+      '<select data-billing-company="' + p.id + '" style="margin-left:6px;width:170px;">' +
       '<option value="">—</option>' +
       BILLING_COMPANIES.map(function (c) {
         return '<option value="' + esc(c) + '"' + (p.billingCompany === c ? " selected" : "") + ">" + esc(c) + "</option>";
