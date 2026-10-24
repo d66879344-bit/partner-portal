@@ -1,0 +1,14 @@
+{
+  "name": "partner-portal-site-tests",
+  "private": true,
+  "type": "module",
+  "description": "Regression tests for partner-portal-site. See e2e/.env.example before running the e2e suite.",
+  "scripts": {
+    "test:unit": "node --test unit/*.test.js",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

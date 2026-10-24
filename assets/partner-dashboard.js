@@ -77,6 +77,20 @@
   function badge(status) {
     return '<span class="badge badge-' + esc(status) + '">' + esc(status) + "</span>";
   }
+  // Pickup/dropoff addresses are free-text, so these just hand them to Google
+  // Maps as a search / directions query — no geocoding or map embed on our
+  // side, just a link out.
+  function mapsSearchUrl(address) {
+    return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(address || "");
+  }
+  function mapsRouteUrl(pickup, dropoff) {
+    return "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(pickup || "") +
+      "&destination=" + encodeURIComponent(dropoff || "");
+  }
+  function addressLinkHtml(address) {
+    if (!address) return "";
+    return '<a href="' + esc(mapsSearchUrl(address)) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-decoration-color:var(--line-strong);">' + esc(address) + "</a>";
+  }
 
   async function api(path, opts) {
     var res = await fetch(path, Object.assign({ headers: opts && opts.json ? { "Content-Type": "application/json" } : undefined }, opts || {}));
@@ -99,7 +113,7 @@
     closeInvoiceModal();
   }
   function refreshTabDataSilently(tabKey) {
-    if (tabKey === "orders" || tabKey === "finance") loadOrders(true).catch(function () {});
+    if (tabKey === "orders" || tabKey === "finance" || tabKey === "today") loadOrders(true).catch(function () {});
     if (tabKey === "finance") loadInvoice().catch(function () {});
     if (tabKey === "fleet" || tabKey === "company" || tabKey === "contract") loadFleet().catch(function () {});
     if (tabKey === "company" || tabKey === "account" || tabKey === "ridepool") refreshMeSilently().catch(function () {});
@@ -352,6 +366,8 @@
     if (document.activeElement !== $("payAccount")) $("payAccount").value = me.payAccountNumber || "";
     if (document.activeElement !== $("paySwift")) $("paySwift").value = me.paySwift || "";
     if (document.activeElement !== $("payCurrency")) $("payCurrency").value = me.payCurrency || "";
+    updateDocAlerts();
+    renderInvoiceCard();
 
     if (window.AirportPicker && $("acctAirports")) {
       acctAirportPicker = window.AirportPicker.create($("acctAirports"), {
@@ -463,6 +479,8 @@
     try {
       await api("/api/partner/billing-update", { method: "POST", json: true, body: JSON.stringify(payload) });
       Object.assign(me, payload);
+      updateDocAlerts();
+      renderInvoiceCard();
       statusEl.textContent = window.I18N ? I18N.t("saved_label") : "Saved.";
       statusEl.className = "status ok";
     } catch (e) {
@@ -512,6 +530,7 @@
       lastClosedCount = data.declinedCount || 0;
       renderOrders(lastOrders);
       renderFinance(lastOrders);
+      renderToday(lastOrders);
     } catch (e) {
       if (silent) return;
       $("ordersStatus").textContent = "Could not load orders.";
@@ -534,10 +553,70 @@
     if ($("statClosed")) $("statClosed").textContent = lastClosedCount;
   }
 
+  // Shared by the Orders table and the Today table — same row shape either
+  // way, just with the Date column dropped on Today (every row there is
+  // already today by definition).
+  function orderActionHtml(o) {
+    var stageObj = o.status === "accepted" && o.tripStage ? STAGES.filter(function (s) { return s.key === o.tripStage; })[0] : null;
+    return o.status === "offered"
+      ? '<div style="display:flex;gap:8px;">' +
+        '<button type="button" class="minibtn accept" data-accept="' + o.id + '">' + esc(I18N.t("btn_accept")) + '</button>' +
+        '<button type="button" class="minibtn decline" data-decline="' + o.id + '">' + esc(I18N.t("btn_decline")) + '</button>' +
+        "</div>"
+      : (stageObj ? '<span class="badge badge-accepted">' + esc(stageLabel(stageObj.key)) + "</span>" : badge(o.status));
+  }
+  function orderRowHtml(o, showDate) {
+    return '<tr class="data-row" data-order-open="' + o.id + '">' +
+      '<td class="col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
+      "<td>" + esc(o.pickup) + "</td>" +
+      "<td>" + esc(o.dropoff) + "</td>" +
+      (showDate ? "<td>" + esc(fmtDay(o.orderDate)) + "</td>" : "") +
+      "<td>" + esc(o.orderTime || "—") + "</td>" +
+      "<td>" + esc(o.vehicleType || "—") + "</td>" +
+      "<td>" + esc(o.passengers != null ? o.passengers : "—") + "</td>" +
+      "<td>" + (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") + "</td>" +
+      "<td>" + orderActionHtml(o) + "</td>" +
+      "</tr>";
+  }
+  // Order-number / pickup / dropoff substring search, shared by Orders.
+  function matchesSearch(o, q) {
+    if (!q) return true;
+    q = q.toLowerCase();
+    return (o.orderNumber && String(o.orderNumber).toLowerCase().indexOf(q) !== -1) ||
+      (o.pickup && o.pickup.toLowerCase().indexOf(q) !== -1) ||
+      (o.dropoff && o.dropoff.toLowerCase().indexOf(q) !== -1);
+  }
+  function handleOrderListClick(e) {
+    var acc = e.target.closest("[data-accept]");
+    var dec = e.target.closest("[data-decline]");
+    if (acc || dec) {
+      e.stopPropagation();
+      var id = (acc || dec).getAttribute(acc ? "data-accept" : "data-decline");
+      var btn = acc || dec;
+      btn.disabled = true;
+      (async function () {
+        try {
+          await api("/api/partner/respond", { method: "POST", json: true, body: JSON.stringify({ id: Number(id), action: acc ? "accept" : "decline" }) });
+          loadOrders();
+        } catch (err) {
+          btn.disabled = false;
+          $("ordersStatus").textContent = "Could not update the order. Try again.";
+          $("ordersStatus").className = "status err";
+        }
+      })();
+      return;
+    }
+    var open = e.target.closest("[data-order-open]");
+    if (open) openOrderDetail(Number(open.getAttribute("data-order-open")));
+  }
+
   function renderOrders(allOrders) {
     updateTabCounts(allOrders);
     var wantStatus = STATUS_FOR_TAB[orderTab];
     var orders = allOrders.filter(function (o) { return o.status === wantStatus; });
+
+    var q = $("fSearch") ? $("fSearch").value.trim() : "";
+    if (q) orders = orders.filter(function (o) { return matchesSearch(o, q); });
 
     var from = $("fDateFrom").value, to = $("fDateTo").value;
     if (from) orders = orders.filter(function (o) { return o.orderDate >= from; });
@@ -553,7 +632,7 @@
     $("ordersStatus").className = "status";
     if (!orders.length) {
       $("ordersStatus").textContent = "";
-      $("ordersList").innerHTML = '<tr><td colspan="9" class="empty-cell">' + esc(emptyMessage(orderTab)) + "</td></tr>";
+      $("ordersList").innerHTML = '<tr><td colspan="9" class="empty-cell">' + esc(q ? "" : emptyMessage(orderTab)) + "</td></tr>";
       $("ordersPager").innerHTML = "";
       return;
     }
@@ -562,48 +641,33 @@
     ordersPage = pageResult.page;
     $("ordersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages, pagerLabels()) : "";
     orders = pageResult.items;
-    $("ordersList").innerHTML = orders.map(function (o) {
-      var stageObj = o.status === "accepted" && o.tripStage ? STAGES.filter(function (s) { return s.key === o.tripStage; })[0] : null;
-      var action = o.status === "offered"
-        ? '<div style="display:flex;gap:8px;">' +
-          '<button type="button" class="minibtn accept" data-accept="' + o.id + '">' + esc(I18N.t("btn_accept")) + '</button>' +
-          '<button type="button" class="minibtn decline" data-decline="' + o.id + '">' + esc(I18N.t("btn_decline")) + '</button>' +
-          "</div>"
-        : (stageObj ? '<span class="badge badge-accepted">' + esc(stageLabel(stageObj.key)) + "</span>" : badge(o.status));
-      return '<tr class="data-row" data-order-open="' + o.id + '">' +
-        '<td class="col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
-        "<td>" + esc(o.pickup) + "</td>" +
-        "<td>" + esc(o.dropoff) + "</td>" +
-        "<td>" + esc(fmtDay(o.orderDate)) + "</td>" +
-        "<td>" + esc(o.orderTime || "—") + "</td>" +
-        "<td>" + esc(o.vehicleType || "—") + "</td>" +
-        "<td>" + esc(o.passengers != null ? o.passengers : "—") + "</td>" +
-        "<td>" + (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") + "</td>" +
-        "<td>" + action + "</td>" +
-        "</tr>";
-    }).join("");
+    $("ordersList").innerHTML = orders.map(function (o) { return orderRowHtml(o, true); }).join("");
   }
-  $("ordersList").addEventListener("click", async function (e) {
-    var acc = e.target.closest("[data-accept]");
-    var dec = e.target.closest("[data-decline]");
-    if (acc || dec) {
-      e.stopPropagation();
-      var id = (acc || dec).getAttribute(acc ? "data-accept" : "data-decline");
-      var btn = acc || dec;
-      btn.disabled = true;
-      try {
-        await api("/api/partner/respond", { method: "POST", json: true, body: JSON.stringify({ id: Number(id), action: acc ? "accept" : "decline" }) });
-        loadOrders();
-      } catch (err) {
-        btn.disabled = false;
-        $("ordersStatus").textContent = "Could not update the order. Try again.";
-        $("ordersStatus").className = "status err";
-      }
+  $("ordersList").addEventListener("click", handleOrderListClick);
+  if ($("fSearch")) $("fSearch").addEventListener("input", function () { ordersPage = 1; renderOrders(lastOrders); });
+
+  /* ---------- today ----------
+     Same orders already loaded for "Your Orders", pre-filtered to today's
+     date and sorted by pickup time — no separate backend call. */
+  function todayDateStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function renderToday(allOrders) {
+    var el = $("todayList");
+    if (!el) return;
+    var today = todayDateStr();
+    var orders = (allOrders || []).filter(function (o) { return o.orderDate === today; });
+    orders = orders.slice().sort(function (a, b) {
+      return (a.orderTime || "") < (b.orderTime || "") ? -1 : (a.orderTime || "") > (b.orderTime || "") ? 1 : 0;
+    });
+    if (!orders.length) {
+      el.innerHTML = '<tr><td colspan="8" class="empty-cell">' + esc(window.I18N ? I18N.t("today_empty") : "No trips scheduled for today.") + "</td></tr>";
       return;
     }
-    var open = e.target.closest("[data-order-open]");
-    if (open) openOrderDetail(Number(open.getAttribute("data-order-open")));
-  });
+    el.innerHTML = orders.map(function (o) { return orderRowHtml(o, false); }).join("");
+  }
+  if ($("todayList")) $("todayList").addEventListener("click", handleOrderListClick);
 
   /* ---------- finance ----------
      CSV export and print were removed from the partner's Finance tab once
@@ -700,13 +764,18 @@
       return;
     }
     if (!lastInvoice) {
+      // Payment details are required before an invoice can be generated
+      // (same rule the server enforces in /api/partner/invoice's "generate"
+      // action) — the button stays disabled here rather than letting the
+      // partner click it just to hit that error.
+      var missingPay = paymentDetailsMissing();
       el.innerHTML =
         '<div class="invoice-card-left"><span class="badge badge-generated">' + esc(window.I18N ? I18N.t("invoice_trial_ended") : "Trial ended") + "</span></div>" +
-        '<div><button type="button" class="minibtn good" id="invoiceGenerateBtn">' + esc(window.I18N ? I18N.t("btn_generate_invoice") : "Generate Invoice") + "</button>" +
-        '<div class="invoice-card-note">' + esc(window.I18N ? I18N.t("invoice_note_needs_details") : "Needs your payment details saved first, under Account.") + "</div>" +
+        '<div><button type="button" class="minibtn good" id="invoiceGenerateBtn"' + (missingPay ? " disabled" : "") + '>' + esc(window.I18N ? I18N.t("btn_generate_invoice") : "Generate Invoice") + "</button>" +
+        (missingPay ? '<div class="invoice-card-note">' + esc(window.I18N ? I18N.t("invoice_note_needs_details") : "Needs your payment details saved first, under Account.") + "</div>" : "") +
         '<p class="status" id="invoiceCardStatus"></p></div>';
       var genBtn = $("invoiceGenerateBtn");
-      if (genBtn) genBtn.addEventListener("click", generateInvoice);
+      if (genBtn && !missingPay) genBtn.addEventListener("click", generateInvoice);
       return;
     }
     el.innerHTML =
@@ -824,6 +893,9 @@
       openInvoiceModal();
     } catch (e) {
       this.disabled = false;
+      var reason = e && e.data && (e.data.reason || e.data.error);
+      var key = reason === "email_not_configured" ? "invoice_send_err_not_configured" : "invoice_send_err_generic";
+      alert(window.I18N ? I18N.t(key) : "Could not send the invoice email. Please try again later.");
     }
   });
 
@@ -917,11 +989,16 @@
       '<div class="route-dot end"></div>' +
       "</div>" +
       '<div style="flex:1;min-width:0;">' +
-      '<div class="route-line"><span style="font-weight:700;font-size:14px;">' + esc(o.pickup) + "</span>" + copyBtnHtml(o.pickup) + "</div>" +
+      '<div class="route-line"><span style="font-weight:700;font-size:14px;">' + addressLinkHtml(o.pickup) + "</span>" + copyBtnHtml(o.pickup) + "</div>" +
       (o.flightNumber
         ? '<div class="route-line" style="margin:6px 0;"><span class="badge" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);">Flight ' + esc(o.flightNumber) + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + "</span>" + copyBtnHtml(o.flightNumber) + "</div>"
         : "") +
-      '<div class="route-line" style="margin-top:' + (o.flightNumber ? "20" : "6") + 'px;"><span style="font-weight:700;font-size:14px;">' + esc(o.dropoff) + "</span>" + copyBtnHtml(o.dropoff) + "</div>" +
+      '<div class="route-line" style="margin-top:' + (o.flightNumber ? "20" : "6") + 'px;"><span style="font-weight:700;font-size:14px;">' + addressLinkHtml(o.dropoff) + "</span>" + copyBtnHtml(o.dropoff) + "</div>" +
+      (o.pickup && o.dropoff
+        ? '<div class="route-line" style="margin-top:10px;"><a href="' + esc(mapsRouteUrl(o.pickup, o.dropoff)) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent);text-decoration:none;font-weight:600;font-size:12.5px;">' +
+          '<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 17l5-13 4 9 4-9 1 13" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+          esc(window.I18N ? I18N.t("od_route_link") : "Route: pickup → dropoff") + "</a></div>"
+        : "") +
       "</div></div>" +
       '<div class="od-fields">' +
       '<div class="field"><div class="field-label">' + esc(I18N.t("fl_date")) + '</div><div class="field-val">' + esc(fmtDay(o.orderDate)) + "</div></div>" +
@@ -1371,17 +1448,29 @@
     });
   }
 
-  // Sidebar dots + Company banner: cleared automatically once an admin approves
-  // the relevant documents (myFleet is reloaded after every upload/review).
+  // Whether the required payment fields (bank/IBAN/SWIFT — same ones the
+  // admin can also fill in from their side) are still missing. Mirrors the
+  // server-side check in functions/api/partner/invoice.js's "generate"
+  // action (SWIFT itself stays optional there and here).
+  function paymentDetailsMissing() {
+    if (!me) return true;
+    return !me.payAccountHolder || !me.payBankName || !me.payAccountNumber || !me.payCurrency;
+  }
+
+  // Sidebar dots + banners: cleared automatically once the missing thing is
+  // fixed (an admin approving a document, either side saving payment details).
   function updateDocAlerts() {
     var country = me ? me.country : null;
     var companyNeeds = companyDocsNeedAttention(country, myFleet.company.documents);
     var fleetNeeds = !myFleet.vehicles.length || !myFleet.drivers.length ||
       myFleet.vehicles.some(function (v) { return v.status !== "approved"; }) ||
       myFleet.drivers.some(function (d) { return d.status !== "approved"; });
+    var payNeeds = paymentDetailsMissing();
     if ($("companyTabDot")) $("companyTabDot").hidden = !companyNeeds;
     if ($("fleetTabDot")) $("fleetTabDot").hidden = !fleetNeeds;
     if ($("companyDocAlert")) $("companyDocAlert").hidden = !companyNeeds;
+    if ($("accountTabDot")) $("accountTabDot").hidden = !payNeeds;
+    if ($("payDetailsAlert")) $("payDetailsAlert").hidden = !payNeeds;
   }
 
   async function loadFleet() {

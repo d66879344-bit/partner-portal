@@ -191,6 +191,7 @@
       </div>
 
       <div class="toolbar">
+        <input type="text" id="fPartnerSearch" placeholder="Search company, email or account ID">
         <select id="fStatus">
           <option value="">All statuses</option>
           <option value="pending">Pending review</option>
@@ -358,6 +359,7 @@
       </div>
 
       <div class="tabs" role="tablist" id="orderTabs">
+        <button type="button" class="tab" data-order-tab="today" aria-pressed="false">Today <span class="tab-count" id="countToday"></span></button>
         <button type="button" class="tab" data-order-tab="offered" aria-pressed="true">Not accepted <span class="tab-count" id="countOffered"></span></button>
         <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">In progress <span class="tab-count" id="countAccepted"></span></button>
         <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed <span class="tab-count" id="countCompleted"></span></button>
@@ -366,7 +368,7 @@
       </div>
       <div class="toolbar">
         <select id="fOrderPartner"><option value="">All partners</option></select>
-        <input type="text" id="fOrderSearch" placeholder="Search order #">
+        <input type="text" id="fOrderSearch" placeholder="Search order #, route or partner">
         <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
         <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
         <select id="fSort">
