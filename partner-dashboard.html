@@ -355,6 +355,10 @@
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
         <span data-i18n="nav_orders">Your Orders</span>
       </button>
+      <button type="button" class="tab" data-tab="today" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3.5" y="3.5" width="13" height="13" rx="2"/><path d="M3.5 7.5h13M7 2.5v2M13 2.5v2" stroke-linecap="round"/><circle cx="10" cy="11.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+        <span data-i18n="nav_today">Today</span>
+      </button>
       <button type="button" class="tab" data-tab="ridepool" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.6 2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span data-i18n="nav_ridepool">Ride Pool</span>
@@ -385,6 +389,7 @@
       <button type="button" class="tab" data-tab="account" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
         <span data-i18n="nav_account">Account</span>
+        <span class="tab-dot" id="accountTabDot" hidden title="Payment details needed"></span>
       </button>
     </nav>
 
@@ -425,6 +430,7 @@
           <button type="button" class="tab" data-order-tab="completed" aria-pressed="false" data-i18n="stat_completed">Completed</button>
         </div>
         <div class="toolbar">
+          <input type="search" id="fSearch" class="toolbar-field" style="min-width:220px;" data-i18n-placeholder="search_placeholder" placeholder="Search by order #, route or partner…">
           <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
           <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
           <select id="fSort">
@@ -471,6 +477,31 @@
           <p class="sub">Fill in evidence for each category below &mdash; upload a photo where you have one, or leave a note explaining why you don't. Each category is submitted on its own.</p>
         </div>
         <div id="noShowBody" style="max-width:720px;"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-today">
+      <div class="dash-pagehead">
+        <h1 data-i18n="nav_today">Today</h1>
+        <p class="sub" data-i18n="today_sub">Your trips for today, sorted by pickup time.</p>
+      </div>
+      <p class="status" id="todayStatus"></p>
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th data-i18n="th_order">Order #</th>
+              <th data-i18n="th_start">Start point</th>
+              <th data-i18n="th_dest">Destination</th>
+              <th data-i18n="th_time">Time</th>
+              <th data-i18n="th_vehicle">Vehicle</th>
+              <th data-i18n="th_passengers">Passengers</th>
+              <th data-i18n="th_price">Price</th>
+              <th data-i18n="th_action">Action</th>
+            </tr>
+          </thead>
+          <tbody id="todayList"></tbody>
+        </table>
       </div>
     </section>
 
@@ -677,6 +708,14 @@
         </div>
         <button type="button" class="btn" id="acctSaveBtn" style="width:auto;" data-i18n="save_changes_btn">Save changes</button>
         <p class="status" id="acctStatus2" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="alert-banner section-card" id="payDetailsAlert" hidden style="margin-top:18px;">
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1.5 1 17h18L10 1.5Zm0 5.2 5.6 9.5H4.4L10 6.7Z"/><rect x="9.1" y="8.5" width="1.8" height="4.4" rx="0.9"/><circle cx="10" cy="14.4" r="1.1"/></svg>
+        <div>
+          <strong data-i18n="pay_details_alert_title">Payment details are missing</strong>
+          <p data-i18n="pay_details_alert_body">Add your bank details below — required before you can generate your invoice.</p>
+        </div>
       </div>
 
       <div class="card section-card" style="margin-top:18px;">
