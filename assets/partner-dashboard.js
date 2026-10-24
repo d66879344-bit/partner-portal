@@ -824,6 +824,9 @@
       openInvoiceModal();
     } catch (e) {
       this.disabled = false;
+      var reason = e && e.data && (e.data.reason || e.data.error);
+      var key = reason === "email_not_configured" ? "invoice_send_err_not_configured" : "invoice_send_err_generic";
+      alert(window.I18N ? I18N.t(key) : "Could not send the invoice email. Please try again later.");
     }
   });
 
