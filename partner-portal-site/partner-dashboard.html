@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314202E'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23F2B705' stroke-width='2.4'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%23F2B705'/%3E%3Cpath d='M16 7.4V12.6M16 19.4V24.6M7.4 16H12.6M19.4 16H24.6' stroke='%23F2B705' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  body { background: var(--bg); }
+
+  /* ---------- dashboard shell ---------- */
+  /* The sidebar stays put; only .dash-main scrolls — the shell itself never scrolls. */
+  .dash-shell { display: flex; flex-wrap: wrap; align-items: flex-start; height: 100vh; overflow: hidden; }
+  .dash-sidebar {
+    width: 240px; flex: 0 0 240px; background: linear-gradient(180deg, #0B1E35 0%, #081627 100%);
+    padding: 24px 14px; display: flex; flex-direction: column; box-sizing: border-box; height: 100vh; overflow-y: auto;
+  }
+  .dash-brand { padding: 2px 10px 24px; }
+  .dash-brand-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; line-height: 1.18; text-transform: uppercase; color: #fff; overflow-wrap: anywhere; }
+  .dash-brand-sub { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
+  .dash-nav { display: flex; flex-direction: column; gap: 3px; }
+  .dash-nav .tab {
+    border: 0; background: transparent; border-radius: 8px; min-height: auto;
+    padding: 10px 12px; width: 100%; text-align: left; display: flex; align-items: center; gap: 11px;
+    font-size: 14px; font-weight: 500; color: rgba(255,255,255,.65);
+  }
+  .dash-nav .tab:hover { background: rgba(255,255,255,.08); }
+  .dash-nav .tab[aria-pressed="true"] { background: rgba(255,255,255,.1); color: #fff; font-weight: 700; }
+  .dash-nav svg { flex: none; }
+  .dash-sidebar-foot {
+    margin-top: auto; padding: 14px 10px 2px; border-top: 1px solid rgba(255,255,255,.14);
+    display: flex; flex-direction: column; gap: 9px; font-size: 13px; color: rgba(255,255,255,.6);
+  }
+  .dash-sidebar-foot-row { display: flex; align-items: center; gap: 10px; }
+  .dash-avatar {
+    width: 28px; height: 28px; flex: none; border-radius: 999px; background: rgba(255,255,255,.12); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
+  }
+  .dash-sidebar-foot-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: rgba(255,255,255,.85); }
+  .trial-chip {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; padding: 4px 9px;
+    border-radius: 999px; background: rgba(242,183,5,.18); color: #F2B705; width: fit-content;
+  }
+  .trial-chip.ending { background: rgba(242,183,5,.3); color: #F2B705; }
+  .trial-chip.ended { background: rgba(180,35,24,.22); color: #FF8A7A; }
+  .dash-main { flex: 999 1 560px; min-width: 0; height: 100vh; overflow-y: auto; padding: 28px 32px 56px; box-sizing: border-box; }
+  .dash-pagehead { margin-bottom: 18px; }
+  .dash-pagehead h1 { font-size: 28px; text-transform: none; color: var(--ink); }
+  .dash-pagehead .sub { color: var(--ink-2); font-size: 14px; margin-top: 4px; max-width: 70ch; }
+
+  .pending-banner { border-color: #E8C65A; background: #FDF6E0; margin-bottom: 18px; padding: 14px 18px; }
+
+  /* ---------- order detail: assignment warning + "More" menu ---------- */
+  .warn-chip { display: flex; align-items: center; gap: 8px; background: #FDF6E0; border: 1px solid #E8C65A; color: #7A5B00; font-size: 12.5px; font-weight: 700; border-radius: 8px; padding: 9px 12px; margin: 10px 0; }
+  .more-wrap { position: relative; flex: none; }
+  .more-menu { position: absolute; bottom: calc(100% + 6px); right: 0; min-width: 230px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(16,24,40,.18); overflow: hidden; z-index: 5; }
+  .more-menu-item { display: block; width: 100%; text-align: left; padding: 12px 14px; font-size: 13.5px; font-weight: 700; background: none; border: 0; cursor: pointer; color: var(--ink); font-family: inherit; }
+  .more-menu-item:hover { background: var(--surface-2); }
+  .more-menu-item.danger { color: var(--crit); }
+
+  /* ---------- customer no-show report ---------- */
+  .ns-steps { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .ns-step-dot { width: 26px; height: 26px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink-2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .ns-step-dot.done { background: var(--good); border-color: var(--good); color: #fff; }
+  .ns-cat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-card); padding: 20px 22px; margin-bottom: 14px; }
+  .ns-cat.done { border-left: 3px solid var(--good); }
+  .ns-cat-eyebrow { font-size: 11px; font-weight: 800; color: var(--ink-2); letter-spacing: .04em; text-transform: uppercase; }
+  .ns-cat h3 { margin: 2px 0 4px; font-size: 15px; font-weight: 700; text-transform: none; }
+  .ns-cat-desc { margin: 0; font-size: 12.5px; color: var(--ink-2); max-width: 56ch; }
+  .ns-cat-body { display: flex; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+  .ns-upload-tile { width: 110px; height: 86px; flex: none; border-radius: 10px; border: 1.5px dashed var(--line-strong); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--ink-2); cursor: pointer; }
+  .ns-upload-tile.has-file { border-style: solid; border-color: var(--focus); color: var(--focus); }
+  .ns-cat-fields { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 8px; }
+  .ns-pill { font: 700 10px/1 ui-monospace, monospace; letter-spacing: .04em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; white-space: nowrap; }
+  .ns-pill.ok { background: var(--good-bg); color: var(--good); }
+
+  /* ---------- stat cards ---------- */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 22px; }
+  .stat-card { padding: 16px 18px; }
+  .stat-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+  .stat-value { font-size: 26px; font-weight: 600; margin-top: 6px; }
+  @media (max-width: 760px) { .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+  /* ---------- order cards ---------- */
+  .orow { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--surface); margin-bottom: 10px; cursor: pointer; }
+  .orow:hover { border-color: var(--line-strong); }
+  .orow-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .orow-route { font-weight: 600; }
+  .orow-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+  .orow-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+  .om-row { padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .om-row:first-of-type { border-top: 0; }
+  .om-label { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
+  .stage-chip { font: 600 12px/1 var(--font-body); padding: 5px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink-2); }
+  .stage-chip.stage-done { background: var(--good-bg); color: var(--good); border-color: var(--good); }
+  .stage-chip.stage-next { background: #FDF0CC; color: #7A5B00; border-color: #D8B23C; }
+
+  /* ---------- order detail: full-screen 2-column layout + compact assignment row ---------- */
+  .od-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .od-grid > .card { margin-top: 0; }
+  .od-grid + .od-grid { margin-top: 16px; }
+  .od-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 14px; }
+  .field { margin-bottom: 12px; }
+  .field-label { font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
+  .field-val { margin-top: 3px; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
+  .od-actionbar {
+    position: sticky; bottom: 0; margin-top: 16px; padding: 14px 0; background: var(--surface);
+    border-top: 1px solid var(--line); box-shadow: 0 -6px 16px rgba(16,24,40,.06);
+    display: flex; gap: 10px; align-items: center;
+  }
+  @media (max-width: 960px) {
+    .od-grid { grid-template-columns: 1fr; }
+  }
+  .minibtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 8px 14px; min-height: 38px; cursor: pointer; font-weight: 600; font-size: 13px; transition: border-color .12s, background .12s; }
+  .minibtn:hover:not(:disabled) { border-color: var(--ink); }
+  .minibtn:disabled { opacity: .55; cursor: not-allowed; }
+  .minibtn.accept { background: var(--good); color: #fff; border-color: var(--good); }
+  .minibtn.accept:hover:not(:disabled) { background: var(--good); filter: brightness(1.08); border-color: var(--good); }
+  .minibtn.decline { background: var(--accent-warm); color: #3B2B00; border-color: var(--accent-warm); }
+  .minibtn.decline:hover:not(:disabled) { background: var(--accent-warm); filter: brightness(1.06); border-color: var(--accent-warm); }
+  .minibtn.good { background: var(--good); color: #fff; border-color: var(--good); }
+  .minibtn.good:hover:not(:disabled) { background: var(--good); filter: brightness(1.08); border-color: var(--good); }
+
+  /* ---------- fleet & documents ---------- */
+  .section-card { margin-bottom: 18px; }
+  .block { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); }
+  .block:first-of-type { margin-top: 10px; }
+  .block-title { font-weight: 600; margin-bottom: 2px; font-size: 15px; }
+  .block-sub { font-size: 12px; color: var(--ink-2); margin-bottom: 8px; }
+
+  /* clickable document-upload tiles */
+  .doc-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+  .doc-item { width: 132px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .doc-tile {
+    display: block; width: 132px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden; background: var(--surface); cursor: pointer; transition: border-color .12s;
+  }
+  .doc-tile:hover { border-color: var(--focus); }
+  .doc-tile.uploading { opacity: .55; pointer-events: none; }
+  .doc-tile-icon {
+    height: 58px; display: flex; align-items: center; justify-content: center; color: var(--line-strong);
+  }
+  .doc-tile.has-file .doc-tile-icon, .doc-tile.doc-tile-add .doc-tile-icon { color: var(--focus); }
+  .doc-tile-body { padding: 8px 9px; border-top: 1px solid var(--line); text-align: left; }
+  .doc-tile-add .doc-tile-body { text-align: center; }
+  .doc-tile-label { font-size: 11.5px; font-weight: 600; line-height: 1.25; }
+  .doc-tile-file { font-size: 10.5px; color: var(--ink-2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .doc-tile-status { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+  .doc-tile-status.doc-status-ok { color: var(--good); }
+  .doc-tile-status.doc-status-pending { color: #7A5B00; }
+  .doc-tile-status.doc-status-rejected { color: var(--crit); }
+  .doc-required { display: block; font-size: 10.5px; color: var(--crit); text-transform: uppercase; letter-spacing: .03em; font-weight: 700; margin-top: 2px; }
+  .doc-optional { display: block; font-size: 10.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+  .doc-tile.needed { border: 1.5px dashed var(--crit); background: var(--crit-bg); }
+  .doc-tile.needed .doc-tile-icon { color: var(--crit); }
+  .doc-tile.needed .doc-tile-body { border-top-color: #F3B7AE; }
+  .doc-tile-bar { height: 3px; background: var(--line); }
+  .doc-tile-bar.ok { background: var(--good); }
+  .doc-tile-bar.pending { background: #D8B23C; }
+  .doc-tile-bar.rejected { background: var(--crit); }
+  .doc-tile-bar.selected { background: var(--focus); }
+  .doc-view { font-size: 11px; color: var(--focus); }
+  .doc-note { font-size: 11px; color: var(--crit); text-align: center; max-width: 132px; }
+
+  /* "+" add card/driver tile */
+  .add-tile {
+    display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 12px;
+    padding: 13px; border: 1.5px dashed var(--line-strong); border-radius: 10px; background: var(--surface);
+    color: var(--ink-2); font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  .add-tile:hover { border-color: var(--focus); color: var(--focus); background: #F3F8FD; }
+  .add-tile-icon { font-size: 16px; line-height: 1; }
+
+  /* ---------- fleet sub-tabs + compact vehicle/driver cards ---------- */
+  .fleet-tabpanel { margin-top: 2px; }
+  .field-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .field-row .field { flex: 1 1 160px; min-width: 150px; }
+
+  .card-grid { display: flex; flex-wrap: wrap; gap: 14px; }
+  .fleet-card {
+    width: 190px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+    padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box;
+  }
+  .fleet-card:hover { border-color: var(--line-strong); }
+  .fleet-card-thumb {
+    width: 100%; height: 96px; border-radius: 8px; background: var(--surface-2); overflow: hidden;
+    display: flex; align-items: center; justify-content: center; color: var(--ink-2); flex: none;
+  }
+  .fleet-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .fleet-card-name { font-weight: 600; font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
+  .fleet-card-sub { font-size: 12px; color: var(--ink-2); margin-top: 1px; }
+  .fleet-card-foot { margin-top: auto; }
+  .fleet-card-add {
+    width: 190px; border: 1.5px dashed var(--line-strong); border-radius: 12px; background: var(--surface);
+    padding: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; color: var(--ink-2); font-weight: 600; font-size: 13px; min-height: 164px; box-sizing: border-box;
+  }
+  .fleet-card-add:hover { border-color: var(--focus); color: var(--focus); background: #F3F8FD; }
+  .fleet-card-add-icon { font-size: 26px; line-height: 1; font-weight: 400; }
+
+  /* ---------- account ---------- */
+  .va-field { padding: 13px 0; border-top: 1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:14px; }
+  .va-field:first-of-type { border-top: 0; padding-top: 2px; }
+  .va-fieldlabel { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+  .mono { font-family: var(--font-mono); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ---------- toolbar / tabs ---------- */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .toolbar-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
+  .toolbar input, .toolbar select { min-height: 36px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 8px; font-size: 13px; }
+  .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.08); font-size: 11px; margin-left: 2px; font-family: var(--font-mono); }
+  .tab[aria-pressed="true"] .tab-count { background: rgba(0,0,0,.08); }
+
+  /* ---------- document-missing alerts (sidebar nav dot + Company banner) ---------- */
+  .dash-nav .tab-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent-warm); flex: none; margin-left: auto; box-shadow: 0 0 0 3px rgba(242,183,5,.25); }
+  .alert-banner { display: flex; align-items: center; gap: 14px; background: var(--crit-bg); border: 1px solid #F3B7AE; border-radius: 10px; padding: 14px 18px; }
+  .alert-banner svg { flex: none; color: var(--crit); }
+  .alert-banner strong { display: block; font-size: 14px; }
+  .alert-banner p { margin: 2px 0 0; font-size: 13px; color: #7A2318; }
+
+  /* ---------- ride pool nav badge (live "available now" count) ---------- */
+  .dash-nav .tab-badge {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px;
+    border-radius: 999px; background: rgba(242,183,5,.22); color: #F2B705; font-size: 11px; font-weight: 700;
+    font-family: var(--font-mono); margin-left: auto; transition: background .25s, transform .15s;
+  }
+  .dash-nav .tab[aria-pressed="true"] .tab-badge { background: rgba(242,183,5,.32); }
+  .dash-nav .tab-badge.bump { transform: scale(1.18); }
+
+  /* ---------- ride pool: locked live-feed list ---------- */
+  .ridepool-wrap { position: relative; }
+  .ridepool-list { display: flex; flex-direction: column; gap: 10px; filter: saturate(.5) blur(.3px); opacity: .6; user-select: none; }
+  /* Once the trial has ended (real end, or the admin's testing-only simulate-ended
+     override), the lock overlay/blur goes away — the cards are still not clickable
+     (no click handler exists on a row either way), just no longer hidden behind the notice. */
+  .ridepool-wrap.unlocked .ridepool-list { filter: none; opacity: 1; }
+  .ridepool-wrap.unlocked .ridepool-lock { display: none; }
+  .rp-row { border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; background: var(--surface); cursor: default; }
+  .rp-row-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .rp-row-route { font-weight: 600; }
+  .rp-row-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+  .rp-row-price { font-family: var(--font-mono); font-weight: 600; color: var(--ink-2); }
+  .rp-pulse-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 999px; background: var(--good);
+    margin-right: 7px; animation: rp-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes rp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+  .ridepool-lock {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 10px; padding: 32px; background: rgba(244,246,248,.5); backdrop-filter: blur(2px);
+  }
+  .ridepool-lock-icon {
+    width: 46px; height: 46px; border-radius: 999px; background: var(--ink); color: #fff;
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .ridepool-lock-card {
+    max-width: 380px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(16,24,40,.14); padding: 22px 26px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .ridepool-lock-card h3 { margin: 0; font-size: 15.5px; text-transform: none; }
+  .ridepool-lock-card p { margin: 0; font-size: 13px; color: var(--ink-2); max-width: 36ch; }
+
+  @media (max-width: 860px) {
+    /* Below this width the sidebar becomes a horizontal top bar, so the page scrolls as a whole again. */
+    .dash-shell { height: auto; overflow: visible; }
+    .dash-sidebar { width: 100%; flex: 1 1 100%; height: auto; overflow-y: visible; flex-direction: row; overflow-x: auto; align-items: center; }
+    .dash-brand { padding: 2px 12px; }
+    .dash-nav { flex-direction: row; }
+    .dash-sidebar-foot { display: none; }
+    .dash-main { height: auto; overflow-y: visible; padding: 22px 16px 48px; }
+  }
+
+  /* ---------- printing the Finance tab: sidebar and controls stay out, table fills the page ---------- */
+  @media print {
+    .dash-sidebar, .toolbar { display: none !important; }
+    .dash-shell, .dash-main { height: auto !important; overflow: visible !important; }
+  }
+
+  /* ---------- pagination bar (assets/paginate.js renders this markup) ---------- */
+  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+  .pager-label { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- invoice: status badges, compact card, modal ---------- */
+  .badge-generated { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-strong); }
+  .badge-sent { background: var(--accent-soft); color: var(--focus); }
+  .badge-received { background: var(--accent-soft); color: var(--focus); border: 1px solid var(--focus); }
+  .badge-processing { background: #FDF0CC; color: #7A5B00; }
+  .badge-paid { background: var(--good-bg); color: var(--good); }
+  .invoice-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+  .invoice-card-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .invoice-card-num { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-2); }
+  .invoice-card-note { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .invoice-modal-overlay {
+    position: fixed; inset: 0; background: rgba(16,24,40,.5); display: flex; align-items: center;
+    justify-content: center; padding: 24px; z-index: 50; overflow-y: auto;
+  }
+  .invoice-modal { border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; box-shadow: 0 14px 40px rgba(16,24,40,.3); background: var(--surface); max-width: 760px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; }
+  .invoice-modal-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line); font: 600 12.5px var(--font-body); color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; flex: none; }
+  .invoice-modal-close { border: 0; background: transparent; font-size: 20px; line-height: 1; color: var(--ink-2); cursor: pointer; padding: 2px 7px; border-radius: 6px; }
+  .invoice-modal-close:hover { background: var(--line); }
+  .invoice-modal-body { padding: 22px 26px; overflow-y: auto; flex: 1; }
+  .invoice-modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 18px; background: var(--surface-2); border-top: 1px solid var(--line); flex: none; }
+  .invoice-head { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 2px solid var(--ink); margin-bottom: 16px; }
+  .invoice-issuer-name { font-weight: 700; font-size: 15px; }
+  .invoice-issuer-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; max-width: 32ch; }
+  .invoice-title { font-family: var(--font-display); font-weight: 700; font-size: 20px; text-transform: uppercase; text-align: right; }
+  .invoice-meta { margin-top: 6px; font-size: 12.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 3px; text-align: right; }
+  .invoice-parties { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 18px; }
+  .invoice-party { flex: 1 1 220px; }
+  .invoice-party-label { font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+  .invoice-party-name { font-weight: 600; font-size: 13.5px; }
+  .invoice-party-line { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+  .invoice-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .invoice-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-2); padding: 8px 6px; border-bottom: 1px solid var(--line-strong); }
+  .invoice-table td { padding: 9px 6px; border-bottom: 1px solid var(--line); }
+  .invoice-table .num { text-align: right; font-family: var(--font-mono); }
+  .invoice-total-row td { border-bottom: 0; border-top: 2px solid var(--ink); font-weight: 700; padding-top: 12px; }
+  .invoice-foot { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: 11.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 3px; }
+
+  /* ---------- Contract / Referrals: document row, referral link + list ---------- */
+  .doc-row { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .doc-icon { width: 38px; height: 38px; border-radius: 8px; background: var(--accent-soft); color: var(--focus); display: flex; align-items: center; justify-content: center; flex: none; }
+  .doc-meta { flex: 1; min-width: 0; }
+  .doc-name { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .doc-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  .ref-link-row { display: flex; gap: 10px; }
+  .ref-link-row input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 13px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-2); padding: 9px 12px; }
+  .ref-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 0; border-top: 1px solid var(--line); }
+  .ref-row:first-of-type { border-top: 0; }
+  .ref-name { font-weight: 600; font-size: 13.5px; }
+  .ref-sub { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
+  .ref-amount { font-size: 14px; font-weight: 600; text-align: right; }
+  .ref-amount-label { font-size: 11px; color: var(--ink-2); text-align: right; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="dash-shell">
+  <aside class="dash-sidebar">
+    <div class="dash-brand">
+      <div class="dash-brand-name" id="whoCompany">…</div>
+      <div class="dash-brand-sub">Partner Portal</div>
+    </div>
+
+    <nav class="dash-nav" id="mainTabs">
+      <button type="button" class="tab" data-tab="orders" aria-pressed="true">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
+        <span data-i18n="nav_orders">Your Orders</span>
+      </button>
+      <button type="button" class="tab" data-tab="ridepool" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.6 2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span data-i18n="nav_ridepool">Ride Pool</span>
+        <span class="tab-badge" id="ridePoolTabBadge">0</span>
+      </button>
+      <button type="button" class="tab" data-tab="company" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 2h7l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/></svg>
+        <span data-i18n="nav_company">Company</span>
+        <span class="tab-dot" id="companyTabDot" hidden title="Documents needed"></span>
+      </button>
+      <button type="button" class="tab" data-tab="fleet" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3h11l3 4v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M6.5 9h7M6.5 12.5h7" stroke-linecap="round"/></svg>
+        <span data-i18n="nav_fleet">Fleet</span>
+        <span class="tab-dot" id="fleetTabDot" hidden title="Documents needed"></span>
+      </button>
+      <button type="button" class="tab" data-tab="finance" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M3 8h14M7 12h2" stroke-linecap="round"/></svg>
+        <span data-i18n="nav_finance">Finance</span>
+      </button>
+      <button type="button" class="tab" data-tab="contract" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 2.5h7l3 3v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z"/><path d="M6.5 8h7M6.5 10.5h5" stroke-linecap="round"/><path d="M6.5 14.2c1-.6 1.6-.6 2.2 0s1.2.6 2.2 0 1.6-.6 2.6 0" stroke-linecap="round"/></svg>
+        <span data-i18n="nav_contract">Contract</span>
+      </button>
+      <button type="button" class="tab" data-tab="referrals" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 12a4 4 0 0 1 0-5.6l2-2a4 4 0 0 1 5.6 5.6l-1 1" stroke-linecap="round"/><path d="M12 8a4 4 0 0 1 0 5.6l-2 2a4 4 0 0 1-5.6-5.6l1-1" stroke-linecap="round"/></svg>
+        <span data-i18n="nav_referrals">Referrals</span>
+      </button>
+      <button type="button" class="tab" data-tab="account" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
+        <span data-i18n="nav_account">Account</span>
+      </button>
+    </nav>
+
+    <div class="dash-sidebar-foot">
+      <div class="dash-sidebar-foot-row">
+        <div class="dash-avatar" id="whoAvatar">…</div>
+        <div class="dash-sidebar-foot-name" id="whoCompanyFoot">…</div>
+        <button type="button" class="minibtn" id="logoutBtn" style="color:var(--crit); min-height:30px; padding:5px 10px; font-size:12px; flex:none;" data-i18n="logout">Log out</button>
+      </div>
+      <span class="trial-chip" id="trialChip" hidden></span>
+    </div>
+  </aside>
+
+  <main class="dash-main">
+
+    <div class="card pending-banner" id="pendingBanner" hidden>
+      <strong data-i18n="pending_banner_title">Your documents are still under review.</strong>
+      <span style="color:var(--ink-2);" data-i18n="pending_banner_body">You can use your dashboard, but you won't receive orders until an admin activates your account.</span>
+    </div>
+
+    <section class="panel active" id="panel-orders">
+      <div id="ordersListView">
+        <div class="dash-pagehead">
+          <h1 data-i18n="dash_orders_title">Orders</h1>
+          <p class="sub" data-i18n="dash_orders_sub">Orders assigned to you by the admin. Accept or decline before someone else is asked.</p>
+        </div>
+
+        <div class="stat-grid">
+          <div class="card stat-card"><div class="stat-label" data-i18n="stat_new">New</div><div class="stat-value mono" id="statNew">0</div></div>
+          <div class="card stat-card"><div class="stat-label" data-i18n="stat_accepted">Accepted</div><div class="stat-value mono" id="statAccepted">0</div></div>
+          <div class="card stat-card"><div class="stat-label" data-i18n="stat_completed">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
+          <div class="card stat-card"><div class="stat-label" data-i18n="stat_closed">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
+        </div>
+
+        <div class="tabs" role="tablist" id="orderTabs">
+          <button type="button" class="tab" data-order-tab="new" aria-pressed="true"><span data-i18n="stat_new">New</span> <span class="tab-count" id="countNew"></span></button>
+          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false"><span data-i18n="stat_accepted">Accepted</span> <span class="tab-count" id="countAccepted"></span></button>
+          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false" data-i18n="stat_completed">Completed</button>
+        </div>
+        <div class="toolbar">
+          <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
+          <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
+          <select id="fSort">
+            <option value="asc">Date: soonest first</option>
+            <option value="desc">Date: latest first</option>
+          </select>
+        </div>
+        <p class="status" id="ordersStatus"></p>
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-i18n="th_order">Order #</th>
+                <th data-i18n="th_start">Start point</th>
+                <th data-i18n="th_dest">Destination</th>
+                <th data-i18n="th_date">Date</th>
+                <th data-i18n="th_time">Time</th>
+                <th data-i18n="th_vehicle">Vehicle</th>
+                <th data-i18n="th_passengers">Passengers</th>
+                <th data-i18n="th_price">Price</th>
+                <th data-i18n="th_action">Action</th>
+              </tr>
+            </thead>
+            <tbody id="ordersList"></tbody>
+          </table>
+          <div id="ordersPager"></div>
+        </div>
+      </div>
+
+      <div id="orderDetailView" hidden>
+        <button type="button" class="minibtn" id="orderDetailBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <h1 id="odTitle">Order</h1>
+          <span id="odStatusBadge"></span>
+        </div>
+        <div id="odBody"></div>
+      </div>
+
+      <div id="noShowView" hidden>
+        <button type="button" class="minibtn" id="noShowBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead">
+          <h1>Report a customer no-show</h1>
+          <p class="sub" id="noShowSub"></p>
+          <p class="sub">Fill in evidence for each category below &mdash; upload a photo where you have one, or leave a note explaining why you don't. Each category is submitted on its own.</p>
+        </div>
+        <div id="noShowBody" style="max-width:720px;"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-company">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_company_title">Company</h1>
+        <p class="sub" data-i18n="dash_company_sub">Your company profile and the documents we have on file.</p>
+      </div>
+
+      <div class="alert-banner section-card" id="companyDocAlert" hidden>
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1.5 1 17h18L10 1.5Zm0 5.2 5.6 9.5H4.4L10 6.7Z"/><rect x="9.1" y="8.5" width="1.8" height="4.4" rx="0.9"/><circle cx="10" cy="14.4" r="1.1"/></svg>
+        <div>
+          <strong data-i18n="company_doc_alert_title">Some company documents are still needed</strong>
+          <p data-i18n="company_doc_alert_body">Upload them below — this notice clears once an admin approves them.</p>
+        </div>
+      </div>
+
+      <div class="card section-card">
+        <h2 data-i18n="company_details_title">Company details</h2>
+        <div class="field" style="max-width:360px;">
+          <label for="coCompanyName" data-i18n="register_company_name">Company name</label>
+          <input type="text" id="coCompanyName" autocomplete="off">
+        </div>
+        <button type="button" class="btn" id="coSaveBtn" style="width:auto;" data-i18n="save_changes_btn">Save changes</button>
+        <p class="status" id="coStatus" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="card section-card">
+        <h2 data-i18n="company_documents_title">Company documents</h2>
+        <p class="sub" data-i18n="company_documents_sub">Click a box to upload a document. Click it again any time to replace the file.</p>
+        <div class="doc-grid" id="companyDocGrid"></div>
+        <div class="block">
+          <div class="block-title" data-i18n="other_documents_title">Other documents</div>
+          <div class="block-sub" data-i18n="other_documents_sub">Anything that doesn't fit the categories above</div>
+          <div class="doc-grid" id="otherDocGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-fleet">
+      <div id="fleetListView">
+        <div class="dash-pagehead">
+          <h1 data-i18n="dash_fleet_title">Fleet</h1>
+          <p class="sub" data-i18n="dash_fleet_sub">Manage your vehicles and drivers. Click a card to edit details and documents.</p>
+        </div>
+
+        <div class="tabs" role="tablist" id="fleetTabs">
+          <button type="button" class="tab" data-fleet-tab="vehicles" aria-pressed="true"><span data-i18n="fleet_vehicles_tab">Vehicles</span> <span class="tab-count" id="countVehicles"></span></button>
+          <button type="button" class="tab" data-fleet-tab="drivers" aria-pressed="false"><span data-i18n="fleet_drivers_tab">Drivers</span> <span class="tab-count" id="countDrivers"></span></button>
+        </div>
+
+        <div class="fleet-tabpanel" id="fleetTab-vehicles">
+          <div class="card-grid" id="vehicleCards"></div>
+        </div>
+
+        <div class="fleet-tabpanel" id="fleetTab-drivers" hidden>
+          <div class="card-grid" id="driverCards"></div>
+        </div>
+      </div>
+
+      <div id="vehicleFormView" hidden>
+        <button type="button" class="minibtn" id="vehicleFormBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead" style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+          <h1 id="vfTitle">Add vehicle</h1>
+          <span id="vfStatusBadge"></span>
+        </div>
+        <div class="card" style="max-width:640px;">
+          <div class="field-row">
+            <div class="field"><label for="vfMake">Make</label><input type="text" id="vfMake" placeholder="e.g. Mercedes E-Class"></div>
+            <div class="field"><label for="vfPlate">Plate number</label><input type="text" id="vfPlate" placeholder="e.g. MB-1234-AB"></div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="minibtn good" id="vfCreateBtn">Create vehicle</button>
+            <button type="button" class="minibtn good" id="vfSaveBtn" hidden>Save changes</button>
+          </div>
+          <p class="status" id="vfStatus"></p>
+
+          <div id="vfDocsSection" hidden>
+            <div class="block">
+              <div class="block-title">Photo &amp; documents</div>
+              <div class="doc-grid" id="vfDocGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="driverFormView" hidden>
+        <button type="button" class="minibtn" id="driverFormBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead" style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+          <h1 id="dfTitle">Add driver</h1>
+          <span id="dfStatusBadge"></span>
+        </div>
+        <div class="card" style="max-width:640px;">
+          <div class="field-row">
+            <div class="field"><label for="dfName">Name</label><input type="text" id="dfName" placeholder="Full name"></div>
+            <div class="field"><label for="dfPhone">Phone number</label><input type="text" id="dfPhone" placeholder="+34 ..."></div>
+            <div class="field"><label for="dfLanguage">Language</label><input type="text" id="dfLanguage" placeholder="e.g. Spanish"></div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="minibtn good" id="dfCreateBtn">Create driver</button>
+            <button type="button" class="minibtn good" id="dfSaveBtn" hidden>Save changes</button>
+          </div>
+          <p class="status" id="dfStatus"></p>
+
+          <div id="dfDocsSection" hidden>
+            <div class="block">
+              <div class="block-title">Documents</div>
+              <div class="doc-grid" id="dfDocGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-finance">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_finance_title">Finance</h1>
+        <p class="sub" data-i18n="dash_finance_sub">Your completed trips and earnings. Every completed order (including confirmed no-shows) counts here automatically.</p>
+      </div>
+
+      <div class="toolbar">
+        <label class="toolbar-field">From <input type="date" id="finDateFrom"></label>
+        <label class="toolbar-field">To <input type="date" id="finDateTo"></label>
+      </div>
+
+      <div class="stat-grid" id="finStatGrid"></div>
+
+      <div class="card invoice-card" id="invoiceCard" hidden></div>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr><th data-i18n="th_order">Order #</th><th data-i18n="th_date">Date</th><th data-i18n="fin_th_route">Route</th><th data-i18n="fin_th_price">Price</th></tr>
+          </thead>
+          <tbody id="financeList"></tbody>
+        </table>
+        <div id="financePager"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-ridepool">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_ridepool_title">Ride Pool</h1>
+        <p class="sub" data-i18n="dash_ridepool_sub">A live feed of nearby ride requests in your coverage area.</p>
+      </div>
+
+      <div class="ridepool-wrap" id="ridePoolWrap">
+        <div class="ridepool-list" id="ridePoolList"></div>
+        <div class="ridepool-lock">
+          <div class="ridepool-lock-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4.5" y="9" width="11" height="8" rx="1.6"/><path d="M6.5 9V6.5a3.5 3.5 0 0 1 7 0V9" stroke-linecap="round"/></svg>
+          </div>
+          <div class="ridepool-lock-card">
+            <h3 data-i18n="ridepool_locked_title">Pool access is locked during your trial</h3>
+            <p data-i18n="ridepool_locked_body">The open ride pool unlocks once your 30-day trial period ends. Until then, you'll only receive orders assigned to you directly.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-account">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_account_title">Account</h1>
+        <p class="sub" data-i18n="dash_account_sub">Your company's details on file</p>
+      </div>
+
+      <div class="card section-card" id="trialCard" hidden>
+        <h2 data-i18n="trial_title" style="font-size:15px;">Trial period</h2>
+        <p class="sub" data-i18n="trial_sub" style="margin-top:2px;margin-bottom:14px;">Starts automatically with your first completed order and runs for 30 days.</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:8px;">
+          <span style="font-weight:600;font-size:13.5px;" id="trialDayLabel"></span>
+          <span id="trialBadge"></span>
+        </div>
+        <div class="trial-bar-track"><div class="trial-bar-fill" id="trialBarFill" style="width:0%;"></div></div>
+        <div class="trial-dates"><span id="trialStartDate"></span><span id="trialEndDate"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_id_label">Account ID</span><div class="mono" id="acctId"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_email_label">Email</span><div id="acctEmail"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_company_label">Company</span><div id="acctCompany"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_country_label">Country</span><div id="acctCountry"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_status_label">Status</span><div id="acctStatus"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="account_since_label">Member since</span><div id="acctSince"></div></div>
+        <div class="va-field"><span class="va-fieldlabel" data-i18n="language_label">Dashboard language</span><div id="acctLangWrap"><select id="acctLang" style="min-height:32px;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface);padding:4px 8px;font-size:13px;"></select></div></div>
+      </div>
+
+      <div class="card section-card" style="margin-top:18px;">
+        <h2 data-i18n="contact_coverage_title">Contact &amp; coverage</h2>
+        <p class="sub" data-i18n="contact_coverage_sub">Shown to our team only — keep this up to date so we can reach you and route the right orders your way.</p>
+        <div class="field-row">
+          <div class="field">
+            <label for="acctPhone" data-i18n="contact_phone_label">Contact phone number</label>
+            <input type="tel" id="acctPhone" autocomplete="tel">
+          </div>
+          <div class="field">
+            <label for="acctCityCombo" data-i18n="city_of_service_label">City of service</label>
+            <div id="acctCityCombo"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="airports_you_cover_label">Airports you cover</label>
+          <div id="acctAirports"></div>
+        </div>
+        <button type="button" class="btn" id="acctSaveBtn" style="width:auto;" data-i18n="save_changes_btn">Save changes</button>
+        <p class="status" id="acctStatus2" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="card section-card" style="margin-top:18px;">
+        <h2 data-i18n="pay_details_title">Payment details</h2>
+        <p class="sub" data-i18n="pay_details_sub">Used to fill in "pay to" on your trial invoice — fill these in before generating it, under Finance.</p>
+        <div class="field-row">
+          <div class="field">
+            <label for="payHolder" data-i18n="pay_holder_label">Account holder name</label>
+            <input type="text" id="payHolder" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="payBank" data-i18n="pay_bank_label">Bank name</label>
+            <input type="text" id="payBank" autocomplete="off">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="payAccount" data-i18n="pay_account_label">IBAN / account number</label>
+            <input type="text" id="payAccount" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="paySwift" data-i18n="pay_swift_label">SWIFT / BIC</label>
+            <input type="text" id="paySwift" autocomplete="off">
+          </div>
+          <div class="field" style="flex:1 1 100px;">
+            <label for="payCurrency" data-i18n="pay_currency_label">Currency</label>
+            <input type="text" id="payCurrency" autocomplete="off" maxlength="10">
+          </div>
+        </div>
+        <button type="button" class="btn" id="paySaveBtn" style="width:auto;" data-i18n="save_changes_btn">Save changes</button>
+        <p class="status" id="payStatus" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-contract">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_contract_title">Contract</h1>
+        <p class="sub" data-i18n="dash_contract_sub">Your cooperation agreement with us, once it's been signed by both sides.</p>
+      </div>
+      <div class="card section-card" id="contractCard"></div>
+    </section>
+
+    <section class="panel" id="panel-referrals">
+      <div class="dash-pagehead">
+        <h1 data-i18n="dash_referrals_title">Referrals</h1>
+        <p class="sub" data-i18n="dash_referrals_sub">Invite other fleets to join us. While their account stays active, you earn 7% of their completed-order value as a bonus.</p>
+      </div>
+      <div class="card section-card">
+        <div class="block-title" data-i18n="ref_link_title" style="margin-bottom:10px;">Your referral link</div>
+        <div class="ref-link-row">
+          <input type="text" id="refLinkInput" readonly>
+          <button type="button" class="minibtn" id="refCopyBtn" data-i18n="copy_btn">Copy</button>
+        </div>
+      </div>
+      <div class="card section-card">
+        <div class="block-title" data-i18n="ref_list_title" style="margin-bottom:6px;">Your referrals</div>
+        <div id="refList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="invoice-modal-overlay" id="invoiceModal" hidden>
+  <div class="invoice-modal">
+    <div class="invoice-modal-bar">
+      <span data-i18n="invoice_modal_title">Invoice preview</span>
+      <button type="button" class="invoice-modal-close" id="invoiceModalCloseX" aria-label="Close">&times;</button>
+    </div>
+    <div class="invoice-modal-body" id="invoiceModalBody"></div>
+    <div class="invoice-modal-actions">
+      <button type="button" class="minibtn" id="invoiceModalCloseBtn" data-i18n="btn_close">Close</button>
+      <button type="button" class="minibtn good" id="invoiceSendBtn" data-i18n="btn_send_invoice">Send Invoice</button>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/i18n.js"></script>
+<script src="/assets/doc-defs.js"></script>
+<script src="/assets/airports.js"></script>
+<script src="/assets/combobox.js"></script>
+<script src="/assets/trial.js"></script>
+<script src="/assets/paginate.js"></script>
+<script src="/assets/partner-dashboard.js"></script>
+</body>
+</html>
