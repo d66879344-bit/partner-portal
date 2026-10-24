@@ -25,7 +25,10 @@
 
   var DICT = {
     en: {
-      nav_orders: "Your Orders", nav_company: "Company", nav_fleet: "Fleet", nav_finance: "Finance", nav_ridepool: "Ride Pool", nav_account: "Account",
+      nav_orders: "Your Orders", nav_company: "Company", nav_fleet: "Fleet", nav_finance: "Finance", nav_ridepool: "Ride Pool", nav_account: "Account", nav_today: "Today",
+      search_placeholder: "Search by order #, route or partner…",
+      today_sub: "Your trips for today, sorted by pickup time.", today_empty: "No trips scheduled for today.",
+      pay_details_alert_title: "Payment details are missing", pay_details_alert_body: "Add your bank details below — required before you can generate your invoice.",
       logout: "Log out",
 
       home_eyebrow: "Partner portal", home_title: "Fleet Partner Portal",
@@ -55,6 +58,10 @@
       register_driver1_title: "Driver 1", register_driver2_title: "Driver 2", register_driver2_sub: "Only if this company has a second driver — otherwise leave blank.",
       register_driver_name: "Driver name",
       register_other_title: "Other document", register_other_sub: "Optional — anything that doesn't fit above.", register_other_desc: "What is this document?",
+      register_hero_eyebrow: "Partner network", register_hero_headline: "Your fleet, connected.",
+      register_hero_prop1: "Orders go straight into your dashboard — accept or decline, no bidding.",
+      register_hero_prop2: "Register once, then list every city and airport your vehicles cover.",
+      register_hero_prop3: "Upload documents once, track review status for every slot.",
       register_submit_btn: "Create account",
       register_next_note: "Next: sign in and add your vehicles, drivers and documents from the dashboard.",
       register_success_title: "Application submitted", register_goto_login: "Go to sign in",
@@ -80,7 +87,7 @@
 
       empty_new: "No new orders right now.", empty_accepted: "Nothing in progress right now.", empty_completed: "No completed orders yet.",
 
-      od_trip: "Trip", od_passenger_price: "Passenger & price", od_vehicle_driver: "Vehicle & driver", od_trip_progress: "Trip progress",
+      od_trip: "Trip", od_passenger_price: "Passenger & price", od_vehicle_driver: "Vehicle & driver", od_trip_progress: "Trip progress", od_route_link: "Route: pickup → dropoff",
       fl_date: "Date", fl_pickup_time: "Pickup time", fl_buffer_time: "Waiting time", fl_vehicle_type: "Vehicle type", fl_vehicles_needed: "Vehicles needed", fl_meet_greet: "Meet & greet sign",
       btn_accept: "Accept", btn_decline: "Decline", btn_save: "Save", btn_more: "More", btn_back_to_orders: "Back to orders",
       no_show_pending: "Reported as a customer no-show — pending review.",
@@ -139,7 +146,10 @@
       pager_prev: "← Prev", pager_next: "Next →", pager_label: "Page {page} of {pages}",
     },
     ru: {
-      nav_orders: "Мои заказы", nav_company: "Компания", nav_fleet: "Автопарк", nav_finance: "Финансы", nav_ridepool: "Пул поездок", nav_account: "Аккаунт",
+      nav_orders: "Мои заказы", nav_company: "Компания", nav_fleet: "Автопарк", nav_finance: "Финансы", nav_ridepool: "Пул поездок", nav_account: "Аккаунт", nav_today: "Сегодня",
+      search_placeholder: "Поиск по номеру заказа, маршруту или партнёру…",
+      today_sub: "Ваши поездки на сегодня, по времени подачи.", today_empty: "На сегодня поездок нет.",
+      pay_details_alert_title: "Не указаны платёжные реквизиты", pay_details_alert_body: "Укажите банковские реквизиты ниже — это нужно для формирования инвойса.",
       logout: "Выйти",
 
       home_eyebrow: "Портал партнёров", home_title: "Портал партнёров автопарка",
@@ -169,6 +179,10 @@
       register_driver1_title: "Водитель 1", register_driver2_title: "Водитель 2", register_driver2_sub: "Только если у компании есть второй водитель — иначе оставьте пустым.",
       register_driver_name: "Имя водителя",
       register_other_title: "Другой документ", register_other_sub: "Необязательно — всё, что не подошло выше.", register_other_desc: "Что это за документ?",
+      register_hero_eyebrow: "Сеть партнёров", register_hero_headline: "Ваш автопарк на связи.",
+      register_hero_prop1: "Заказы приходят прямо в личный кабинет — принять или отклонить, без торгов.",
+      register_hero_prop2: "Зарегистрируйтесь один раз и укажите все города и аэропорты, которые обслуживают ваши автомобили.",
+      register_hero_prop3: "Загрузите документы один раз и следите за статусом проверки каждого.",
       register_submit_btn: "Создать аккаунт",
       register_next_note: "Далее: войдите и добавьте автомобили, водителей и документы в личном кабинете.",
       register_success_title: "Заявка отправлена", register_goto_login: "Перейти ко входу",
@@ -194,7 +208,7 @@
 
       empty_new: "Пока нет новых заказов.", empty_accepted: "Сейчас ничего не в работе.", empty_completed: "Завершённых заказов пока нет.",
 
-      od_trip: "Поездка", od_passenger_price: "Пассажир и цена", od_vehicle_driver: "Авто и водитель", od_trip_progress: "Статус поездки",
+      od_trip: "Поездка", od_passenger_price: "Пассажир и цена", od_vehicle_driver: "Авто и водитель", od_trip_progress: "Статус поездки", od_route_link: "Маршрут: подача → высадка",
       fl_date: "Дата", fl_pickup_time: "Время подачи", fl_buffer_time: "Время ожидания", fl_vehicle_type: "Тип авто", fl_vehicles_needed: "Количество машин", fl_meet_greet: "Табличка для встречи",
       btn_accept: "Принять", btn_decline: "Отклонить", btn_save: "Сохранить", btn_more: "Ещё", btn_back_to_orders: "Назад к заказам",
       no_show_pending: "Заявлено как неявка пассажира — ожидает проверки.",
@@ -253,7 +267,10 @@
       pager_prev: "← Назад", pager_next: "Далее →", pager_label: "Страница {page} из {pages}",
     },
     es: {
-      nav_orders: "Mis pedidos", nav_company: "Empresa", nav_fleet: "Flota", nav_finance: "Finanzas", nav_ridepool: "Grupo de viajes", nav_account: "Cuenta",
+      nav_orders: "Mis pedidos", nav_company: "Empresa", nav_fleet: "Flota", nav_finance: "Finanzas", nav_ridepool: "Grupo de viajes", nav_account: "Cuenta", nav_today: "Hoy",
+      search_placeholder: "Buscar por n.º de pedido, ruta o socio…",
+      today_sub: "Tus viajes de hoy, ordenados por hora de recogida.", today_empty: "No hay viajes programados para hoy.",
+      pay_details_alert_title: "Faltan los datos de pago", pay_details_alert_body: "Añade tus datos bancarios abajo — necesarios para generar tu factura.",
       logout: "Cerrar sesión",
 
       home_eyebrow: "Portal de socios", home_title: "Portal de socios de flota",
@@ -283,6 +300,10 @@
       register_driver1_title: "Conductor 1", register_driver2_title: "Conductor 2", register_driver2_sub: "Solo si esta empresa tiene un segundo conductor — si no, déjalo en blanco.",
       register_driver_name: "Nombre del conductor",
       register_other_title: "Otro documento", register_other_sub: "Opcional — cualquier cosa que no encaje arriba.", register_other_desc: "¿Qué es este documento?",
+      register_hero_eyebrow: "Red de socios", register_hero_headline: "Tu flota, conectada.",
+      register_hero_prop1: "Los pedidos llegan directo a tu panel: aceptas o rechazas, sin pujas.",
+      register_hero_prop2: "Regístrate una vez y añade cada ciudad y aeropuerto que cubren tus vehículos.",
+      register_hero_prop3: "Sube los documentos una vez y sigue el estado de revisión de cada uno.",
       register_submit_btn: "Crear cuenta",
       register_next_note: "A continuación: inicia sesión y añade tus vehículos, conductores y documentos desde el panel.",
       register_success_title: "Solicitud enviada", register_goto_login: "Ir a iniciar sesión",
@@ -308,7 +329,7 @@
 
       empty_new: "No hay pedidos nuevos ahora mismo.", empty_accepted: "Nada en curso ahora mismo.", empty_completed: "Aún no hay pedidos completados.",
 
-      od_trip: "Viaje", od_passenger_price: "Pasajero y precio", od_vehicle_driver: "Vehículo y conductor", od_trip_progress: "Progreso del viaje",
+      od_trip: "Viaje", od_passenger_price: "Pasajero y precio", od_vehicle_driver: "Vehículo y conductor", od_trip_progress: "Progreso del viaje", od_route_link: "Ruta: recogida → destino",
       fl_date: "Fecha", fl_pickup_time: "Hora de recogida", fl_buffer_time: "Tiempo de espera", fl_vehicle_type: "Tipo de vehículo", fl_vehicles_needed: "Vehículos necesarios", fl_meet_greet: "Cartel de bienvenida",
       btn_accept: "Aceptar", btn_decline: "Rechazar", btn_save: "Guardar", btn_more: "Más", btn_back_to_orders: "Volver a pedidos",
       no_show_pending: "Reportado como no presentación del pasajero — pendiente de revisión.",
@@ -367,7 +388,10 @@
       pager_prev: "← Anterior", pager_next: "Siguiente →", pager_label: "Página {page} de {pages}",
     },
     el: {
-      nav_orders: "Οι παραγγελίες μου", nav_company: "Εταιρεία", nav_fleet: "Στόλος", nav_finance: "Οικονομικά", nav_ridepool: "Δεξαμενή διαδρομών", nav_account: "Λογαριασμός",
+      nav_orders: "Οι παραγγελίες μου", nav_company: "Εταιρεία", nav_fleet: "Στόλος", nav_finance: "Οικονομικά", nav_ridepool: "Δεξαμενή διαδρομών", nav_account: "Λογαριασμός", nav_today: "Σήμερα",
+      search_placeholder: "Αναζήτηση με αριθμό παραγγελίας, διαδρομή ή συνεργάτη…",
+      today_sub: "Οι διαδρομές σας για σήμερα, ταξινομημένες κατά ώρα παραλαβής.", today_empty: "Δεν υπάρχουν προγραμματισμένες διαδρομές για σήμερα.",
+      pay_details_alert_title: "Λείπουν τα στοιχεία πληρωμής", pay_details_alert_body: "Προσθέστε τα τραπεζικά σας στοιχεία παρακάτω — απαιτούνται για τη δημιουργία του τιμολογίου σας.",
       logout: "Αποσύνδεση",
 
       home_eyebrow: "Πύλη συνεργατών", home_title: "Πύλη συνεργατών στόλου",
@@ -397,6 +421,10 @@
       register_driver1_title: "Οδηγός 1", register_driver2_title: "Οδηγός 2", register_driver2_sub: "Μόνο αν η εταιρεία έχει δεύτερο οδηγό — διαφορετικά αφήστε το κενό.",
       register_driver_name: "Όνομα οδηγού",
       register_other_title: "Άλλο έγγραφο", register_other_sub: "Προαιρετικό — οτιδήποτε δεν ταιριάζει παραπάνω.", register_other_desc: "Τι είδους έγγραφο είναι αυτό;",
+      register_hero_eyebrow: "Δίκτυο συνεργατών", register_hero_headline: "Ο στόλος σας, συνδεδεμένος.",
+      register_hero_prop1: "Οι παραγγελίες έρχονται απευθείας στον πίνακά σας — αποδοχή ή απόρριψη, χωρίς προσφορές.",
+      register_hero_prop2: "Εγγραφείτε μία φορά και προσθέστε κάθε πόλη και αεροδρόμιο που καλύπτουν τα οχήματά σας.",
+      register_hero_prop3: "Ανεβάστε έγγραφα μία φορά και παρακολουθήστε την κατάσταση ελέγχου κάθε θέσης.",
       register_submit_btn: "Δημιουργία λογαριασμού",
       register_next_note: "Επόμενο βήμα: συνδεθείτε και προσθέστε οχήματα, οδηγούς και έγγραφα από τον πίνακα.",
       register_success_title: "Η αίτηση υποβλήθηκε", register_goto_login: "Μετάβαση στη σύνδεση",
@@ -422,7 +450,7 @@
 
       empty_new: "Καμία νέα παραγγελία αυτή τη στιγμή.", empty_accepted: "Τίποτα σε εξέλιξη αυτή τη στιγμή.", empty_completed: "Καμία ολοκληρωμένη παραγγελία ακόμα.",
 
-      od_trip: "Διαδρομή", od_passenger_price: "Επιβάτης & τιμή", od_vehicle_driver: "Όχημα & οδηγός", od_trip_progress: "Πρόοδος διαδρομής",
+      od_trip: "Διαδρομή", od_passenger_price: "Επιβάτης & τιμή", od_vehicle_driver: "Όχημα & οδηγός", od_trip_progress: "Πρόοδος διαδρομής", od_route_link: "Διαδρομή: παραλαβή → προορισμός",
       fl_date: "Ημερομηνία", fl_pickup_time: "Ώρα παραλαβής", fl_buffer_time: "Χρόνος αναμονής", fl_vehicle_type: "Τύπος οχήματος", fl_vehicles_needed: "Απαιτούμενα οχήματα", fl_meet_greet: "Πινακίδα υποδοχής",
       btn_accept: "Αποδοχή", btn_decline: "Απόρριψη", btn_save: "Αποθήκευση", btn_more: "Περισσότερα", btn_back_to_orders: "Πίσω στις παραγγελίες",
       no_show_pending: "Αναφέρθηκε ως μη εμφάνιση επιβάτη — σε αναμονή ελέγχου.",
@@ -481,7 +509,10 @@
       pager_prev: "← Προηγ.", pager_next: "Επόμ. →", pager_label: "Σελίδα {page} από {pages}",
     },
     fr: {
-      nav_orders: "Mes commandes", nav_company: "Entreprise", nav_fleet: "Flotte", nav_finance: "Finances", nav_ridepool: "Pool de courses", nav_account: "Compte",
+      nav_orders: "Mes commandes", nav_company: "Entreprise", nav_fleet: "Flotte", nav_finance: "Finances", nav_ridepool: "Pool de courses", nav_account: "Compte", nav_today: "Aujourd'hui",
+      search_placeholder: "Rechercher par n° de commande, trajet ou partenaire…",
+      today_sub: "Vos courses du jour, triées par heure de prise en charge.", today_empty: "Aucune course prévue aujourd'hui.",
+      pay_details_alert_title: "Les informations de paiement sont manquantes", pay_details_alert_body: "Ajoutez vos coordonnées bancaires ci-dessous — nécessaires pour générer votre facture.",
       logout: "Déconnexion",
 
       home_eyebrow: "Portail partenaires", home_title: "Portail partenaires flotte",
@@ -511,6 +542,10 @@
       register_driver1_title: "Chauffeur 1", register_driver2_title: "Chauffeur 2", register_driver2_sub: "Seulement si l'entreprise a un second chauffeur — sinon laissez vide.",
       register_driver_name: "Nom du chauffeur",
       register_other_title: "Autre document", register_other_sub: "Facultatif — tout ce qui ne correspond pas ci-dessus.", register_other_desc: "De quel document s'agit-il ?",
+      register_hero_eyebrow: "Réseau de partenaires", register_hero_headline: "Votre flotte, connectée.",
+      register_hero_prop1: "Les commandes arrivent directement dans votre tableau de bord — acceptez ou refusez, sans enchères.",
+      register_hero_prop2: "Inscrivez-vous une fois, puis indiquez chaque ville et aéroport couverts par vos véhicules.",
+      register_hero_prop3: "Téléchargez les documents une fois et suivez le statut de vérification de chacun.",
       register_submit_btn: "Créer le compte",
       register_next_note: "Ensuite : connectez-vous et ajoutez vos véhicules, chauffeurs et documents depuis le tableau de bord.",
       register_success_title: "Candidature envoyée", register_goto_login: "Aller à la connexion",
@@ -536,7 +571,7 @@
 
       empty_new: "Aucune nouvelle commande pour le moment.", empty_accepted: "Rien en cours pour le moment.", empty_completed: "Aucune commande terminée pour le moment.",
 
-      od_trip: "Trajet", od_passenger_price: "Passager & prix", od_vehicle_driver: "Véhicule & chauffeur", od_trip_progress: "Progression du trajet",
+      od_trip: "Trajet", od_passenger_price: "Passager & prix", od_vehicle_driver: "Véhicule & chauffeur", od_trip_progress: "Progression du trajet", od_route_link: "Itinéraire : prise en charge → destination",
       fl_date: "Date", fl_pickup_time: "Heure de prise en charge", fl_buffer_time: "Temps d'attente", fl_vehicle_type: "Type de véhicule", fl_vehicles_needed: "Véhicules nécessaires", fl_meet_greet: "Pancarte d'accueil",
       btn_accept: "Accepter", btn_decline: "Refuser", btn_save: "Enregistrer", btn_more: "Plus", btn_back_to_orders: "Retour aux commandes",
       no_show_pending: "Signalé comme no-show du passager — en attente de vérification.",
@@ -595,7 +630,10 @@
       pager_prev: "← Préc.", pager_next: "Suiv. →", pager_label: "Page {page} sur {pages}",
     },
     pt: {
-      nav_orders: "Meus pedidos", nav_company: "Empresa", nav_fleet: "Frota", nav_finance: "Finanças", nav_ridepool: "Grupo de viagens", nav_account: "Conta",
+      nav_orders: "Meus pedidos", nav_company: "Empresa", nav_fleet: "Frota", nav_finance: "Finanças", nav_ridepool: "Grupo de viagens", nav_account: "Conta", nav_today: "Hoje",
+      search_placeholder: "Pesquisar por n.º de pedido, rota ou parceiro…",
+      today_sub: "As suas viagens de hoje, ordenadas por hora de embarque.", today_empty: "Não há viagens agendadas para hoje.",
+      pay_details_alert_title: "Faltam os dados de pagamento", pay_details_alert_body: "Adicione os seus dados bancários abaixo — necessários para gerar a sua fatura.",
       logout: "Sair",
 
       home_eyebrow: "Portal de parceiros", home_title: "Portal de parceiros da frota",
@@ -625,6 +663,10 @@
       register_driver1_title: "Motorista 1", register_driver2_title: "Motorista 2", register_driver2_sub: "Só se esta empresa tiver um segundo motorista — caso contrário, deixe em branco.",
       register_driver_name: "Nome do motorista",
       register_other_title: "Outro documento", register_other_sub: "Opcional — qualquer coisa que não se enquadre acima.", register_other_desc: "Que documento é este?",
+      register_hero_eyebrow: "Rede de parceiros", register_hero_headline: "A sua frota, ligada.",
+      register_hero_prop1: "Os pedidos chegam diretamente ao seu painel — aceite ou recuse, sem licitações.",
+      register_hero_prop2: "Registe-se uma vez e indique todas as cidades e aeroportos que os seus veículos cobrem.",
+      register_hero_prop3: "Carregue os documentos uma vez e acompanhe o estado de revisão de cada um.",
       register_submit_btn: "Criar conta",
       register_next_note: "A seguir: inicie sessão e adicione os seus veículos, motoristas e documentos no painel.",
       register_success_title: "Candidatura enviada", register_goto_login: "Ir para iniciar sessão",
@@ -650,7 +692,7 @@
 
       empty_new: "Sem pedidos novos neste momento.", empty_accepted: "Nada em curso neste momento.", empty_completed: "Ainda não há pedidos concluídos.",
 
-      od_trip: "Viagem", od_passenger_price: "Passageiro e preço", od_vehicle_driver: "Veículo e motorista", od_trip_progress: "Progresso da viagem",
+      od_trip: "Viagem", od_passenger_price: "Passageiro e preço", od_vehicle_driver: "Veículo e motorista", od_trip_progress: "Progresso da viagem", od_route_link: "Rota: embarque → destino",
       fl_date: "Data", fl_pickup_time: "Hora de recolha", fl_buffer_time: "Tempo de espera", fl_vehicle_type: "Tipo de veículo", fl_vehicles_needed: "Veículos necessários", fl_meet_greet: "Placa de boas-vindas",
       btn_accept: "Aceitar", btn_decline: "Recusar", btn_save: "Guardar", btn_more: "Mais", btn_back_to_orders: "Voltar aos pedidos",
       no_show_pending: "Reportado como não comparência do passageiro — a aguardar revisão.",

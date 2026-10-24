@@ -40,6 +40,20 @@
   function badge(status) {
     return '<span class="badge badge-' + esc(status) + '">' + esc(status) + "</span>";
   }
+  // Pickup/dropoff addresses are free-text, so these just hand them to Google
+  // Maps as a search / directions query — no geocoding or map embed on our
+  // side, just a link out.
+  function mapsSearchUrl(address) {
+    return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(address || "");
+  }
+  function mapsRouteUrl(pickup, dropoff) {
+    return "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(pickup || "") +
+      "&destination=" + encodeURIComponent(dropoff || "");
+  }
+  function addressLinkHtml(address) {
+    if (!address) return "";
+    return '<a href="' + esc(mapsSearchUrl(address)) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-decoration-color:var(--line-strong);">' + esc(address) + "</a>";
+  }
   function fileUrl(id) {
     return "/api/admin/partner-file?secret=" + encodeURIComponent(secret) + "&id=" + id;
   }
@@ -112,6 +126,11 @@
   }
 
   function matchesPartnerFilter(p) {
+    var q = $("fPartnerSearch") ? $("fPartnerSearch").value.trim().toLowerCase() : "";
+    if (q) {
+      var hay = [p.companyName, p.email, p.accountId].filter(Boolean).join(" ").toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
     var fs = $("fStatus").value, fc = $("fCountry").value, ft = $("fTrialState").value, fo = $("fOrganization").value;
     if (fs && p.status !== fs) return false;
     if (fc && p.country !== fc) return false;
@@ -265,11 +284,26 @@
       "</label>" +
       '<button type="button" class="minibtn" data-billing-save="' + p.id + '">Save</button>' +
       "</div>" +
-      '<div class="row-meta">Payment details from partner: ' +
-      (p.payAccountHolder || p.payBankName || p.payAccountNumber
-        ? esc(p.payAccountHolder || "—") + " · " + esc(p.payBankName || "—") + " · " + esc(p.payAccountNumber || "—") +
-          (p.paySwift ? " · SWIFT " + esc(p.paySwift) : "") + (p.payCurrency ? " · " + esc(p.payCurrency) : "")
-        : "Not provided yet.") +
+      '<div class="row-meta" style="margin-bottom:6px;">Payment details (editable here, or by the partner in their own account — same record, last save wins)</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<label style="font-size:12.5px;color:var(--ink-2);">Account holder' +
+      '<input type="text" data-pay-holder="' + p.id + '" value="' + esc(p.payAccountHolder || "") + '" placeholder="Account holder name" style="margin-left:6px;width:160px;">' +
+      "</label>" +
+      '<label style="font-size:12.5px;color:var(--ink-2);">Bank name' +
+      '<input type="text" data-pay-bank="' + p.id + '" value="' + esc(p.payBankName || "") + '" placeholder="Bank name" style="margin-left:6px;width:140px;">' +
+      "</label>" +
+      "</div>" +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">' +
+      '<label style="font-size:12.5px;color:var(--ink-2);">IBAN / account number' +
+      '<input type="text" data-pay-account="' + p.id + '" value="' + esc(p.payAccountNumber || "") + '" placeholder="IBAN or account number" style="margin-left:6px;width:170px;">' +
+      "</label>" +
+      '<label style="font-size:12.5px;color:var(--ink-2);">SWIFT/BIC' +
+      '<input type="text" data-pay-swift="' + p.id + '" value="' + esc(p.paySwift || "") + '" placeholder="SWIFT" style="margin-left:6px;width:100px;">' +
+      "</label>" +
+      '<label style="font-size:12.5px;color:var(--ink-2);">Currency' +
+      '<input type="text" data-pay-currency="' + p.id + '" value="' + esc(p.payCurrency || "") + '" placeholder="EUR" style="margin-left:6px;width:70px;">' +
+      "</label>" +
+      '<button type="button" class="minibtn" data-pay-save="' + p.id + '">Save</button>' +
       "</div>" +
       (p.accountId === TRIAL_SIMULATE_ACCOUNT_ID
         ? '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">' +
@@ -404,6 +438,7 @@
   }
   wirePagerContainer("partnersPager", function () { return partnersPage; }, function (p) { partnersPage = p; }, renderPartners);
 
+  if ($("fPartnerSearch")) $("fPartnerSearch").addEventListener("input", function () { partnersPage = 1; renderPartners(); });
   $("fStatus").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
   $("fCountry").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
   $("fTrialState").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
@@ -432,10 +467,11 @@
 
   $("partnersList").addEventListener("click", async function (e) {
     var saveBilling = e.target.closest("[data-billing-save]");
+    var savePay = e.target.closest("[data-pay-save]");
     var uploadContract = e.target.closest("[data-contract-upload]");
     var uploadPriceList = e.target.closest("[data-price-list-upload]");
     var saveInvoiceStatus = e.target.closest("[data-invoice-status-save]");
-    if (!saveBilling && !uploadContract && !uploadPriceList && !saveInvoiceStatus) return;
+    if (!saveBilling && !savePay && !uploadContract && !uploadPriceList && !saveInvoiceStatus) return;
     e.stopPropagation();
 
     if (saveBilling) {
@@ -450,6 +486,32 @@
         refreshDetail(bpid);
       } catch (err) {
         alert("Could not save billing settings. Try again.");
+      }
+      return;
+    }
+
+    if (savePay) {
+      var ppid = Number(savePay.getAttribute("data-pay-save"));
+      var holderInput = document.querySelector('[data-pay-holder="' + ppid + '"]');
+      var bankInput = document.querySelector('[data-pay-bank="' + ppid + '"]');
+      var accountInput = document.querySelector('[data-pay-account="' + ppid + '"]');
+      var swiftInput = document.querySelector('[data-pay-swift="' + ppid + '"]');
+      var currencyInput = document.querySelector('[data-pay-currency="' + ppid + '"]');
+      try {
+        await api("/api/admin/partner-pay-update", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: ppid,
+            payAccountHolder: holderInput ? holderInput.value.trim() : "",
+            payBankName: bankInput ? bankInput.value.trim() : "",
+            payAccountNumber: accountInput ? accountInput.value.trim() : "",
+            paySwift: swiftInput ? swiftInput.value.trim() : "",
+            payCurrency: currencyInput ? currencyInput.value.trim() : ""
+          })
+        });
+        refreshDetail(ppid);
+      } catch (err) {
+        alert("Could not save payment details. Try again.");
       }
       return;
     }
@@ -843,19 +905,28 @@
 
   var CLOSED_STATUSES = ["declined", "cancelled"];
   var EMPTY_ORDER_MESSAGE = {
+    today: "No trips scheduled for today.",
     offered: "No orders waiting on a partner right now.",
     accepted: "Nothing in progress right now.",
     completed: "No completed orders yet.",
     closed: "No declined or cancelled orders.",
     no_show: "No customer no-show reports right now.",
   };
+  function pad2a(n) { return (n < 10 ? "0" : "") + n; }
+  function todayDateStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2a(d.getMonth() + 1) + "-" + pad2a(d.getDate());
+  }
 
   function updateOrderTabCounts() {
+    var today = todayDateStr();
+    var cToday = orders.filter(function (o) { return o.orderDate === today; }).length;
     var cOffered = orders.filter(function (o) { return o.status === "offered"; }).length;
     var cAccepted = orders.filter(function (o) { return o.status === "accepted"; }).length;
     var cCompleted = orders.filter(function (o) { return o.status === "completed"; }).length;
     var cClosed = orders.filter(function (o) { return CLOSED_STATUSES.indexOf(o.status) !== -1; }).length;
     var cNoShow = orders.filter(function (o) { return o.status === "no_show"; }).length;
+    $("countToday").textContent = cToday || "";
     $("countOffered").textContent = cOffered || "";
     $("countAccepted").textContent = cAccepted || "";
     $("countCompleted").textContent = cCompleted || "";
@@ -871,9 +942,12 @@
   function matchesOrderFilter(o) {
     var q = $("fOrderSearch").value.trim().toLowerCase();
     if (q) {
-      // Searching by order # looks across every status, not just the open tab.
-      var orderNum = (o.orderNumber || String(o.id)).toLowerCase();
-      if (orderNum.indexOf(q) === -1) return false;
+      // Searching looks across every status, not just the open tab — matches
+      // order #, pickup/dropoff or the assigned partner's company name.
+      var hay = [o.orderNumber || String(o.id), o.pickup, o.dropoff, o.companyName].filter(Boolean).join(" ").toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    } else if (orderTab === "today") {
+      if (o.orderDate !== todayDateStr()) return false;
     } else {
       var inTab = orderTab === "closed" ? CLOSED_STATUSES.indexOf(o.status) !== -1 : o.status === orderTab;
       if (!inTab) return false;
@@ -1048,13 +1122,18 @@
       '<div class="route-dot end"></div>' +
       "</div>" +
       '<div style="flex:1;min-width:0;padding-bottom:4px;">' +
-      '<div style="font-weight:700;font-size:14px;">' + esc(o.pickup) + "</div>" +
+      '<div style="font-weight:700;font-size:14px;">' + addressLinkHtml(o.pickup) + "</div>" +
       (o.flightNumber
         ? '<div style="margin:7px 0;"><span class="badge" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);">Flight ' + esc(o.flightNumber) + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + "</span></div>"
         : "") +
-      '<div style="font-weight:700;font-size:14px;margin-top:' + (o.flightNumber ? "20" : "7") + 'px;">' + esc(o.dropoff) + "</div>" +
+      '<div style="font-weight:700;font-size:14px;margin-top:' + (o.flightNumber ? "20" : "7") + 'px;">' + addressLinkHtml(o.dropoff) + "</div>" +
       "</div></div>" +
-      '<div class="row-meta" style="margin-top:6px;">' + dateLine + "</div>";
+      '<div class="row-meta" style="margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + dateLine +
+      (o.pickup && o.dropoff
+        ? ' <a href="' + esc(mapsRouteUrl(o.pickup, o.dropoff)) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent);text-decoration:none;font-weight:600;">' +
+          '<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 17l5-13 4 9 4-9 1 13" stroke-linecap="round" stroke-linejoin="round"/></svg>Route</a>'
+        : "") +
+      "</div>";
 
     var iconRows =
       '<div class="icon-row" style="margin-top:10px;">' +
