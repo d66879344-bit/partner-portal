@@ -186,7 +186,6 @@
     var pageResult = window.Paginate ? Paginate.slice(rows, partnersPage, PAGE_SIZE) : { page: 1, pages: 1, items: rows };
     partnersPage = pageResult.page;
     $("partnersList").innerHTML = pageResult.items.map(function (p) {
-      var isOpen = openId === p.id;
       return '<tr class="data-row" data-toggle="' + p.id + '">' +
         '<td class="col-main">' + esc(p.companyName) + "</td>" +
         "<td>" + esc(p.email) + "</td>" +
@@ -195,9 +194,8 @@
         "<td>" + badge(p.status) + "</td>" +
         "<td>" + trialPillHtml(p.trialStartedAt, p.trialSimulateEnded) + "</td>" +
         "<td>" + (p.organization ? esc(p.organization) : '<span style="color:var(--ink-2);">—</span>') + "</td>" +
-        '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
-        "</tr>" +
-        '<tr><td colspan="8" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="detail-' + p.id + '"></div></td></tr>';
+        '<td class="col-chev">›</td>' +
+        "</tr>";
     }).join("");
     $("partnersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
     if (openId != null) renderDetail(openId);
@@ -206,14 +204,36 @@
   $("partnersList").addEventListener("click", function (e) {
     var toggle = e.target.closest("[data-toggle]");
     if (!toggle) return;
-    var id = Number(toggle.getAttribute("data-toggle"));
-    openId = openId === id ? null : id;
-    renderPartners();
+    openPartnerDetail(Number(toggle.getAttribute("data-toggle")));
   });
 
+  // Opens the full-page partner detail view in place of the list — same
+  // pattern as the partner-side Orders tab (openOrderDetail/closeOrderDetail
+  // in partner-dashboard.js): the list hides, the detail view takes over the
+  // whole panel with a "← Back" button, instead of expanding inline in the
+  // table. Paints instantly from whatever we already have in `partners`
+  // (company name + status), then renderDetail() fills in the rest once the
+  // full detail has loaded (or instantly from detailCache, if already warm).
+  function openPartnerDetail(id) {
+    var quick = partners.filter(function (x) { return x.id === id; })[0];
+    openId = id;
+    $("pdTitle").textContent = quick ? quick.companyName : "Partner";
+    $("pdStatusBadge").innerHTML = quick ? badge(quick.status) : "";
+    $("partnersListView").hidden = true;
+    $("partnerDetailView").hidden = false;
+    window.scrollTo(0, 0);
+    renderDetail(id);
+  }
+  function closePartnerDetail() {
+    openId = null;
+    $("partnerDetailView").hidden = true;
+    $("partnersListView").hidden = false;
+  }
+  if ($("pdBack")) $("pdBack").addEventListener("click", closePartnerDetail);
+
   async function renderDetail(id) {
-    var el = $("detail-" + id);
-    if (!el) return;
+    var el = $("pdBody");
+    if (!el || openId !== id) return;
     if (!detailCache[id]) {
       el.innerHTML = "Loading…";
       try {
@@ -222,9 +242,12 @@
         el.innerHTML = "Could not load details.";
         return;
       }
+      if (openId !== id) return; // navigated away (e.g. clicked Back) while this was loading
     }
     var d = detailCache[id];
     var p = d.partner;
+    $("pdTitle").textContent = p.companyName;
+    $("pdStatusBadge").innerHTML = badge(p.status);
 
 
     function docList(docs) {
@@ -360,8 +383,7 @@
   // until the fresh data is ready (then swapping in one go) avoids that
   // collapse entirely.
   async function refreshDetail(id) {
-    var el = $("detail-" + id);
-    if (!el) return;
+    if (id == null) return;
     try {
       detailCache[id] = await api("/api/admin/partner-detail?id=" + id);
     } catch (e) {
@@ -370,7 +392,7 @@
     if (openId === id) renderDetail(id); // re-renders from the now-fresh cache, no extra network call
   }
 
-  $("partnersList").addEventListener("click", async function (e) {
+  $("partnerDetailView").addEventListener("click", async function (e) {
     var approveDoc = e.target.closest("[data-doc-approve]");
     var rejectDoc = e.target.closest("[data-doc-reject]");
     var approveP = e.target.closest("[data-partner-approve]");
@@ -397,7 +419,7 @@
           body: JSON.stringify({ id: delPid })
         });
         delete detailCache[delPid];
-        openId = null;
+        closePartnerDetail();
         await loadPartners();
       } catch (err) {
         alert("Could not delete the partner.");
@@ -451,7 +473,7 @@
   $("fTrialState").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
   $("fOrganization").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
 
-  $("partnersList").addEventListener("click", async function (e) {
+  $("partnerDetailView").addEventListener("click", async function (e) {
     var saveOrg = e.target.closest("[data-organization-save]");
     if (!saveOrg) return;
     e.stopPropagation();
@@ -472,7 +494,7 @@
     }
   });
 
-  $("partnersList").addEventListener("click", async function (e) {
+  $("partnerDetailView").addEventListener("click", async function (e) {
     var saveBilling = e.target.closest("[data-billing-save]");
     var savePay = e.target.closest("[data-pay-save]");
     var uploadContract = e.target.closest("[data-contract-upload]");
@@ -573,7 +595,7 @@
     }
   });
 
-  $("partnersList").addEventListener("change", async function (e) {
+  $("partnerDetailView").addEventListener("change", async function (e) {
     var toggle = e.target.closest("[data-trial-simulate]");
     if (!toggle) return;
     var tpid = Number(toggle.getAttribute("data-trial-simulate"));
@@ -595,7 +617,7 @@
 
   // Updates the filename text next to any custom file-chooser label (see
   // fileChooserHtml) as soon as a file is picked.
-  $("partnersList").addEventListener("change", function (e) {
+  $("partnerDetailView").addEventListener("change", function (e) {
     var fileInput = e.target.closest('input[type="file"][id]');
     if (!fileInput) return;
     var nameEl = document.querySelector('[data-file-chooser-name="' + fileInput.id + '"]');

@@ -185,46 +185,57 @@
   <main class="dash-main">
 
     <section class="panel" id="panel-partners">
-      <div class="dash-pagehead">
-        <h1>Partners</h1>
-        <p class="sub">Review documents and manage partner accounts</p>
+      <div id="partnersListView">
+        <div class="dash-pagehead">
+          <h1>Partners</h1>
+          <p class="sub">Review documents and manage partner accounts</p>
+        </div>
+
+        <div class="toolbar">
+          <input type="text" id="fPartnerSearch" placeholder="Search company, email or account ID">
+          <select id="fStatus">
+            <option value="">All statuses</option>
+            <option value="pending">Pending review</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+          </select>
+          <select id="fCountry">
+            <option value="">All countries</option>
+          </select>
+          <select id="fTrialState">
+            <option value="">All trial states</option>
+            <option value="not_started">Not started</option>
+            <option value="active">Active</option>
+            <option value="ending">Ending soon</option>
+            <option value="ended">Ended</option>
+          </select>
+          <select id="fOrganization">
+            <option value="">All organizations</option>
+            <option value="ShuttleDirect">ShuttleDirect</option>
+            <option value="Mozio">Mozio</option>
+            <option value="__none__">Unassigned</option>
+          </select>
+        </div>
+        <p class="status" id="partnersStatus"></p>
+
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr><th>Company</th><th>Email</th><th>Country</th><th>Registered</th><th>Status</th><th>Trial</th><th>Organization</th><th></th></tr>
+            </thead>
+            <tbody id="partnersList"></tbody>
+          </table>
+          <div id="partnersPager"></div>
+        </div>
       </div>
 
-      <div class="toolbar">
-        <input type="text" id="fPartnerSearch" placeholder="Search company, email or account ID">
-        <select id="fStatus">
-          <option value="">All statuses</option>
-          <option value="pending">Pending review</option>
-          <option value="active">Active</option>
-          <option value="blocked">Blocked</option>
-        </select>
-        <select id="fCountry">
-          <option value="">All countries</option>
-        </select>
-        <select id="fTrialState">
-          <option value="">All trial states</option>
-          <option value="not_started">Not started</option>
-          <option value="active">Active</option>
-          <option value="ending">Ending soon</option>
-          <option value="ended">Ended</option>
-        </select>
-        <select id="fOrganization">
-          <option value="">All organizations</option>
-          <option value="ShuttleDirect">ShuttleDirect</option>
-          <option value="Mozio">Mozio</option>
-          <option value="__none__">Unassigned</option>
-        </select>
-      </div>
-      <p class="status" id="partnersStatus"></p>
-
-      <div class="card table-card">
-        <table class="data-table">
-          <thead>
-            <tr><th>Company</th><th>Email</th><th>Country</th><th>Registered</th><th>Status</th><th>Trial</th><th>Organization</th><th></th></tr>
-          </thead>
-          <tbody id="partnersList"></tbody>
-        </table>
-        <div id="partnersPager"></div>
+      <div id="partnerDetailView" hidden>
+        <button type="button" class="minibtn" id="pdBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <h1 id="pdTitle">Partner</h1>
+          <span id="pdStatusBadge"></span>
+        </div>
+        <div id="pdBody" class="card"></div>
       </div>
     </section>
 
