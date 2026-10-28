@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS partners (
   pay_bank_name TEXT,
   pay_account_number TEXT, -- IBAN or account number
   pay_swift TEXT,
-  pay_currency TEXT
+  pay_currency TEXT,
+  contract_confirm_exempt INTEGER NOT NULL DEFAULT 0 -- 1 = never shown the contract-confirm prompt (grandfathered partners who registered before this feature existed); all new registrations default to 0
 );
 
 -- One invoice per partner, covering their 30-day trial period only (trips
@@ -98,7 +99,8 @@ CREATE TABLE IF NOT EXISTS documents (
   status TEXT NOT NULL DEFAULT 'pending',       -- pending | approved | rejected
   review_note TEXT,
   uploaded_at TEXT NOT NULL DEFAULT (datetime('now')),
-  reviewed_at TEXT
+  reviewed_at TEXT,
+  confirmed_at TEXT  -- set once the partner clicks "Confirm" on this document (owner_type='contract' only); re-uploading a contract (DELETE+INSERT) always resets this to NULL
 );
 
 CREATE TABLE IF NOT EXISTS orders (

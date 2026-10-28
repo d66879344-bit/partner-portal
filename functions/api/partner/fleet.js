@@ -9,6 +9,7 @@ function docShape(d) {
     status: d.status,
     reviewNote: d.review_note,
     uploadedAt: d.uploaded_at,
+    confirmedAt: d.confirmed_at || null,
   };
 }
 
@@ -32,9 +33,20 @@ export async function onRequestGet(context) {
     env.DB.prepare("SELECT id, plate, category, make, created_at FROM vehicles WHERE partner_id = ? ORDER BY id ASC").bind(partnerId).all(),
     env.DB.prepare("SELECT id, full_name, phone, language, created_at FROM drivers WHERE partner_id = ? ORDER BY id ASC").bind(partnerId).all(),
     env.DB.prepare(
-      "SELECT id, owner_type, owner_id, field, label, filename, status, review_note, uploaded_at FROM documents WHERE partner_id = ? ORDER BY uploaded_at DESC"
+      "SELECT id, owner_type, owner_id, field, label, filename, status, review_note, uploaded_at, confirmed_at FROM documents WHERE partner_id = ? ORDER BY uploaded_at DESC"
     ).bind(partnerId).all(),
   ]);
+
+  // contract_confirm_exempt is newer (see migration-contract-confirm.sql) —
+  // treat as "not exempt" if the column hasn't been migrated on this
+  // database yet, rather than failing the whole request.
+  let contractConfirmExempt = false;
+  try {
+    const row = await env.DB.prepare("SELECT contract_confirm_exempt FROM partners WHERE id = ?").bind(partnerId).first();
+    contractConfirmExempt = !!(row && Number(row.contract_confirm_exempt) === 1);
+  } catch (e) {
+    contractConfirmExempt = false;
+  }
 
   const docs = documentsRes.results || [];
   const byOwner = (type, id) => docs.filter((d) => d.owner_type === type && (id == null ? d.owner_id == null : d.owner_id === id)).map(docShape);
@@ -67,6 +79,7 @@ export async function onRequestGet(context) {
     company: { documents: byOwner("company", null) },
     other: { documents: byOwner("other", null) },
     contract: { documents: byOwner("contract", null) },
+    contractConfirmExempt,
     vehicles,
     drivers,
   });

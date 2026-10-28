@@ -314,6 +314,13 @@
       "</div>" +
       '<div class="block"><div class="block-title">Contract</div>' +
       (d.contract.documents.length ? docList(d.contract.documents) : '<p class="docrow" style="color:var(--ink-2);">Not uploaded yet.</p>') +
+      (d.contract.documents.length && !p.contractConfirmExempt
+        ? '<p class="docrow" style="color:var(--ink-2);margin-top:2px;">' +
+          (d.contract.documents[0].confirmedAt
+            ? '<span class="badge badge-approved">Confirmed by partner</span> &middot; ' + esc(fmtDate(d.contract.documents[0].confirmedAt))
+            : '<span class="badge badge-pending">Not yet confirmed by partner</span>') +
+          "</p>"
+        : "") +
       '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
       fileChooserHtml("contract-file-" + p.id, "data-contract-file", p.id, ".pdf,.doc,.docx,.jpg,.jpeg,.png") +
       '<button type="button" class="minibtn" data-contract-upload="' + p.id + '">Upload contract</button>' +

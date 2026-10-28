@@ -9,6 +9,7 @@ function docShape(d) {
     status: d.status,
     reviewNote: d.review_note,
     uploadedAt: d.uploaded_at,
+    confirmedAt: d.confirmed_at || null,
   };
 }
 
@@ -21,8 +22,9 @@ export async function onRequestGet(context) {
   const id = Number(url.searchParams.get("id"));
   if (!id) return Response.json({ error: "invalid_id" }, { status: 400 });
 
-  // `organization` and the billing/trial-simulate/payment columns are newer
-  // (see migration-partner-organization.sql / migration-invoicing-referrals-contract.sql)
+  // `organization`, the billing/trial-simulate/payment columns, and
+  // `contract_confirm_exempt` are newer (see migration-partner-organization.sql /
+  // migration-invoicing-referrals-contract.sql / migration-contract-confirm.sql)
   // — fall back to the query without them if they haven't been migrated on
   // this database yet.
   let partner;
@@ -30,7 +32,7 @@ export async function onRequestGet(context) {
     partner = await env.DB.prepare(
       `SELECT id, email, company_name, contact_name, phone, account_id, covered_airports, service_city, country, country_name, status, admin_note, created_at, activated_at, organization,
               trial_started_at, trial_simulate_ended, billing_company, billing_email,
-              pay_account_holder, pay_bank_name, pay_account_number, pay_swift, pay_currency
+              pay_account_holder, pay_bank_name, pay_account_number, pay_swift, pay_currency, contract_confirm_exempt
        FROM partners WHERE id = ?`
     ).bind(id).first();
   } catch (e) {
@@ -69,7 +71,7 @@ export async function onRequestGet(context) {
     env.DB.prepare("SELECT id, plate, category, make FROM vehicles WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
     env.DB.prepare("SELECT id, full_name, phone, language FROM drivers WHERE partner_id = ? ORDER BY id ASC").bind(id).all(),
     env.DB.prepare(
-      "SELECT id, owner_type, owner_id, field, label, filename, status, review_note, uploaded_at FROM documents WHERE partner_id = ? ORDER BY uploaded_at DESC"
+      "SELECT id, owner_type, owner_id, field, label, filename, status, review_note, uploaded_at, confirmed_at FROM documents WHERE partner_id = ? ORDER BY uploaded_at DESC"
     ).bind(id).all(),
   ]);
 
@@ -106,6 +108,7 @@ export async function onRequestGet(context) {
       payAccountNumber: partner.pay_account_number || "",
       paySwift: partner.pay_swift || "",
       payCurrency: partner.pay_currency || "",
+      contractConfirmExempt: Number(partner.contract_confirm_exempt || 0) === 1,
     },
     company: { documents: byOwner("company", null) },
     other: { documents: byOwner("other", null) },
