@@ -13,6 +13,9 @@
   var partnersPage = 1;
   var ordersPage = 1;
   var financePage = 1;
+  var passengers = [];
+  var passengersPage = 1;
+  var passengersLoaded = false;
   var BILLING_COMPANIES = ["ShuttleDirect", "Mozio"];
   var INVOICE_STATUSES = ["generated", "sent", "received", "processing", "paid"];
   var TRIAL_SIMULATE_ACCOUNT_ID = "id656888"; // testing-only toggle, restricted to this one account
@@ -86,6 +89,10 @@
     tab.addEventListener("click", function () {
       $("mainTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
       document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === "panel-" + tab.getAttribute("data-tab")); });
+      if (tab.getAttribute("data-tab") === "passengers" && !passengersLoaded) {
+        passengersLoaded = true;
+        loadPassengers();
+      }
     });
   });
 
@@ -850,6 +857,96 @@
     downloadCsv("finance-all-partners.csv", rows);
   });
   $("finPrintBtn").addEventListener("click", function () { window.print(); });
+
+  /* ---------- passengers ---------- */
+  async function loadPassengers() {
+    $("passengersStatus").textContent = "Loading…";
+    $("passengersStatus").className = "status";
+    try {
+      var data = await api("/api/admin/passengers");
+      passengers = data.passengers || [];
+      populatePassengerCityFilter();
+      passengersPage = 1;
+      renderPassengers();
+      $("passengersStatus").textContent = passengers.length + " passenger record(s)";
+    } catch (e) {
+      if (e.message === "unauthorized") {
+        $("gateStatus").textContent = "Wrong password.";
+        showGate();
+      } else {
+        $("passengersStatus").textContent = "Could not load passengers.";
+        $("passengersStatus").className = "status err";
+      }
+    }
+  }
+
+  function matchesPassengerFilter(p) {
+    var fc = $("fPassengerCity").value;
+    var from = $("fPassengerFrom").value, to = $("fPassengerTo").value;
+    if (fc && p.city !== fc) return false;
+    if (from && (!p.tripDate || p.tripDate < from)) return false;
+    if (to && (!p.tripDate || p.tripDate > to)) return false;
+    return true;
+  }
+
+  function populatePassengerCityFilter() {
+    var prev = $("fPassengerCity").value;
+    var seen = {};
+    var rows = [];
+    passengers.forEach(function (p) {
+      if (!p.city || seen[p.city]) return;
+      seen[p.city] = true;
+      rows.push(p.city);
+    });
+    rows.sort(function (a, b) { return a.localeCompare(b); });
+    $("fPassengerCity").innerHTML = '<option value="">All cities</option>' +
+      rows.map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + "</option>"; }).join("");
+    $("fPassengerCity").value = prev;
+  }
+
+  function updatePassengersExportLink() {
+    var params = [];
+    var fc = $("fPassengerCity").value, from = $("fPassengerFrom").value, to = $("fPassengerTo").value;
+    if (fc) params.push("city=" + encodeURIComponent(fc));
+    if (from) params.push("from=" + encodeURIComponent(from));
+    if (to) params.push("to=" + encodeURIComponent(to));
+    var qs = params.length ? "&" + params.join("&") : "";
+    $("passengersExportLink").href = "/api/admin/passengers-export?secret=" + encodeURIComponent(secret) + qs;
+  }
+
+  function renderPassengers() {
+    var rows = passengers.filter(matchesPassengerFilter);
+    updatePassengersExportLink();
+    if (!rows.length) {
+      $("passengersList").innerHTML = '<tr><td colspan="5" class="empty-cell">No passengers match these filters.</td></tr>';
+      $("passengersPager").innerHTML = "";
+      return;
+    }
+    var pageResult = window.Paginate ? Paginate.slice(rows, passengersPage, PAGE_SIZE) : { page: 1, pages: 1, items: rows };
+    passengersPage = pageResult.page;
+    $("passengersList").innerHTML = pageResult.items.map(function (p) {
+      return "<tr>" +
+        '<td class="col-main">' + esc(p.name) + "</td>" +
+        "<td>" + esc(p.phone || "—") + "</td>" +
+        "<td>" + esc(p.city || "—") + "</td>" +
+        '<td class="mono">' + esc(fmtDay(p.tripDate)) + "</td>" +
+        '<td class="mono">' + (p.orderNumber ? "#" + esc(p.orderNumber) : "—") + "</td>" +
+        "</tr>";
+    }).join("");
+    $("passengersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
+  }
+  wirePagerContainer("passengersPager", function () { return passengersPage; }, function (p) { passengersPage = p; }, renderPassengers);
+
+  $("fPassengerCity").addEventListener("change", function () { passengersPage = 1; renderPassengers(); });
+  $("fPassengerFrom").addEventListener("change", function () { passengersPage = 1; renderPassengers(); });
+  $("fPassengerTo").addEventListener("change", function () { passengersPage = 1; renderPassengers(); });
+  $("passengersClearBtn").addEventListener("click", function () {
+    $("fPassengerCity").value = "";
+    $("fPassengerFrom").value = "";
+    $("fPassengerTo").value = "";
+    passengersPage = 1;
+    renderPassengers();
+  });
 
   (function initVehicleTypes() {
     var types = (window.VEHICLE_TYPES || []);
