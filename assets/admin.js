@@ -1114,7 +1114,7 @@
       return ka < kb ? -dir : ka > kb ? dir : 0;
     });
     if (!rows.length) {
-      $("ordersList").innerHTML = '<tr><td colspan="7" class="empty-cell">' + EMPTY_ORDER_MESSAGE[orderTab] + "</td></tr>";
+      $("ordersList").innerHTML = '<tr><td colspan="8" class="empty-cell">' + EMPTY_ORDER_MESSAGE[orderTab] + "</td></tr>";
       $("ordersPager").innerHTML = "";
       return;
     }
@@ -1123,6 +1123,7 @@
     $("ordersList").innerHTML = pageResult.items.map(function (o) {
       return '<tr class="data-row" data-order-toggle="' + o.id + '">' +
         '<td class="mono col-main">' + copyableHtml(o.orderNumber ? "#" + o.orderNumber : "#" + o.id, o.orderNumber || String(o.id)) + "</td>" +
+        '<td class="mono">' + (o.adminNumber ? copyableHtml(o.adminNumber, o.adminNumber) : '<span style="color:var(--ink-2);">—</span>') + "</td>" +
         "<td>" + esc(o.companyName) + "</td>" +
         "<td>" + esc(o.pickup) + " → " + esc(o.dropoff) + "</td>" +
         '<td class="mono">' + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</td>" +
