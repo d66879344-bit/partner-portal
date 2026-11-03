@@ -953,7 +953,7 @@
     $("opVehicleType").innerHTML = types.map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + "</option>"; }).join("");
   })();
 
-  $("createOrderBtn").addEventListener("click", async function () {
+  function submitCreateOrder(asDraft) {
     var partnerId = Number($("opPartner").value);
     var pickup = $("opPickup").value.trim();
     var dropoff = $("opDropoff").value.trim();
@@ -963,8 +963,8 @@
       $("createOrderStatus").className = "status err";
       return;
     }
-    this.disabled = true;
-    var btn = this;
+    $("createOrderBtn").disabled = true;
+    $("createDraftBtn").disabled = true;
     var attempts = 0;
     (async function attempt() {
       try {
@@ -978,7 +978,8 @@
             passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
             passengerName: $("opPassengerName").value.trim(), passengerPhone: $("opPassengerPhone").value.trim(),
             price: $("opPrice").value.trim(), currency: $("opCurrency").value || "EUR",
-            meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim()
+            meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim(),
+            status: asDraft ? "draft" : "offered"
           })
         });
         ["opOrderNumber", "opAdminNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
@@ -989,10 +990,13 @@
         bufferManual = false;
         regenerateOrderNumberForSelectedPartner();
         applyAutoBuffer();
-        $("createOrderStatus").textContent = "Order created and assigned.";
+        $("createOrderStatus").textContent = asDraft
+          ? "Draft saved — send it from the Drafts tab when you're ready."
+          : "Order created and assigned.";
         $("createOrderStatus").className = "status ok";
         loadOrders();
-        btn.disabled = false;
+        $("createOrderBtn").disabled = false;
+        $("createDraftBtn").disabled = false;
       } catch (e) {
         if (e.message === "order_number_taken" && !orderNumberManual && attempts < 8) {
           attempts++;
@@ -1004,10 +1008,13 @@
           ? "This order number is already in use — try another."
           : "Could not create the order.";
         $("createOrderStatus").className = "status err";
-        btn.disabled = false;
+        $("createOrderBtn").disabled = false;
+        $("createDraftBtn").disabled = false;
       }
     })();
-  });
+  }
+  $("createOrderBtn").addEventListener("click", function () { submitCreateOrder(false); });
+  $("createDraftBtn").addEventListener("click", function () { submitCreateOrder(true); });
 
   /* ---------- orders: list ---------- */
   async function loadOrders(silent) {
@@ -1046,7 +1053,8 @@
 
   function updateOrderTabCounts() {
     var today = todayDateStr();
-    var cToday = orders.filter(function (o) { return o.orderDate === today; }).length;
+    var cDraft = orders.filter(function (o) { return o.status === "draft"; }).length;
+    var cToday = orders.filter(function (o) { return o.orderDate === today && o.status !== "draft"; }).length;
     var cOffered = orders.filter(function (o) { return o.status === "offered"; }).length;
     var cAccepted = orders.filter(function (o) { return o.status === "accepted"; }).length;
     var cCompleted = orders.filter(function (o) { return o.status === "completed"; }).length;
@@ -1063,9 +1071,14 @@
     $("statCompleted").textContent = cCompleted;
     $("statClosed").textContent = cClosed;
     $("statNoShow").textContent = cNoShow;
+    if ($("countAllOrders")) $("countAllOrders").textContent = (orders.length - cDraft) || "";
+    if ($("countDrafts")) $("countDrafts").textContent = cDraft || "";
   }
 
   function matchesOrderFilter(o) {
+    // Drafts live only in the Drafts tab (see renderDrafts) — never in the
+    // normal Orders tabs, the Today tab, or free-text search results.
+    if (o.status === "draft") return false;
     var q = $("fOrderSearch").value.trim().toLowerCase();
     if (q) {
       // Searching looks across every status, not just the open tab — matches
@@ -1134,7 +1147,103 @@
     }).join("");
     $("ordersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
     if (openOrderId != null) renderOrderDetail(openOrderId);
+    if (ordersView === "drafts") renderDrafts();
   }
+
+  /* ---------- orders: Orders / Drafts view switch ---------- */
+  var ordersView = "orders";
+  function setOrdersView(view) {
+    ordersView = view;
+    $("tabOrdersView").classList.toggle("active", view === "orders");
+    $("tabDraftsView").classList.toggle("active", view === "drafts");
+    $("ordersNormalView").hidden = view !== "orders";
+    $("draftsView").hidden = view !== "drafts";
+    if (view === "drafts") renderDrafts();
+  }
+  $("tabOrdersView").addEventListener("click", function () { setOrdersView("orders"); });
+  $("tabDraftsView").addEventListener("click", function () { setOrdersView("drafts"); });
+
+  /* ---------- orders: Drafts list + bulk send ---------- */
+  function updateSendDraftsButton() {
+    var checked = $("draftsList").querySelectorAll(".draft-check:checked");
+    var all = $("draftsList").querySelectorAll(".draft-check");
+    $("draftsSelectAll").checked = all.length > 0 && checked.length === all.length;
+    if (!all.length) {
+      $("sendDraftsBtn").disabled = true;
+      $("sendDraftsBtn").textContent = "No drafts";
+    } else if (!checked.length) {
+      $("sendDraftsBtn").disabled = true;
+      $("sendDraftsBtn").textContent = "Select drafts to send";
+    } else {
+      $("sendDraftsBtn").disabled = false;
+      $("sendDraftsBtn").textContent = "Send selected (" + checked.length + ")";
+    }
+  }
+
+  function renderDrafts() {
+    var drafts = orders.filter(function (o) { return o.status === "draft"; });
+    drafts = drafts.slice().sort(function (a, b) {
+      var ka = (a.orderDate || "") + " " + (a.orderTime || "");
+      var kb = (b.orderDate || "") + " " + (b.orderTime || "");
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    if (!drafts.length) {
+      $("draftsList").innerHTML = '<tr><td colspan="8" class="empty-cell">No drafts right now — use "Create draft" above to save one without notifying the partner.</td></tr>';
+      updateSendDraftsButton();
+      return;
+    }
+    $("draftsList").innerHTML = drafts.map(function (o) {
+      return '<tr class="data-row" data-order-toggle="' + o.id + '">' +
+        '<td class="col-check"><input type="checkbox" class="draft-check" data-draft-id="' + o.id + '"></td>' +
+        '<td class="mono col-main">' + copyableHtml(o.orderNumber ? "#" + o.orderNumber : "#" + o.id, o.orderNumber || String(o.id)) + "</td>" +
+        '<td class="mono">' + (o.adminNumber ? copyableHtml(o.adminNumber, o.adminNumber) : '<span style="color:var(--ink-2);">—</span>') + "</td>" +
+        "<td>" + esc(o.companyName) + "</td>" +
+        "<td>" + esc(o.pickup) + " → " + esc(o.dropoff) + "</td>" +
+        '<td class="mono">' + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</td>" +
+        '<td class="mono">' + (o.price ? esc(o.price) + " " + esc(o.currency) : "—") + "</td>" +
+        '<td class="col-chev">›</td>' +
+        "</tr>";
+    }).join("");
+    updateSendDraftsButton();
+  }
+
+  $("draftsSelectAll").addEventListener("change", function () {
+    var checked = this.checked;
+    $("draftsList").querySelectorAll(".draft-check").forEach(function (c) { c.checked = checked; });
+    updateSendDraftsButton();
+  });
+  $("draftsList").addEventListener("change", function (e) {
+    if (e.target.classList.contains("draft-check")) updateSendDraftsButton();
+  });
+  $("draftsList").addEventListener("click", function (e) {
+    if (e.target.closest(".draft-check")) return;
+    var copyEl = e.target.closest("[data-copy]");
+    if (copyEl) { copyToClipboard(copyEl.getAttribute("data-copy"), copyEl); return; }
+    var toggleEl = e.target.closest("[data-order-toggle]");
+    if (toggleEl) openOrderDetail(Number(toggleEl.getAttribute("data-order-toggle")));
+  });
+  $("sendDraftsBtn").addEventListener("click", async function () {
+    var ids = Array.prototype.map.call($("draftsList").querySelectorAll(".draft-check:checked"), function (c) {
+      return Number(c.getAttribute("data-draft-id"));
+    });
+    if (!ids.length) return;
+    this.disabled = true;
+    $("draftsSendStatus").textContent = "Sending…";
+    $("draftsSendStatus").className = "status";
+    try {
+      var data = await api("/api/admin/order-send-drafts", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: ids })
+      });
+      $("draftsSendStatus").textContent = "Sent " + data.sent + " order(s) to the partner.";
+      $("draftsSendStatus").className = "status ok";
+      await loadOrders();
+    } catch (e) {
+      $("draftsSendStatus").textContent = "Could not send the selected drafts.";
+      $("draftsSendStatus").className = "status err";
+      this.disabled = false;
+    }
+  });
 
   function openOrderDetail(id) {
     var o = orders.filter(function (x) { return x.id === id; })[0];

@@ -102,6 +102,10 @@ export async function onRequestPost(context) {
     const notes = (body.notes || "").toString().trim().slice(0, 1000);
     let driverId = body.driverId ? Number(body.driverId) : null;
     let vehicleId = body.vehicleId ? Number(body.vehicleId) : null;
+    // "draft" lets an admin create an order without the partner seeing it yet,
+    // so several can be created and then sent together via order-send-drafts.
+    // Any other/missing value is treated as the normal "offered" status.
+    const status = body.status === "draft" ? "draft" : "offered";
 
     if (!partnerId || !orderNumber || !pickup || !dropoff || !orderDate) {
       return Response.json({ error: "invalid_request" }, { status: 400 });
@@ -140,16 +144,16 @@ export async function onRequestPost(context) {
                               order_date, order_time, vehicle_type, vehicles_needed,
                               passengers, luggage, passenger_name, passenger_phone, meet_greet, sign_text, driver_id, vehicle_id,
                               price, currency, notes, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
-      ).bind(orderNumber, adminNumber || null, ...insertValues.slice(1)).run();
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(orderNumber, adminNumber || null, ...insertValues.slice(1), status).run();
     } catch (e) {
       r = await env.DB.prepare(
         `INSERT INTO orders (order_number, partner_id, pickup, dropoff, flight_number, flight_time, buffer_minutes,
                               order_date, order_time, vehicle_type, vehicles_needed,
                               passengers, luggage, passenger_name, passenger_phone, meet_greet, sign_text, driver_id, vehicle_id,
                               price, currency, notes, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
-      ).bind(...insertValues).run();
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(...insertValues, status).run();
     }
 
     return Response.json({ ok: true, id: r.meta.last_row_id });

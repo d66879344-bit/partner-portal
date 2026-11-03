@@ -159,6 +159,19 @@
     color: var(--warn-ink); background: var(--warn-bg); border: 1px solid var(--warn-border);
     border-radius: 5px; padding: 1px 6px; margin-left: 4px; vertical-align: 1px;
   }
+
+  /* ---------- Orders / Drafts view switcher ---------- */
+  .viewtabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .viewtab {
+    border: 0; background: none; cursor: pointer; font: inherit; font-weight: 600; font-size: 13.5px;
+    color: var(--ink-2); padding: 10px 4px; margin-right: 20px; border-bottom: 2px solid transparent;
+  }
+  .viewtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .viewtab .tab-count { background: var(--surface-2); color: var(--ink-2); }
+  .viewtab.active .tab-count { background: var(--accent-soft); color: var(--accent); }
+  .col-check { width: 36px; padding-right: 0 !important; }
+  .col-check input, th.col-check input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .badge-draft { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-strong); }
 </style>
 </head>
 <body>
@@ -390,45 +403,72 @@
         <div class="field" style="margin-top:14px;margin-bottom:0;"><label for="opNotes">Additional instructions <span class="hint">optional</span></label><input type="text" id="opNotes"></div>
       </div>
 
-      <button type="button" class="minibtn good" id="createOrderBtn" style="width:100%;margin-top:14px;">Create &amp; assign</button>
+      <div class="addform" style="margin-top:14px;gap:10px;">
+        <button type="button" class="minibtn good" id="createOrderBtn" style="flex:1 1 200px;min-width:200px;margin-bottom:0;">Create and send</button>
+        <button type="button" class="minibtn" id="createDraftBtn" style="flex:1 1 200px;min-width:200px;margin-bottom:0;">Create draft</button>
+      </div>
+      <p class="sub" style="margin-top:8px;">"Create and send" works as before — the partner sees it right away. "Create draft" saves the same order but keeps it hidden from the partner until you send it from the Drafts tab below.</p>
       <p class="status" id="createOrderStatus" style="margin-bottom:18px;"></p>
 
-      <div class="stat-grid">
-        <div class="card stat-card"><div class="stat-label">Not accepted</div><div class="stat-value mono" id="statOffered">0</div></div>
-        <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
-        <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
-        <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
-        <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
+      <div class="viewtabs" id="ordersViewTabs">
+        <button type="button" class="viewtab active" id="tabOrdersView">Orders <span class="tab-count" id="countAllOrders"></span></button>
+        <button type="button" class="viewtab" id="tabDraftsView">Drafts <span class="tab-count" id="countDrafts"></span></button>
       </div>
 
-      <div class="tabs" role="tablist" id="orderTabs">
-        <button type="button" class="tab" data-order-tab="today" aria-pressed="false">Today <span class="tab-count" id="countToday"></span></button>
-        <button type="button" class="tab" data-order-tab="offered" aria-pressed="true">Not accepted <span class="tab-count" id="countOffered"></span></button>
-        <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">In progress <span class="tab-count" id="countAccepted"></span></button>
-        <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed <span class="tab-count" id="countCompleted"></span></button>
-        <button type="button" class="tab" data-order-tab="closed" aria-pressed="false">Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
-        <button type="button" class="tab" data-order-tab="no_show" aria-pressed="false">Customer no-show <span class="tab-count" id="countNoShow"></span></button>
-      </div>
-      <div class="toolbar">
-        <select id="fOrderPartner"><option value="">All partners</option></select>
-        <input type="text" id="fOrderSearch" placeholder="Search order #, route or partner">
-        <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
-        <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
-        <select id="fSort">
-          <option value="asc">Date: soonest first</option>
-          <option value="desc">Date: latest first</option>
-        </select>
-      </div>
-      <p class="status" id="ordersStatus"></p>
+      <div id="ordersNormalView">
+        <div class="stat-grid">
+          <div class="card stat-card"><div class="stat-label">Not accepted</div><div class="stat-value mono" id="statOffered">0</div></div>
+          <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
+        </div>
 
-      <div class="card table-card">
-        <table class="data-table">
-          <thead>
-            <tr><th>Order #</th><th>Admin #</th><th>Partner</th><th>Route</th><th>Date &amp; time</th><th>Price</th><th>Status</th><th></th></tr>
-          </thead>
-          <tbody id="ordersList"></tbody>
-        </table>
-        <div id="ordersPager"></div>
+        <div class="tabs" role="tablist" id="orderTabs">
+          <button type="button" class="tab" data-order-tab="today" aria-pressed="false">Today <span class="tab-count" id="countToday"></span></button>
+          <button type="button" class="tab" data-order-tab="offered" aria-pressed="true">Not accepted <span class="tab-count" id="countOffered"></span></button>
+          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">In progress <span class="tab-count" id="countAccepted"></span></button>
+          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed <span class="tab-count" id="countCompleted"></span></button>
+          <button type="button" class="tab" data-order-tab="closed" aria-pressed="false">Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
+          <button type="button" class="tab" data-order-tab="no_show" aria-pressed="false">Customer no-show <span class="tab-count" id="countNoShow"></span></button>
+        </div>
+        <div class="toolbar">
+          <select id="fOrderPartner"><option value="">All partners</option></select>
+          <input type="text" id="fOrderSearch" placeholder="Search order #, route or partner">
+          <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
+          <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
+          <select id="fSort">
+            <option value="asc">Date: soonest first</option>
+            <option value="desc">Date: latest first</option>
+          </select>
+        </div>
+        <p class="status" id="ordersStatus"></p>
+
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr><th>Order #</th><th>Admin #</th><th>Partner</th><th>Route</th><th>Date &amp; time</th><th>Price</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="ordersList"></tbody>
+          </table>
+          <div id="ordersPager"></div>
+        </div>
+      </div>
+
+      <div id="draftsView" hidden>
+        <p class="sub" style="margin-bottom:14px;">Drafts are not visible to the partner anywhere — not in their order list, not in their counts. Select the ones you want to release and send them together.</p>
+        <div class="toolbar">
+          <button type="button" class="minibtn good" id="sendDraftsBtn" disabled>Select drafts to send</button>
+          <p class="status" id="draftsSendStatus"></p>
+        </div>
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr><th class="col-check"><input type="checkbox" id="draftsSelectAll"></th><th>Order #</th><th>Admin #</th><th>Partner</th><th>Route</th><th>Date &amp; time</th><th>Price</th><th></th></tr>
+            </thead>
+            <tbody id="draftsList"></tbody>
+          </table>
+        </div>
       </div>
      </div>
 
