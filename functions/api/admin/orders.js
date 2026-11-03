@@ -5,24 +5,35 @@ export async function onRequestGet(context) {
   if (!checkAdminSecret(request, env)) return Response.json({ error: "unauthorized" }, { status: 401 });
   if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
 
-  const { results } = await env.DB.prepare(
-    `SELECT o.id, o.order_number, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.flight_time,
-            o.buffer_minutes, o.order_date, o.order_time,
-            o.vehicle_type, o.vehicles_needed, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet, o.sign_text,
-            o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
-            o.price, o.currency, o.notes, o.status, o.trip_stage, o.no_show_type, o.no_show_at, o.no_show_review_status,
-            o.created_at, o.responded_at
-     FROM orders o
+  // admin_number is a newer column (added by migration-admin-order-number.sql);
+  // fall back to a query without it if that migration hasn't been applied yet,
+  // so a code deploy that lands before the migration doesn't break this list.
+  const BASE_FIELDS =
+    `o.id, o.order_number, o.partner_id, p.company_name, o.pickup, o.dropoff, o.flight_number, o.flight_time,
+     o.buffer_minutes, o.order_date, o.order_time,
+     o.vehicle_type, o.vehicles_needed, o.passengers, o.luggage, o.passenger_name, o.passenger_phone, o.meet_greet, o.sign_text,
+     o.driver_id, dr.full_name AS driver_name, o.vehicle_id, v.plate AS vehicle_plate,
+     o.price, o.currency, o.notes, o.status, o.trip_stage, o.no_show_type, o.no_show_at, o.no_show_review_status,
+     o.created_at, o.responded_at`;
+  const FROM_CLAUSE =
+    `FROM orders o
      JOIN partners p ON p.id = o.partner_id
      LEFT JOIN drivers dr ON dr.id = o.driver_id
      LEFT JOIN vehicles v ON v.id = o.vehicle_id
      WHERE o.hidden_from_admin = 0
-     ORDER BY o.order_date DESC, o.order_time DESC`
-  ).all();
+     ORDER BY o.order_date DESC, o.order_time DESC`;
+
+  let results;
+  try {
+    ({ results } = await env.DB.prepare(`SELECT o.admin_number, ${BASE_FIELDS} ${FROM_CLAUSE}`).all());
+  } catch (e) {
+    ({ results } = await env.DB.prepare(`SELECT ${BASE_FIELDS} ${FROM_CLAUSE}`).all());
+  }
 
   const orders = (results || []).map((o) => ({
     id: o.id,
     orderNumber: o.order_number,
+    adminNumber: o.admin_number || null,
     partnerId: o.partner_id,
     companyName: o.company_name,
     pickup: o.pickup,
@@ -68,6 +79,7 @@ export async function onRequestPost(context) {
     const body = await request.json().catch(() => ({}));
     const partnerId = Number(body.partnerId);
     const orderNumber = (body.orderNumber || "").toString().trim().slice(0, 40);
+    const adminNumber = (body.adminNumber || "").toString().trim().slice(0, 40);
     const pickup = (body.pickup || "").toString().trim().slice(0, 200);
     const dropoff = (body.dropoff || "").toString().trim().slice(0, 200);
     const flightNumber = (body.flightNumber || "").toString().trim().slice(0, 30);
@@ -112,18 +124,33 @@ export async function onRequestPost(context) {
       if (!v) vehicleId = null;
     }
 
-    const r = await env.DB.prepare(
-      `INSERT INTO orders (order_number, partner_id, pickup, dropoff, flight_number, flight_time, buffer_minutes,
-                            order_date, order_time, vehicle_type, vehicles_needed,
-                            passengers, luggage, passenger_name, passenger_phone, meet_greet, sign_text, driver_id, vehicle_id,
-                            price, currency, notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
-    ).bind(
+    const insertValues = [
       orderNumber, partnerId, pickup, dropoff, flightNumber, flightTime, bufferMinutes,
       orderDate, orderTime, vehicleType, vehiclesNeeded,
       passengers, luggage, passengerName, passengerPhone, meetGreet, signText, driverId, vehicleId,
-      price, currency, notes
-    ).run();
+      price, currency, notes,
+    ];
+
+    // admin_number is a newer column (added by migration-admin-order-number.sql);
+    // fall back to inserting without it if that migration hasn't been applied yet.
+    let r;
+    try {
+      r = await env.DB.prepare(
+        `INSERT INTO orders (order_number, admin_number, partner_id, pickup, dropoff, flight_number, flight_time, buffer_minutes,
+                              order_date, order_time, vehicle_type, vehicles_needed,
+                              passengers, luggage, passenger_name, passenger_phone, meet_greet, sign_text, driver_id, vehicle_id,
+                              price, currency, notes, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
+      ).bind(orderNumber, adminNumber || null, ...insertValues.slice(1)).run();
+    } catch (e) {
+      r = await env.DB.prepare(
+        `INSERT INTO orders (order_number, partner_id, pickup, dropoff, flight_number, flight_time, buffer_minutes,
+                              order_date, order_time, vehicle_type, vehicles_needed,
+                              passengers, luggage, passenger_name, passenger_phone, meet_greet, sign_text, driver_id, vehicle_id,
+                              price, currency, notes, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'offered')`
+      ).bind(...insertValues).run();
+    }
 
     return Response.json({ ok: true, id: r.meta.last_row_id });
   } catch (e) {

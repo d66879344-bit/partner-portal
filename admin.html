@@ -133,6 +133,32 @@
   .toggle-switch .slider:before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 999px; transition: transform .15s; }
   .toggle-switch input:checked + .slider { background: var(--accent-warm); }
   .toggle-switch input:checked + .slider:before { transform: translateX(18px); }
+
+  /* ---------- copy-to-clipboard buttons (order #, admin #, passenger name/phone) ---------- */
+  .copyable { display: inline-flex; align-items: center; gap: 6px; }
+  .copy-btn {
+    border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2);
+    border-radius: 6px; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; flex: none; padding: 0; vertical-align: -4px;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--good); color: var(--good); }
+  .copy-feedback { font-size: 11px; color: var(--good); font-weight: 600; opacity: 0; transition: opacity .15s; margin-left: 2px; }
+  .copy-feedback.show { opacity: 1; }
+
+  /* ---------- order detail quick-copy grid ---------- */
+  .dt-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 20px; }
+  @media (max-width: 640px) { .dt-grid { grid-template-columns: 1fr; } }
+  .dt-label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); font-weight: 600; margin-bottom: 3px; }
+  .dt-val { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+
+  /* ---------- admin-only field (Admin # on create/edit order, and its badge wherever it's shown) ---------- */
+  .admin-field input { background: #FFF9E8; border-color: var(--warn-border); }
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--warn-ink); background: var(--warn-bg); border: 1px solid var(--warn-border);
+    border-radius: 5px; padding: 1px 6px; margin-left: 4px; vertical-align: 1px;
+  }
 </style>
 </head>
 <body>
@@ -280,6 +306,7 @@
     </section>
 
     <section class="panel active" id="panel-orders">
+     <div id="ordersListView">
       <div class="dash-pagehead">
         <h1>Orders</h1>
         <p class="sub">All orders across all partners</p>
@@ -292,7 +319,8 @@
 
       <div class="card">
         <div class="addform">
-          <div class="field" style="min-width:170px;flex:1 1 170px;"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
+          <div class="field" style="min-width:140px;flex:1 1 140px;"><label for="opPartner">Partner</label><select id="opPartner"></select></div>
+          <div class="field admin-field" style="min-width:110px;flex:1 1 110px;"><label for="opAdminNumber">Admin # <span class="tag">Admin only</span></label><input type="text" id="opAdminNumber" placeholder="e.g. A-104"></div>
           <div class="field" style="flex:1 1 180px;"><label for="opOrderNumber">Order number <span class="hint">auto-generated, editable</span></label><input type="text" id="opOrderNumber" placeholder="e.g. 17082563-1"></div>
         </div>
         <div id="opPriceListLink" style="margin-top:10px;"></div>
@@ -401,6 +429,16 @@
           <tbody id="ordersList"></tbody>
         </table>
         <div id="ordersPager"></div>
+      </div>
+     </div>
+
+      <div id="orderDetailView" hidden>
+        <button type="button" class="minibtn" id="odBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <h1 id="odTitle">Order</h1>
+          <span id="odStatusBadge"></span>
+        </div>
+        <div id="odBody" class="card"></div>
       </div>
     </section>
 

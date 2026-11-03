@@ -19,6 +19,7 @@ export async function onRequestPost(context) {
     if (!order) return Response.json({ error: "not_found" }, { status: 404 });
 
     const orderNumber = (body.orderNumber || "").toString().trim().slice(0, 40);
+    const adminNumber = (body.adminNumber || "").toString().trim().slice(0, 40);
     const pickup = (body.pickup || "").toString().trim().slice(0, 200);
     const dropoff = (body.dropoff || "").toString().trim().slice(0, 200);
     const orderDate = (body.orderDate || "").toString().trim().slice(0, 20);
@@ -46,18 +47,35 @@ export async function onRequestPost(context) {
     const currency = (body.currency || "EUR").toString().trim().slice(0, 10) || "EUR";
     const notes = (body.notes || "").toString().trim().slice(0, 1000);
 
-    await env.DB.prepare(
-      `UPDATE orders SET
-         order_number = ?, pickup = ?, dropoff = ?, flight_number = ?, flight_time = ?, buffer_minutes = ?,
-         order_date = ?, order_time = ?, vehicle_type = ?, vehicles_needed = ?, passengers = ?, luggage = ?,
-         passenger_name = ?, passenger_phone = ?, meet_greet = ?, price = ?, currency = ?, notes = ?
-       WHERE id = ?`
-    ).bind(
-      orderNumber, pickup, dropoff, flightNumber, flightTime, bufferMinutes,
-      orderDate, orderTime, vehicleType, vehiclesNeeded, passengers, luggage,
-      passengerName, passengerPhone, meetGreet, price, currency, notes,
-      id
-    ).run();
+    // admin_number is a newer column (added by migration-admin-order-number.sql);
+    // fall back to updating without it if that migration hasn't been applied yet.
+    try {
+      await env.DB.prepare(
+        `UPDATE orders SET
+           order_number = ?, admin_number = ?, pickup = ?, dropoff = ?, flight_number = ?, flight_time = ?, buffer_minutes = ?,
+           order_date = ?, order_time = ?, vehicle_type = ?, vehicles_needed = ?, passengers = ?, luggage = ?,
+           passenger_name = ?, passenger_phone = ?, meet_greet = ?, price = ?, currency = ?, notes = ?
+         WHERE id = ?`
+      ).bind(
+        orderNumber, adminNumber || null, pickup, dropoff, flightNumber, flightTime, bufferMinutes,
+        orderDate, orderTime, vehicleType, vehiclesNeeded, passengers, luggage,
+        passengerName, passengerPhone, meetGreet, price, currency, notes,
+        id
+      ).run();
+    } catch (e) {
+      await env.DB.prepare(
+        `UPDATE orders SET
+           order_number = ?, pickup = ?, dropoff = ?, flight_number = ?, flight_time = ?, buffer_minutes = ?,
+           order_date = ?, order_time = ?, vehicle_type = ?, vehicles_needed = ?, passengers = ?, luggage = ?,
+           passenger_name = ?, passenger_phone = ?, meet_greet = ?, price = ?, currency = ?, notes = ?
+         WHERE id = ?`
+      ).bind(
+        orderNumber, pickup, dropoff, flightNumber, flightTime, bufferMinutes,
+        orderDate, orderTime, vehicleType, vehiclesNeeded, passengers, luggage,
+        passengerName, passengerPhone, meetGreet, price, currency, notes,
+        id
+      ).run();
+    }
 
     return Response.json({ ok: true });
   } catch (e) {

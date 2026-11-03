@@ -971,7 +971,7 @@
         await api("/api/admin/orders", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            orderNumber: $("opOrderNumber").value.trim(), partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
+            orderNumber: $("opOrderNumber").value.trim(), adminNumber: $("opAdminNumber").value.trim(), partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
             flightNumber: $("opFlight").value.trim(), flightTime: $("opFlightTime").value, bufferMinutes: $("opBuffer").value.trim(),
             orderTime: $("opTime").value, vehicleType: $("opVehicleType").value,
             vehiclesNeeded: $("opVehiclesNeeded").value.trim() || "1",
@@ -981,7 +981,7 @@
             meetGreet: $("opMeetGreet").value.trim(), notes: $("opNotes").value.trim()
           })
         });
-        ["opOrderNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
+        ["opOrderNumber", "opAdminNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
           "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
         $("opCurrency").value = "EUR";
         $("opVehiclesNeeded").value = "1";
@@ -1121,25 +1121,73 @@
     var pageResult = window.Paginate ? Paginate.slice(rows, ordersPage, PAGE_SIZE) : { page: 1, pages: 1, items: rows };
     ordersPage = pageResult.page;
     $("ordersList").innerHTML = pageResult.items.map(function (o) {
-      var isOpen = openOrderId === o.id;
       return '<tr class="data-row" data-order-toggle="' + o.id + '">' +
-        '<td class="mono col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
+        '<td class="mono col-main">' + copyableHtml(o.orderNumber ? "#" + o.orderNumber : "#" + o.id, o.orderNumber || String(o.id)) + "</td>" +
         "<td>" + esc(o.companyName) + "</td>" +
         "<td>" + esc(o.pickup) + " → " + esc(o.dropoff) + "</td>" +
         '<td class="mono">' + esc(fmtDay(o.orderDate)) + (o.orderTime ? " · " + esc(o.orderTime) : "") + "</td>" +
         '<td class="mono">' + (o.price ? esc(o.price) + " " + esc(o.currency) : "—") + "</td>" +
         "<td>" + statusBadge(o) + "</td>" +
-        '<td class="col-chev">' + (isOpen ? "▾" : "›") + "</td>" +
-        "</tr>" +
-        '<tr><td colspan="7" class="detail-cell"><div class="detail' + (isOpen ? " open" : "") + '" id="orderdetail-' + o.id + '"></div></td></tr>';
+        '<td class="col-chev">›</td>' +
+        "</tr>";
     }).join("");
     $("ordersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
     if (openOrderId != null) renderOrderDetail(openOrderId);
   }
 
+  function openOrderDetail(id) {
+    var o = orders.filter(function (x) { return x.id === id; })[0];
+    openOrderId = id;
+    $("odTitle").textContent = o ? "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id) : "Order";
+    $("odStatusBadge").innerHTML = o ? statusBadge(o) : "";
+    $("ordersListView").hidden = true;
+    $("orderDetailView").hidden = false;
+    window.scrollTo(0, 0);
+    renderOrderDetail(id);
+    if (o && o.status === "no_show" && !evidenceCache[id]) loadOrderEvidence(id);
+  }
+  function closeOrderDetail() {
+    openOrderId = null;
+    $("orderDetailView").hidden = true;
+    $("ordersListView").hidden = false;
+  }
+  if ($("odBack")) $("odBack").addEventListener("click", closeOrderDetail);
+
+  // Renders a value with a small copy-to-clipboard button next to it. `label`
+  // is the escaped HTML shown; `raw` is the exact text copied (unescaped).
+  function copyableHtml(label, raw) {
+    if (raw == null || raw === "") return esc(label);
+    return '<span class="copyable">' + esc(label) +
+      ' <button type="button" class="copy-btn" data-copy="' + esc(raw) + '" title="Copy">' +
+      '<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M4.5 13H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v.5"/></svg>' +
+      "</button></span>";
+  }
+
+  function flashCopied(btn) {
+    btn.classList.add("copied");
+    setTimeout(function () { btn.classList.remove("copied"); }, 1200);
+  }
+  function fallbackCopyText(text, btn) {
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    } catch (e) { /* no-op: feedback still flashes below */ }
+    flashCopied(btn);
+  }
+  function copyToClipboard(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flashCopied(btn); }).catch(function () { fallbackCopyText(text, btn); });
+    } else {
+      fallbackCopyText(text, btn);
+    }
+  }
+
   function renderOrderDetail(id) {
-    var el = $("orderdetail-" + id);
-    if (!el) return;
+    var el = $("odBody");
+    if (!el || openOrderId !== id) return;
     var o = orders.filter(function (x) { return x.id === id; })[0];
     if (!o) return;
 
@@ -1189,6 +1237,7 @@
       '<summary class="minibtn" style="display:inline-block;">Edit order</summary>' +
       '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">' +
       '<div class="field" style="min-width:160px;flex:1 1 160px;margin-bottom:0;"><label>Order number</label><input type="text" data-edit-field="orderNumber" value="' + esc(o.orderNumber || "") + '"></div>' +
+      '<div class="field admin-field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Admin # <span class="tag">Admin only</span></label><input type="text" data-edit-field="adminNumber" value="' + esc(o.adminNumber || "") + '"></div>' +
       '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Pickup</label><input type="text" data-edit-field="pickup" value="' + esc(o.pickup) + '"></div>' +
       '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Dropoff</label><input type="text" data-edit-field="dropoff" value="' + esc(o.dropoff) + '"></div>' +
       '<div class="field" style="min-width:120px;flex:1 1 120px;margin-bottom:0;"><label>Flight number</label><input type="text" data-edit-field="flightNumber" value="' + esc(o.flightNumber || "") + '"></div>' +
@@ -1295,8 +1344,24 @@
         "</div></div>"
       : "";
 
-    el.innerHTML =
+    var quickCopyBlock =
       '<div class="block" style="margin-top:0;padding-top:0;border-top:0;">' +
+      '<div class="dt-grid">' +
+      '<div><div class="dt-label">Order number</div><div class="dt-val">' + copyableHtml(o.orderNumber ? "#" + o.orderNumber : "#" + o.id, o.orderNumber || String(o.id)) + "</div></div>" +
+      (o.adminNumber
+        ? '<div><div class="dt-label">Admin # <span class="tag">Admin only</span></div><div class="dt-val">' + copyableHtml(o.adminNumber, o.adminNumber) + "</div></div>"
+        : "") +
+      (o.passengerName
+        ? '<div><div class="dt-label">Passenger name</div><div class="dt-val">' + copyableHtml(o.passengerName, o.passengerName) + "</div></div>"
+        : "") +
+      (o.passengerPhone
+        ? '<div><div class="dt-label">Passenger phone</div><div class="dt-val mono">' + copyableHtml(o.passengerPhone, o.passengerPhone) + "</div></div>"
+        : "") +
+      "</div></div>";
+
+    el.innerHTML =
+      quickCopyBlock +
+      '<div class="block">' +
       routeBlock +
       iconRows +
       meetGreetBlock +
@@ -1312,8 +1377,25 @@
       reassignBlock;
   }
 
-  $("ordersList").addEventListener("click", async function (e) {
+  $("ordersList").addEventListener("click", function (e) {
+    var copyBtn = e.target.closest("[data-copy]");
+    if (copyBtn) {
+      e.stopPropagation();
+      copyToClipboard(copyBtn.getAttribute("data-copy"), copyBtn);
+      return;
+    }
     var toggle = e.target.closest("[data-order-toggle]");
+    if (!toggle) return;
+    openOrderDetail(Number(toggle.getAttribute("data-order-toggle")));
+  });
+
+  $("orderDetailView").addEventListener("click", async function (e) {
+    var copyBtn = e.target.closest("[data-copy]");
+    if (copyBtn) {
+      e.stopPropagation();
+      copyToClipboard(copyBtn.getAttribute("data-copy"), copyBtn);
+      return;
+    }
     var complete = e.target.closest("[data-order-complete]");
     var cancel = e.target.closest("[data-order-cancel]");
     var hide = e.target.closest("[data-order-hide]");
@@ -1323,18 +1405,6 @@
     var noshowConfirm = e.target.closest("[data-noshow-confirm]");
     var noshowReject = e.target.closest("[data-noshow-reject]");
 
-    if (toggle && !complete && !cancel && !hide && !del && !reassign && !editSave && !noshowConfirm && !noshowReject) {
-      var id = Number(toggle.getAttribute("data-order-toggle"));
-      openOrderId = openOrderId === id ? null : id;
-      renderOrders();
-      if (openOrderId != null) {
-        var openedOrder = orders.filter(function (x) { return x.id === openOrderId; })[0];
-        if (openedOrder && openedOrder.status === "no_show" && !evidenceCache[openOrderId]) {
-          loadOrderEvidence(openOrderId);
-        }
-      }
-      return;
-    }
     if (hide) {
       e.stopPropagation();
       var hideId = Number(hide.getAttribute("data-order-hide"));
@@ -1344,7 +1414,7 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: hideId })
         });
-        openOrderId = null;
+        closeOrderDetail();
         await loadOrders();
       } catch (err) {
         alert("Could not delete the order.");
@@ -1360,7 +1430,7 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: delId })
         });
-        openOrderId = null;
+        closeOrderDetail();
         await loadOrders();
       } catch (err) {
         alert("Could not delete the order.");
@@ -1388,7 +1458,7 @@
             orderDate: fields.orderDate, orderTime: fields.orderTime, price: fields.price, currency: fields.currency
           })
         });
-        openOrderId = null;
+        closeOrderDetail();
         await loadOrders();
       } catch (err) {
         if (statusEl) { statusEl.textContent = "Could not reassign. Try again."; statusEl.className = "status err"; }
@@ -1413,7 +1483,7 @@
         await api("/api/admin/order-edit", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: editId, orderNumber: editFields.orderNumber, pickup: editFields.pickup, dropoff: editFields.dropoff,
+            id: editId, orderNumber: editFields.orderNumber, adminNumber: editFields.adminNumber, pickup: editFields.pickup, dropoff: editFields.dropoff,
             flightNumber: editFields.flightNumber, flightTime: editFields.flightTime, bufferMinutes: editFields.bufferMinutes,
             orderDate: editFields.orderDate, orderTime: editFields.orderTime, vehicleType: editFields.vehicleType,
             vehiclesNeeded: editFields.vehiclesNeeded || "1",
@@ -1446,7 +1516,7 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: ncId, action: "confirm" })
         });
-        openOrderId = null;
+        closeOrderDetail();
         await loadOrders();
       } catch (err) {
         noshowConfirm.disabled = false;
