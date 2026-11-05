@@ -547,6 +547,7 @@
     var completedCount = allOrders.filter(function (o) { return o.status === "completed"; }).length;
     $("countNew").textContent = newCount || "";
     $("countAccepted").textContent = acceptedCount || "";
+    if ($("countCompleted")) $("countCompleted").textContent = completedCount || "";
     if ($("statNew")) $("statNew").textContent = newCount;
     if ($("statAccepted")) $("statAccepted").textContent = acceptedCount;
     if ($("statCompleted")) $("statCompleted").textContent = completedCount;
@@ -573,7 +574,6 @@
       (showDate ? "<td>" + esc(fmtDay(o.orderDate)) + "</td>" : "") +
       "<td>" + esc(o.orderTime || "—") + "</td>" +
       "<td>" + esc(o.vehicleType || "—") + "</td>" +
-      "<td>" + esc(o.passengers != null ? o.passengers : "—") + "</td>" +
       "<td>" + (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") + "</td>" +
       "<td>" + orderActionHtml(o) + "</td>" +
       "</tr>";
@@ -632,7 +632,7 @@
     $("ordersStatus").className = "status";
     if (!orders.length) {
       $("ordersStatus").textContent = "";
-      $("ordersList").innerHTML = '<tr><td colspan="9" class="empty-cell">' + esc(q ? "" : emptyMessage(orderTab)) + "</td></tr>";
+      $("ordersList").innerHTML = '<tr><td colspan="8" class="empty-cell">' + esc(q ? "" : emptyMessage(orderTab)) + "</td></tr>";
       $("ordersPager").innerHTML = "";
       return;
     }
@@ -662,7 +662,7 @@
       return (a.orderTime || "") < (b.orderTime || "") ? -1 : (a.orderTime || "") > (b.orderTime || "") ? 1 : 0;
     });
     if (!orders.length) {
-      el.innerHTML = '<tr><td colspan="8" class="empty-cell">' + esc(window.I18N ? I18N.t("today_empty") : "No trips scheduled for today.") + "</td></tr>";
+      el.innerHTML = '<tr><td colspan="7" class="empty-cell">' + esc(window.I18N ? I18N.t("today_empty") : "No trips scheduled for today.") + "</td></tr>";
       return;
     }
     el.innerHTML = orders.map(function (o) { return orderRowHtml(o, false); }).join("");
@@ -1274,8 +1274,8 @@
   });
 
   /* ---------- fleet & documents ---------- */
-  var UPLOAD_ICON = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13V4M6.5 7.5 10 4l3.5 3.5"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>';
-  var FILE_ICON = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h7l4 4V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z"/><path d="M11 2.5V7h4"/></svg>';
+  var UPLOAD_ICON = '<svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13V4M6.5 7.5 10 4l3.5 3.5"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>';
+  var FILE_ICON = '<svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h7l4 4V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z"/><path d="M11 2.5V7h4"/></svg>';
   var CAR_ICON = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16V11.5a1.5 1.5 0 0 1 .3-.9l1.9-2.5A2 2 0 0 1 7.8 7h8.4a2 2 0 0 1 1.6 1.1l1.9 2.5a1.5 1.5 0 0 1 .3.9V16"/><path d="M4 16a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1H4Zm16 0a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1h3Z"/><circle cx="7.5" cy="16" r="1.3"/><circle cx="16.5" cy="16" r="1.3"/></svg>';
   var PERSON_ICON = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8.2" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
   var PLUS_ICON = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>';
@@ -1324,9 +1324,9 @@
         (required ? '<span class="doc-required">Required</span>' : '<span class="doc-optional">Optional</span>');
     return '<div class="doc-item">' +
       '<label class="doc-tile' + (hasFile ? " has-file" : "") + (needsAttention ? " needed" : "") + '" for="file-' + uid + '">' +
+      (hasFile ? '<span class="doc-tile-corner ' + statusBarClass(doc.status) + '"></span>' : "") +
       '<div class="doc-tile-icon">' + icon + '</div>' +
       '<div class="doc-tile-body">' + body + '</div>' +
-      '<div class="doc-tile-bar' + (hasFile ? " " + statusBarClass(doc.status) : "") + '"></div>' +
       '</label>' +
       '<input type="file" id="file-' + uid + '" data-uid="' + uid + '" data-owner-type="' + ownerType + '"' +
       (ownerId ? ' data-owner-id="' + ownerId + '"' : "") +

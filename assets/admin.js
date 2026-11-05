@@ -6,6 +6,7 @@
   var detailCache = {};
   var openId = null;
   var openOrderId = null;
+  var renderedOrderDetailId = null; // which order's detail is currently drawn into #odBody
   var STAGE_LABELS = { on_the_way: "On the way", arrived: "Arrived at pickup", in_car: "Passenger on board", dropped_off: "Dropped off" };
   var orderNumberManual = false;
   var bufferManual = false;
@@ -641,6 +642,7 @@
       : '<option value="">No active partners yet</option>';
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
     renderOpPriceListLink();
+    applyAutoCurrency();
   }
 
   // Link to the selected partner's attached price list, shown at the top of
@@ -691,6 +693,7 @@
   $("opPartner").addEventListener("change", function () {
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
     renderOpPriceListLink();
+    applyAutoCurrency();
   });
   $("opOrderNumber").addEventListener("input", function () {
     orderNumberManual = true;
@@ -708,6 +711,28 @@
     bufferManual = true;
   });
   applyAutoBuffer();
+
+  /* ---------- order currency: auto-fill from the selected partner's country ---------- */
+  var currencyManual = false;
+  var COUNTRY_CURRENCY = {
+    GB: "GBP", US: "USD", CA: "CAD", AU: "AUD",
+    AT: "EUR", BE: "EUR", CY: "EUR", EE: "EUR", FI: "EUR", FR: "EUR", DE: "EUR", GR: "EUR",
+    IE: "EUR", IT: "EUR", LV: "EUR", LT: "EUR", LU: "EUR", MT: "EUR", NL: "EUR", PT: "EUR",
+    SK: "EUR", SI: "EUR", ES: "EUR", HR: "EUR"
+  };
+  function currencyForPartner(partnerId) {
+    var p = partners.filter(function (x) { return x.id === partnerId; })[0];
+    return (p && COUNTRY_CURRENCY[p.country]) || "EUR";
+  }
+  function applyAutoCurrency() {
+    if (currencyManual) return;
+    var partnerId = Number($("opPartner").value);
+    if (!partnerId) return;
+    $("opCurrency").value = currencyForPartner(partnerId);
+  }
+  $("opCurrency").addEventListener("change", function () {
+    currencyManual = true;
+  });
 
   function populateOrderPartnerFilter() {
     var prev = $("fOrderPartner").value;
@@ -984,12 +1009,13 @@
         });
         ["opOrderNumber", "opAdminNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
           "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
-        $("opCurrency").value = "EUR";
         $("opVehiclesNeeded").value = "1";
         orderNumberManual = false;
         bufferManual = false;
+        currencyManual = false;
         regenerateOrderNumberForSelectedPartner();
         applyAutoBuffer();
+        applyAutoCurrency();
         $("createOrderStatus").textContent = asDraft
           ? "Draft saved — send it from the Drafts tab when you're ready."
           : "Order created and assigned.";
@@ -1258,6 +1284,7 @@
   }
   function closeOrderDetail() {
     openOrderId = null;
+    renderedOrderDetailId = null;
     $("orderDetailView").hidden = true;
     $("ordersListView").hidden = false;
   }
@@ -1295,9 +1322,19 @@
     }
   }
 
-  function renderOrderDetail(id) {
+  function renderOrderDetail(id, force) {
     var el = $("odBody");
     if (!el || openOrderId !== id) return;
+    // This runs on every background poll tick (every 5s) while an order is open,
+    // not just when the admin first opens it. A full el.innerHTML replace would
+    // snap any open <details> (Edit order / Reassign) back to closed and wipe
+    // out whatever the admin is mid-typing. So once that panel is expanded, skip
+    // re-rendering THIS SAME order's detail until they close it or save — same
+    // "don't overwrite what's being actively edited" rule used elsewhere in this
+    // admin panel. (Only applies to a refresh of the order already shown — opening
+    // a different/new order below always renders fresh.) Pass force=true right
+    // after a successful "Save changes" to still show the saved values immediately.
+    if (!force && renderedOrderDetailId === id && el.querySelector("details.block[open]")) return;
     var o = orders.filter(function (x) { return x.id === id; })[0];
     if (!o) return;
 
@@ -1485,6 +1522,7 @@
       "</div>" +
       editBlock +
       reassignBlock;
+    renderedOrderDetailId = id;
   }
 
   $("ordersList").addEventListener("click", function (e) {
@@ -1606,8 +1644,11 @@
         // The reload below re-renders this same detail panel (it stays open,
         // since openOrderId is unchanged) with the freshly saved values —
         // that's the visible confirmation, so there's no separate "Saved"
-        // message that would just be overwritten by it anyway.
+        // message that would just be overwritten by it anyway. Forced, since
+        // the Edit order panel is still open at this point and would otherwise
+        // be skipped by the in-progress-edit guard above.
         await loadOrders(true);
+        renderOrderDetail(editId, true);
       } catch (err) {
         var editMsg = (err && err.message === "order_number_taken") ? "This order number is already in use." : "Could not save. Try again.";
         if (editStatusEl) { editStatusEl.textContent = editMsg; editStatusEl.className = "status err"; }

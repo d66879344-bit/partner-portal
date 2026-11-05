@@ -62,20 +62,28 @@
   .dash-pagehead .sub { color: var(--ink-2); font-size: 14px; margin-top: 4px; max-width: 70ch; }
 
   /* ---------- stat cards ---------- */
-  .stat-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; margin-bottom: 22px; }
-  .stat-card { padding: 16px 18px; }
-  .stat-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
-  .stat-value { font-size: 26px; font-weight: 600; margin-top: 6px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
+  .stat-card { padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .stat-label { font-size: 11px; color: var(--ink-2); font-weight: 600; text-align: right; line-height: 1.25; order: 2; flex: 1 1 auto; min-width: 0; }
+  .stat-value { font-size: 18px; font-weight: 700; margin-top: 0; order: 1; flex: none; }
   @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
   @media (max-width: 560px) { .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 
   /* ---------- toolbar ---------- */
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: 14px; }
   .toolbar select, .toolbar input { min-height: 38px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 10px; }
   .toolbar-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
   .toolbar-field input { min-height: 36px; }
   .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.08); font-size: 11px; margin-left: 2px; font-family: var(--font-mono); }
   .tab[aria-pressed="true"] .tab-count { background: rgba(0,0,0,.08); }
+
+  /* order-status tabs: icon + label, calmer accent-tinted active state */
+  #orderTabs.tabs { gap: 6px; }
+  #orderTabs .tab { display: inline-flex; align-items: center; gap: 7px; border-radius: 10px; min-height: auto; padding: 7px 12px 7px 10px; color: var(--ink-2); font-size: 12.5px; }
+  #orderTabs .tab[aria-pressed="true"] { background: var(--accent-soft); color: var(--focus); border-color: var(--focus); }
+  #orderTabs .tab-ico { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  #orderTabs .tab .tab-count { background: var(--surface-2); color: var(--ink-2); }
+  #orderTabs .tab[aria-pressed="true"] .tab-count { background: rgba(20,118,212,.14); color: var(--focus); }
 
   /* ---------- data table ---------- */
   .table-card { padding: 4px 0 2px; overflow-x: auto; }
@@ -438,12 +446,12 @@
         </div>
 
         <div class="tabs" role="tablist" id="orderTabs">
-          <button type="button" class="tab" data-order-tab="today" aria-pressed="false">Today <span class="tab-count" id="countToday"></span></button>
-          <button type="button" class="tab" data-order-tab="offered" aria-pressed="true">Not accepted <span class="tab-count" id="countOffered"></span></button>
-          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false">In progress <span class="tab-count" id="countAccepted"></span></button>
-          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false">Completed <span class="tab-count" id="countCompleted"></span></button>
-          <button type="button" class="tab" data-order-tab="closed" aria-pressed="false">Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
-          <button type="button" class="tab" data-order-tab="no_show" aria-pressed="false">Customer no-show <span class="tab-count" id="countNoShow"></span></button>
+          <button type="button" class="tab" data-order-tab="today" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round"/></svg></span>Today <span class="tab-count" id="countToday"></span></button>
+          <button type="button" class="tab" data-order-tab="offered" aria-pressed="true"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2V10l2.8 1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Not accepted <span class="tab-count" id="countOffered"></span></button>
+          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M6.8 10.2l2.1 2.1 4.3-4.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>In progress <span class="tab-count" id="countAccepted"></span></button>
+          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 17V3" stroke-linecap="round"/><path d="M5 4h8l-2 3 2 3H5" stroke-linejoin="round"/></svg></span>Completed <span class="tab-count" id="countCompleted"></span></button>
+          <button type="button" class="tab" data-order-tab="closed" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M7.5 7.5l5 5m0-5-5 5" stroke-linecap="round"/></svg></span>Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
+          <button type="button" class="tab" data-order-tab="no_show" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10 3.5 17 16H3L10 3.5Z" stroke-linejoin="round"/><path d="M10 8.3v3.2M10 14h.01" stroke-linecap="round"/></svg></span>Customer no-show <span class="tab-count" id="countNoShow"></span></button>
         </div>
         <div class="toolbar">
           <select id="fOrderPartner"><option value="">All partners</option></select>
