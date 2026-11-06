@@ -1207,6 +1207,15 @@
   }
 
   function renderDrafts() {
+    // This also runs on every background poll tick (every 5s) while the Drafts
+    // view is open, not just when the admin first switches to it. A full
+    // innerHTML replace would otherwise always rebuild unchecked checkboxes,
+    // silently clearing whatever drafts the admin had selected to send. Carry
+    // the checked ids across the rebuild instead.
+    var checkedIds = {};
+    $("draftsList").querySelectorAll(".draft-check:checked").forEach(function (c) {
+      checkedIds[c.getAttribute("data-draft-id")] = true;
+    });
     var drafts = orders.filter(function (o) { return o.status === "draft"; });
     drafts = drafts.slice().sort(function (a, b) {
       var ka = (a.orderDate || "") + " " + (a.orderTime || "");
@@ -1220,7 +1229,7 @@
     }
     $("draftsList").innerHTML = drafts.map(function (o) {
       return '<tr class="data-row" data-order-toggle="' + o.id + '">' +
-        '<td class="col-check"><input type="checkbox" class="draft-check" data-draft-id="' + o.id + '"></td>' +
+        '<td class="col-check"><input type="checkbox" class="draft-check" data-draft-id="' + o.id + '"' + (checkedIds[o.id] ? " checked" : "") + "></td>" +
         '<td class="mono col-main">' + copyableHtml(o.orderNumber ? "#" + o.orderNumber : "#" + o.id, o.orderNumber || String(o.id)) + "</td>" +
         '<td class="mono">' + (o.adminNumber ? copyableHtml(o.adminNumber, o.adminNumber) : '<span style="color:var(--ink-2);">—</span>') + "</td>" +
         "<td>" + esc(o.companyName) + "</td>" +
