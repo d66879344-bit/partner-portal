@@ -918,12 +918,16 @@
     var warning = missing && o.status === "accepted"
       ? '<div class="warn-chip" style="margin:8px 0 0;">Please assign a vehicle and driver before the pickup time</div>'
       : "";
+    var driverLinkBtn = o.status === "accepted"
+      ? '<button type="button" class="minibtn" data-driver-link-order="' + o.id + '" style="flex:none;">' + esc(I18N.t("btn_driver_link")) + "</button>"
+      : "";
     return '<div class="card" style="padding:14px 20px;">' +
       '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
       '<h2 style="margin:0;font-size:13px;flex:none;">' + esc(I18N.t("od_vehicle_driver")) + "</h2>" +
       '<select id="assignVehicle" style="flex:1 1 140px;min-width:120px;">' + fleetOptionsHtml(myFleet.vehicles, o.vehicleId, "vehicle") + "</select>" +
       '<select id="assignDriver" style="flex:1 1 120px;min-width:100px;">' + fleetOptionsHtml(myFleet.drivers, o.driverId, "driver") + "</select>" +
       '<button type="button" class="minibtn good" data-assign-order="' + o.id + '" style="flex:none;">' + esc(I18N.t("btn_save")) + "</button>" +
+      driverLinkBtn +
       "</div>" + warning +
       '<p class="status" id="assignStatus" style="margin:6px 0 0;"></p>' +
       "</div>";
@@ -1090,6 +1094,26 @@
           $("assignStatus").textContent = "Could not save. Try again.";
           $("assignStatus").className = "status err";
           this.disabled = false;
+        }
+      });
+    }
+
+    var driverLinkBtn = $("odBody").querySelector("[data-driver-link-order]");
+    if (driverLinkBtn) {
+      driverLinkBtn.addEventListener("click", async function (e) {
+        e.stopPropagation();
+        var orderId = Number(this.getAttribute("data-driver-link-order"));
+        var btn = this;
+        btn.disabled = true;
+        try {
+          var res = await api("/api/partner/order-driver-link", { method: "POST", json: true, body: JSON.stringify({ id: orderId }) });
+          var link = location.origin + "/driver.html?t=" + encodeURIComponent(res.token);
+          btn.setAttribute("data-copy", link);
+          await handleCopyClick(btn);
+        } catch (e) {
+          alert(window.I18N ? I18N.t("driver_link_err") : "Could not create the link. Try again.");
+        } finally {
+          btn.disabled = false;
         }
       });
     }

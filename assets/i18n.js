@@ -90,6 +90,7 @@
       od_trip: "Trip", od_passenger_price: "Passenger & price", od_vehicle_driver: "Vehicle & driver", od_trip_progress: "Trip progress", od_route_link: "Route: pickup → dropoff",
       fl_date: "Date", fl_pickup_time: "Pickup time", fl_buffer_time: "Waiting time", fl_vehicle_type: "Vehicle type", fl_vehicles_needed: "Vehicles needed", fl_meet_greet: "Meet & greet sign",
       btn_accept: "Accept", btn_decline: "Decline", btn_save: "Save", btn_more: "More", btn_back_to_orders: "Back to orders",
+      btn_driver_link: "Driver link", driver_link_err: "Could not create the link. Try again.",
       no_show_pending: "Reported as a customer no-show — pending review.",
       report_no_show_btn: "Report customer no-show",
 
@@ -214,6 +215,7 @@
       od_trip: "Поездка", od_passenger_price: "Пассажир и цена", od_vehicle_driver: "Авто и водитель", od_trip_progress: "Статус поездки", od_route_link: "Маршрут: подача → высадка",
       fl_date: "Дата", fl_pickup_time: "Время подачи", fl_buffer_time: "Время ожидания", fl_vehicle_type: "Тип авто", fl_vehicles_needed: "Количество машин", fl_meet_greet: "Табличка для встречи",
       btn_accept: "Принять", btn_decline: "Отклонить", btn_save: "Сохранить", btn_more: "Ещё", btn_back_to_orders: "Назад к заказам",
+      btn_driver_link: "Ссылка для водителя", driver_link_err: "Не удалось создать ссылку. Попробуйте ещё раз.",
       no_show_pending: "Заявлено как неявка пассажира — ожидает проверки.",
       report_no_show_btn: "Сообщить о неявке пассажира",
 
@@ -338,6 +340,7 @@
       od_trip: "Viaje", od_passenger_price: "Pasajero y precio", od_vehicle_driver: "Vehículo y conductor", od_trip_progress: "Progreso del viaje", od_route_link: "Ruta: recogida → destino",
       fl_date: "Fecha", fl_pickup_time: "Hora de recogida", fl_buffer_time: "Tiempo de espera", fl_vehicle_type: "Tipo de vehículo", fl_vehicles_needed: "Vehículos necesarios", fl_meet_greet: "Cartel de bienvenida",
       btn_accept: "Aceptar", btn_decline: "Rechazar", btn_save: "Guardar", btn_more: "Más", btn_back_to_orders: "Volver a pedidos",
+      btn_driver_link: "Enlace para el conductor", driver_link_err: "No se pudo crear el enlace. Inténtelo de nuevo.",
       no_show_pending: "Reportado como no presentación del pasajero — pendiente de revisión.",
       report_no_show_btn: "Reportar no presentación del pasajero",
 
@@ -462,6 +465,7 @@
       od_trip: "Διαδρομή", od_passenger_price: "Επιβάτης & τιμή", od_vehicle_driver: "Όχημα & οδηγός", od_trip_progress: "Πρόοδος διαδρομής", od_route_link: "Διαδρομή: παραλαβή → προορισμός",
       fl_date: "Ημερομηνία", fl_pickup_time: "Ώρα παραλαβής", fl_buffer_time: "Χρόνος αναμονής", fl_vehicle_type: "Τύπος οχήματος", fl_vehicles_needed: "Απαιτούμενα οχήματα", fl_meet_greet: "Πινακίδα υποδοχής",
       btn_accept: "Αποδοχή", btn_decline: "Απόρριψη", btn_save: "Αποθήκευση", btn_more: "Περισσότερα", btn_back_to_orders: "Πίσω στις παραγγελίες",
+      btn_driver_link: "Σύνδεσμος οδηγού", driver_link_err: "Δεν ήταν δυνατή η δημιουργία του συνδέσμου. Δοκιμάστε ξανά.",
       no_show_pending: "Αναφέρθηκε ως μη εμφάνιση επιβάτη — σε αναμονή ελέγχου.",
       report_no_show_btn: "Αναφορά μη εμφάνισης επιβάτη",
 
@@ -586,6 +590,7 @@
       od_trip: "Trajet", od_passenger_price: "Passager & prix", od_vehicle_driver: "Véhicule & chauffeur", od_trip_progress: "Progression du trajet", od_route_link: "Itinéraire : prise en charge → destination",
       fl_date: "Date", fl_pickup_time: "Heure de prise en charge", fl_buffer_time: "Temps d'attente", fl_vehicle_type: "Type de véhicule", fl_vehicles_needed: "Véhicules nécessaires", fl_meet_greet: "Pancarte d'accueil",
       btn_accept: "Accepter", btn_decline: "Refuser", btn_save: "Enregistrer", btn_more: "Plus", btn_back_to_orders: "Retour aux commandes",
+      btn_driver_link: "Lien chauffeur", driver_link_err: "Impossible de créer le lien. Veuillez réessayer.",
       no_show_pending: "Signalé comme no-show du passager — en attente de vérification.",
       report_no_show_btn: "Signaler un no-show du passager",
 
@@ -710,6 +715,7 @@
       od_trip: "Viagem", od_passenger_price: "Passageiro e preço", od_vehicle_driver: "Veículo e motorista", od_trip_progress: "Progresso da viagem", od_route_link: "Rota: embarque → destino",
       fl_date: "Data", fl_pickup_time: "Hora de recolha", fl_buffer_time: "Tempo de espera", fl_vehicle_type: "Tipo de veículo", fl_vehicles_needed: "Veículos necessários", fl_meet_greet: "Placa de boas-vindas",
       btn_accept: "Aceitar", btn_decline: "Recusar", btn_save: "Guardar", btn_more: "Mais", btn_back_to_orders: "Voltar aos pedidos",
+      btn_driver_link: "Link do motorista", driver_link_err: "Não foi possível criar o link. Tente novamente.",
       no_show_pending: "Reportado como não comparência do passageiro — a aguardar revisão.",
       report_no_show_btn: "Reportar não comparência do passageiro",
 

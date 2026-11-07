@@ -140,7 +140,14 @@ CREATE TABLE IF NOT EXISTS orders (
   no_show_review_status TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   responded_at TEXT,
-  hidden_from_admin INTEGER NOT NULL DEFAULT 0 -- hides the order from the admin view only; the partner still sees it
+  hidden_from_admin INTEGER NOT NULL DEFAULT 0, -- hides the order from the admin view only; the partner still sees it
+  -- Driver link: a no-login magic link a partner can hand to their driver for
+  -- this one trip only. driver_token is a long random string (set the first
+  -- time the partner clicks "Driver link"); driver_token_active gates whether
+  -- /api/driver/* currently honors it — it's cleared automatically once the
+  -- trip reaches dropped_off/completed, so a link never works after the trip.
+  driver_token TEXT,
+  driver_token_active INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_invoices_partner ON invoices(partner_id);
@@ -151,3 +158,4 @@ CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(owner_type, owner_id
 CREATE INDEX IF NOT EXISTS idx_orders_partner ON orders(partner_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_partners_status ON partners(status);
+CREATE INDEX IF NOT EXISTS idx_orders_driver_token ON orders(driver_token);
