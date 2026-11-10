@@ -12,6 +12,7 @@
   var bufferManual = false;
   var PAGE_SIZE = 20;
   var partnersPage = 1;
+  var partnerCountryTab = ""; // "" = All countries
   var ordersPage = 1;
   var financePage = 1;
   var passengers = [];
@@ -115,7 +116,7 @@
     try {
       var data = await api("/api/admin/partners");
       partners = data.partners || [];
-      populatePartnersCountryFilter();
+      renderPartnerCountryTabs();
       renderPartners();
       populatePartnerSelect();
       populateOrderPartnerFilter();
@@ -139,9 +140,9 @@
       var hay = [p.companyName, p.email, p.accountId].filter(Boolean).join(" ").toLowerCase();
       if (hay.indexOf(q) === -1) return false;
     }
-    var fs = $("fStatus").value, fc = $("fCountry").value, ft = $("fTrialState").value, fo = $("fOrganization").value;
+    var fs = $("fStatus").value, ft = $("fTrialState").value, fo = $("fOrganization").value;
     if (fs && p.status !== fs) return false;
-    if (fc && p.country !== fc) return false;
+    if (partnerCountryTab && p.country !== partnerCountryTab) return false;
     if (ft) {
       var info = window.TrialInfo ? TrialInfo.compute(p.trialStartedAt, p.trialSimulateEnded) : { state: "not_started" };
       if (info.state !== ft) return false;
@@ -169,19 +170,39 @@
       "</div>";
   }
 
-  function populatePartnersCountryFilter() {
-    var prev = $("fCountry").value;
-    var seen = {};
-    var rows = [];
+  // Builds the country tab row from whatever countries are actually present
+  // in the partner list — no fixed list, so it adapts as new countries show
+  // up. Counts are absolute (same convention as the order-status tabs): how
+  // many partners are in that country overall, ignoring the other filters.
+  function renderPartnerCountryTabs() {
+    var byCountry = {};
     partners.forEach(function (p) {
-      if (!p.country || seen[p.country]) return;
-      seen[p.country] = true;
-      rows.push([p.country, p.countryName || p.country]);
+      if (!p.country) return;
+      if (!byCountry[p.country]) byCountry[p.country] = { name: p.countryName || p.country, count: 0 };
+      byCountry[p.country].count++;
     });
-    rows.sort(function (a, b) { return a[1].localeCompare(b[1]); });
-    $("fCountry").innerHTML = '<option value="">All countries</option>' +
-      rows.map(function (r) { return '<option value="' + esc(r[0]) + '">' + esc(r[1]) + "</option>"; }).join("");
-    $("fCountry").value = prev;
+    var codes = Object.keys(byCountry).sort(function (a, b) {
+      return byCountry[a].name.localeCompare(byCountry[b].name);
+    });
+    // Dropping a country that's no longer present (e.g. its only partner was
+    // deleted) back to "All" rather than leaving the filter stuck on nothing.
+    if (partnerCountryTab && !byCountry[partnerCountryTab]) partnerCountryTab = "";
+
+    var tabsHtml = '<button type="button" class="tab" data-country-tab="" aria-pressed="' + (partnerCountryTab === "" ? "true" : "false") + '">All countries <span class="tab-count">' + partners.length + "</span></button>" +
+      codes.map(function (code) {
+        var c = byCountry[code];
+        return '<button type="button" class="tab" data-country-tab="' + esc(code) + '" aria-pressed="' + (partnerCountryTab === code ? "true" : "false") + '">' +
+          esc(c.name) + ' <span class="tab-count">' + c.count + "</span></button>";
+      }).join("");
+    $("partnerCountryTabs").innerHTML = tabsHtml;
+    $("partnerCountryTabs").querySelectorAll(".tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        $("partnerCountryTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
+        partnerCountryTab = tab.getAttribute("data-country-tab");
+        partnersPage = 1;
+        renderPartners();
+      });
+    });
   }
 
   function renderPartners() {
@@ -477,7 +498,6 @@
 
   if ($("fPartnerSearch")) $("fPartnerSearch").addEventListener("input", function () { partnersPage = 1; renderPartners(); });
   $("fStatus").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
-  $("fCountry").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
   $("fTrialState").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
   $("fOrganization").addEventListener("change", function () { partnersPage = 1; renderPartners(); });
 

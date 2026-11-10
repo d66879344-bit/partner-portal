@@ -235,8 +235,14 @@
   #orderTabs .tab .tab-count { background: var(--surface-2); color: var(--ink-2); }
   #orderTabs .tab[aria-pressed="true"] .tab-count { background: rgba(20,118,212,.14); color: var(--focus); }
 
-  /* ---------- document-missing alerts (sidebar nav dot + Company banner) ---------- */
-  .dash-nav .tab-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent-warm); flex: none; margin-left: auto; box-shadow: 0 0 0 3px rgba(242,183,5,.25); }
+  /* ---------- document-missing alerts (sidebar nav flag + Company banner) ---------- */
+  .dash-nav .tab > span:not(.tab-dot):not(.tab-badge) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dash-nav .tab-dot {
+    display: inline-flex; align-items: center; flex: none; margin-left: auto; white-space: nowrap;
+    font-size: 10px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+    color: #F2B705; background: rgba(242,183,5,.18); border-radius: 999px; padding: 3px 8px;
+  }
+  .dash-nav .tab[aria-pressed="true"] .tab-dot { background: rgba(242,183,5,.3); }
   .alert-banner { display: flex; align-items: center; gap: 14px; background: var(--crit-bg); border: 1px solid #F3B7AE; border-radius: 10px; padding: 14px 18px; }
   .alert-banner svg { flex: none; color: var(--crit); }
   .alert-banner strong { display: block; font-size: 14px; }
@@ -383,12 +389,12 @@
       <button type="button" class="tab" data-tab="company" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 17V3a1 1 0 0 1 1-1h6l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z" stroke-linejoin="round"/><path d="M12 2v3h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span data-i18n="nav_company">Company</span>
-        <span class="tab-dot" id="companyTabDot" hidden title="Documents needed"></span>
+        <span class="tab-dot" id="companyTabDot" hidden title="Documents needed" data-i18n="nav_incomplete">Incomplete</span>
       </button>
       <button type="button" class="tab" data-tab="fleet" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3h11l3 4v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M6.5 9h7M6.5 12.5h7" stroke-linecap="round"/></svg>
         <span data-i18n="nav_fleet">Fleet</span>
-        <span class="tab-dot" id="fleetTabDot" hidden title="Documents needed"></span>
+        <span class="tab-dot" id="fleetTabDot" hidden title="Documents needed" data-i18n="nav_incomplete">Incomplete</span>
       </button>
       <button type="button" class="tab" data-tab="finance" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M3 8h14M7 12h2" stroke-linecap="round"/></svg>
@@ -397,7 +403,7 @@
       <button type="button" class="tab" data-tab="contract" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 2.5h7l3 3v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z"/><path d="M6.5 8h7M6.5 10.5h5" stroke-linecap="round"/><path d="M6.5 14.2c1-.6 1.6-.6 2.2 0s1.2.6 2.2 0 1.6-.6 2.6 0" stroke-linecap="round"/></svg>
         <span data-i18n="nav_contract">Contract</span>
-        <span class="tab-dot" id="contractTabDot" hidden title="Confirmation needed"></span>
+        <span class="tab-dot" id="contractTabDot" hidden title="Confirmation needed" data-i18n="nav_incomplete">Incomplete</span>
       </button>
       <button type="button" class="tab" data-tab="referrals" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 12a4 4 0 0 1 0-5.6l2-2a4 4 0 0 1 5.6 5.6l-1 1" stroke-linecap="round"/><path d="M12 8a4 4 0 0 1 0 5.6l-2 2a4 4 0 0 1-5.6-5.6l1-1" stroke-linecap="round"/></svg>
@@ -406,7 +412,7 @@
       <button type="button" class="tab" data-tab="account" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4" stroke-linecap="round"/></svg>
         <span data-i18n="nav_account">Account</span>
-        <span class="tab-dot" id="accountTabDot" hidden title="Payment details needed"></span>
+        <span class="tab-dot" id="accountTabDot" hidden title="Payment details needed" data-i18n="nav_incomplete">Incomplete</span>
       </button>
     </nav>
 

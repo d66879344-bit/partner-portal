@@ -85,6 +85,13 @@
   #orderTabs .tab .tab-count { background: var(--surface-2); color: var(--ink-2); }
   #orderTabs .tab[aria-pressed="true"] .tab-count { background: rgba(20,118,212,.14); color: var(--focus); }
 
+  /* partner country tabs: same calmer accent-tinted active state, no icons, wraps to multiple rows if there are many countries */
+  #partnerCountryTabs.tabs { gap: 6px; margin-bottom: 14px; }
+  #partnerCountryTabs .tab { border-radius: 10px; min-height: auto; padding: 7px 12px; color: var(--ink-2); font-size: 12.5px; }
+  #partnerCountryTabs .tab[aria-pressed="true"] { background: var(--accent-soft); color: var(--focus); border-color: var(--focus); }
+  #partnerCountryTabs .tab .tab-count { background: var(--surface-2); color: var(--ink-2); }
+  #partnerCountryTabs .tab[aria-pressed="true"] .tab-count { background: rgba(20,118,212,.14); color: var(--focus); }
+
   /* ---------- data table ---------- */
   .table-card { padding: 4px 0 2px; overflow-x: auto; }
   .data-table { width: 100%; border-collapse: collapse; min-width: 640px; }
@@ -255,6 +262,8 @@
           <p class="sub">Review documents and manage partner accounts</p>
         </div>
 
+        <div class="tabs" role="tablist" id="partnerCountryTabs"></div>
+
         <div class="toolbar">
           <input type="text" id="fPartnerSearch" placeholder="Search company, email or account ID">
           <select id="fStatus">
@@ -262,9 +271,6 @@
             <option value="pending">Pending review</option>
             <option value="active">Active</option>
             <option value="blocked">Blocked</option>
-          </select>
-          <select id="fCountry">
-            <option value="">All countries</option>
           </select>
           <select id="fTrialState">
             <option value="">All trial states</option>

@@ -26,6 +26,7 @@
   var DICT = {
     en: {
       nav_orders: "Your Orders", nav_company: "Company", nav_fleet: "Fleet", nav_finance: "Finance", nav_ridepool: "Ride Pool", nav_account: "Account", nav_today: "Today",
+      nav_incomplete: "Incomplete",
       search_placeholder: "Search by order #, route or partner…",
       today_sub: "Your trips for today, sorted by pickup time.", today_empty: "No trips scheduled for today.",
       pay_details_alert_title: "Payment details are missing", pay_details_alert_body: "Add your bank details below — required before you can generate your invoice.",
@@ -151,6 +152,7 @@
     },
     ru: {
       nav_orders: "Мои заказы", nav_company: "Компания", nav_fleet: "Автопарк", nav_finance: "Финансы", nav_ridepool: "Пул поездок", nav_account: "Аккаунт", nav_today: "Сегодня",
+      nav_incomplete: "Не завершено",
       search_placeholder: "Поиск по номеру заказа, маршруту или партнёру…",
       today_sub: "Ваши поездки на сегодня, по времени подачи.", today_empty: "На сегодня поездок нет.",
       pay_details_alert_title: "Не указаны платёжные реквизиты", pay_details_alert_body: "Укажите банковские реквизиты ниже — это нужно для формирования инвойса.",
@@ -276,6 +278,7 @@
     },
     es: {
       nav_orders: "Mis pedidos", nav_company: "Empresa", nav_fleet: "Flota", nav_finance: "Finanzas", nav_ridepool: "Grupo de viajes", nav_account: "Cuenta", nav_today: "Hoy",
+      nav_incomplete: "Incompleto",
       search_placeholder: "Buscar por n.º de pedido, ruta o socio…",
       today_sub: "Tus viajes de hoy, ordenados por hora de recogida.", today_empty: "No hay viajes programados para hoy.",
       pay_details_alert_title: "Faltan los datos de pago", pay_details_alert_body: "Añade tus datos bancarios abajo — necesarios para generar tu factura.",
@@ -401,6 +404,7 @@
     },
     el: {
       nav_orders: "Οι παραγγελίες μου", nav_company: "Εταιρεία", nav_fleet: "Στόλος", nav_finance: "Οικονομικά", nav_ridepool: "Δεξαμενή διαδρομών", nav_account: "Λογαριασμός", nav_today: "Σήμερα",
+      nav_incomplete: "Ατελές",
       search_placeholder: "Αναζήτηση με αριθμό παραγγελίας, διαδρομή ή συνεργάτη…",
       today_sub: "Οι διαδρομές σας για σήμερα, ταξινομημένες κατά ώρα παραλαβής.", today_empty: "Δεν υπάρχουν προγραμματισμένες διαδρομές για σήμερα.",
       pay_details_alert_title: "Λείπουν τα στοιχεία πληρωμής", pay_details_alert_body: "Προσθέστε τα τραπεζικά σας στοιχεία παρακάτω — απαιτούνται για τη δημιουργία του τιμολογίου σας.",
@@ -526,6 +530,7 @@
     },
     fr: {
       nav_orders: "Mes commandes", nav_company: "Entreprise", nav_fleet: "Flotte", nav_finance: "Finances", nav_ridepool: "Pool de courses", nav_account: "Compte", nav_today: "Aujourd'hui",
+      nav_incomplete: "Incomplet",
       search_placeholder: "Rechercher par n° de commande, trajet ou partenaire…",
       today_sub: "Vos courses du jour, triées par heure de prise en charge.", today_empty: "Aucune course prévue aujourd'hui.",
       pay_details_alert_title: "Les informations de paiement sont manquantes", pay_details_alert_body: "Ajoutez vos coordonnées bancaires ci-dessous — nécessaires pour générer votre facture.",
@@ -651,6 +656,7 @@
     },
     pt: {
       nav_orders: "Meus pedidos", nav_company: "Empresa", nav_fleet: "Frota", nav_finance: "Finanças", nav_ridepool: "Grupo de viagens", nav_account: "Conta", nav_today: "Hoje",
+      nav_incomplete: "Incompleto",
       search_placeholder: "Pesquisar por n.º de pedido, rota ou parceiro…",
       today_sub: "As suas viagens de hoje, ordenadas por hora de embarque.", today_empty: "Não há viagens agendadas para hoje.",
       pay_details_alert_title: "Faltam os dados de pagamento", pay_details_alert_body: "Adicione os seus dados bancários abaixo — necessários para gerar a sua fatura.",
