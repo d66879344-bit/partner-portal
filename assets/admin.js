@@ -1193,21 +1193,11 @@
     }).join("");
     $("ordersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
     if (openOrderId != null) renderOrderDetail(openOrderId);
-    if (ordersView === "drafts") renderDrafts();
+    // Drafts now live on their own "Create Order" tab rather than behind a
+    // view toggle inside Orders, so keep them rendered in step with the
+    // underlying orders data every time, not only while that tab is open.
+    renderDrafts();
   }
-
-  /* ---------- orders: Orders / Drafts view switch ---------- */
-  var ordersView = "orders";
-  function setOrdersView(view) {
-    ordersView = view;
-    $("tabOrdersView").classList.toggle("active", view === "orders");
-    $("tabDraftsView").classList.toggle("active", view === "drafts");
-    $("ordersNormalView").hidden = view !== "orders";
-    $("draftsView").hidden = view !== "drafts";
-    if (view === "drafts") renderDrafts();
-  }
-  $("tabOrdersView").addEventListener("click", function () { setOrdersView("orders"); });
-  $("tabDraftsView").addEventListener("click", function () { setOrdersView("drafts"); });
 
   /* ---------- orders: Drafts list + bulk send ---------- */
   function updateSendDraftsButton() {
@@ -1301,6 +1291,11 @@
   });
 
   function openOrderDetail(id) {
+    // Order detail lives inside the "Orders" panel. A draft row click comes
+    // from the "Create Order" tab, so switch tabs first (reusing the normal
+    // tab-click handler) in case we're not already there.
+    var ordersTabBtn = $("mainTabs").querySelector('[data-tab="orders"]');
+    if (ordersTabBtn && ordersTabBtn.getAttribute("aria-pressed") !== "true") ordersTabBtn.click();
     var o = orders.filter(function (x) { return x.id === id; })[0];
     openOrderId = id;
     $("odTitle").textContent = o ? "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id) : "Order";

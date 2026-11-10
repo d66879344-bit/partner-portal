@@ -188,15 +188,6 @@
     border-radius: 5px; padding: 1px 6px; margin-left: 4px; vertical-align: 1px;
   }
 
-  /* ---------- Orders / Drafts view switcher ---------- */
-  .viewtabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
-  .viewtab {
-    border: 0; background: none; cursor: pointer; font: inherit; font-weight: 600; font-size: 13.5px;
-    color: var(--ink-2); padding: 10px 4px; margin-right: 20px; border-bottom: 2px solid transparent;
-  }
-  .viewtab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .viewtab .tab-count { background: var(--surface-2); color: var(--ink-2); }
-  .viewtab.active .tab-count { background: var(--accent-soft); color: var(--accent); }
   .col-check { width: 36px; padding-right: 0 !important; }
   .col-check input, th.col-check input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
   .badge-draft { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-strong); }
@@ -232,6 +223,10 @@
       <button type="button" class="tab" data-tab="orders" aria-pressed="true">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
         Orders
+      </button>
+      <button type="button" class="tab" data-tab="create-order" aria-pressed="false">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>
+        Create Order
       </button>
       <button type="button" class="tab" data-tab="partners" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
@@ -352,9 +347,61 @@
         <p class="sub">All orders across all partners</p>
       </div>
 
-      <div style="margin-bottom:14px;">
-        <h2 style="margin-bottom:4px;">Create order</h2>
-        <p class="sub" style="margin:0;">Fill in the trip, passenger and price details, then create &amp; assign to a partner.</p>
+      <div id="ordersNormalView">
+        <div class="stat-grid">
+          <div class="card stat-card"><div class="stat-label">Not accepted</div><div class="stat-value mono" id="statOffered">0</div></div>
+          <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
+          <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
+        </div>
+
+        <div class="tabs" role="tablist" id="orderTabs">
+          <button type="button" class="tab" data-order-tab="today" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round"/></svg></span>Today <span class="tab-count" id="countToday"></span></button>
+          <button type="button" class="tab" data-order-tab="offered" aria-pressed="true"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2V10l2.8 1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Not accepted <span class="tab-count" id="countOffered"></span></button>
+          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M6.8 10.2l2.1 2.1 4.3-4.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>In progress <span class="tab-count" id="countAccepted"></span></button>
+          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 17V3" stroke-linecap="round"/><path d="M5 4h8l-2 3 2 3H5" stroke-linejoin="round"/></svg></span>Completed <span class="tab-count" id="countCompleted"></span></button>
+          <button type="button" class="tab" data-order-tab="closed" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M7.5 7.5l5 5m0-5-5 5" stroke-linecap="round"/></svg></span>Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
+          <button type="button" class="tab" data-order-tab="no_show" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10 3.5 17 16H3L10 3.5Z" stroke-linejoin="round"/><path d="M10 8.3v3.2M10 14h.01" stroke-linecap="round"/></svg></span>Customer no-show <span class="tab-count" id="countNoShow"></span></button>
+        </div>
+        <div class="toolbar">
+          <select id="fOrderPartner"><option value="">All partners</option></select>
+          <input type="text" id="fOrderSearch" placeholder="Search order #, route or partner">
+          <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
+          <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
+          <select id="fSort">
+            <option value="asc">Date: soonest first</option>
+            <option value="desc">Date: latest first</option>
+          </select>
+        </div>
+        <p class="status" id="ordersStatus"></p>
+
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr><th>Order #</th><th>Admin #</th><th>Partner</th><th>Route</th><th>Date &amp; time</th><th>Price</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="ordersList"></tbody>
+          </table>
+          <div id="ordersPager"></div>
+        </div>
+      </div>
+     </div>
+
+      <div id="orderDetailView" hidden>
+        <button type="button" class="minibtn" id="odBack" style="margin-bottom:18px;">&larr; Back</button>
+        <div class="dash-pagehead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <h1 id="odTitle">Order</h1>
+          <span id="odStatusBadge"></span>
+        </div>
+        <div id="odBody" class="card"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-create-order">
+      <div class="dash-pagehead">
+        <h1>Create Order</h1>
+        <p class="sub">Create a new order and assign it to a partner, or save it as a draft to send later.</p>
       </div>
 
       <div class="card">
@@ -434,78 +481,24 @@
         <button type="button" class="minibtn good" id="createOrderBtn" style="flex:1 1 200px;min-width:200px;margin-bottom:0;">Create and send</button>
         <button type="button" class="minibtn" id="createDraftBtn" style="flex:1 1 200px;min-width:200px;margin-bottom:0;">Create draft</button>
       </div>
-      <p class="sub" style="margin-top:8px;">"Create and send" works as before — the partner sees it right away. "Create draft" saves the same order but keeps it hidden from the partner until you send it from the Drafts tab below.</p>
+      <p class="sub" style="margin-top:8px;">"Create and send" works as before — the partner sees it right away. "Create draft" saves the same order but keeps it hidden from the partner until you send it.</p>
       <p class="status" id="createOrderStatus" style="margin-bottom:18px;"></p>
 
-      <div class="viewtabs" id="ordersViewTabs">
-        <button type="button" class="viewtab active" id="tabOrdersView">Orders <span class="tab-count" id="countAllOrders"></span></button>
-        <button type="button" class="viewtab" id="tabDraftsView">Drafts <span class="tab-count" id="countDrafts"></span></button>
+      <div style="margin-bottom:14px;">
+        <h2 style="margin-bottom:4px;">Drafts <span class="tab-count" id="countDrafts"></span></h2>
+        <p class="sub" style="margin:0;">Drafts are not visible to the partner anywhere — not in their order list, not in their counts. Select the ones you want to release and send them together.</p>
       </div>
-
-      <div id="ordersNormalView">
-        <div class="stat-grid">
-          <div class="card stat-card"><div class="stat-label">Not accepted</div><div class="stat-value mono" id="statOffered">0</div></div>
-          <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
-          <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
-          <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
-          <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
-        </div>
-
-        <div class="tabs" role="tablist" id="orderTabs">
-          <button type="button" class="tab" data-order-tab="today" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round"/></svg></span>Today <span class="tab-count" id="countToday"></span></button>
-          <button type="button" class="tab" data-order-tab="offered" aria-pressed="true"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2V10l2.8 1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Not accepted <span class="tab-count" id="countOffered"></span></button>
-          <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M6.8 10.2l2.1 2.1 4.3-4.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>In progress <span class="tab-count" id="countAccepted"></span></button>
-          <button type="button" class="tab" data-order-tab="completed" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 17V3" stroke-linecap="round"/><path d="M5 4h8l-2 3 2 3H5" stroke-linejoin="round"/></svg></span>Completed <span class="tab-count" id="countCompleted"></span></button>
-          <button type="button" class="tab" data-order-tab="closed" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M7.5 7.5l5 5m0-5-5 5" stroke-linecap="round"/></svg></span>Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
-          <button type="button" class="tab" data-order-tab="no_show" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10 3.5 17 16H3L10 3.5Z" stroke-linejoin="round"/><path d="M10 8.3v3.2M10 14h.01" stroke-linecap="round"/></svg></span>Customer no-show <span class="tab-count" id="countNoShow"></span></button>
-        </div>
-        <div class="toolbar">
-          <select id="fOrderPartner"><option value="">All partners</option></select>
-          <input type="text" id="fOrderSearch" placeholder="Search order #, route or partner">
-          <label class="toolbar-field">From <input type="date" id="fDateFrom"></label>
-          <label class="toolbar-field">To <input type="date" id="fDateTo"></label>
-          <select id="fSort">
-            <option value="asc">Date: soonest first</option>
-            <option value="desc">Date: latest first</option>
-          </select>
-        </div>
-        <p class="status" id="ordersStatus"></p>
-
-        <div class="card table-card">
-          <table class="data-table">
-            <thead>
-              <tr><th>Order #</th><th>Admin #</th><th>Partner</th><th>Route</th><th>Date &amp; time</th><th>Price</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody id="ordersList"></tbody>
-          </table>
-          <div id="ordersPager"></div>
-        </div>
+      <div class="toolbar">
+        <button type="button" class="minibtn good" id="sendDraftsBtn" disabled>Select drafts to send</button>
+        <p class="status" id="draftsSendStatus"></p>
       </div>
-
-      <div id="draftsView" hidden>
-        <p class="sub" style="margin-bottom:14px;">Drafts are not visible to the partner anywhere — not in their order list, not in their counts. Select the ones you want to release and send them together.</p>
-        <div class="toolbar">
-          <button type="button" class="minibtn good" id="sendDraftsBtn" disabled>Select drafts to send</button>
-          <p class="status" id="draftsSendStatus"></p>
-        </div>
-        <div class="card table-card">
-          <table class="data-table">
-            <thead>
-              <tr><th class="col-check"><input type="checkbox" id="draftsSelectAll"></th><th>Order #</th><th>Admin #</th><th>Partner</th><th>Route</th><th>Date &amp; time</th><th>Price</th><th></th></tr>
-            </thead>
-            <tbody id="draftsList"></tbody>
-          </table>
-        </div>
-      </div>
-     </div>
-
-      <div id="orderDetailView" hidden>
-        <button type="button" class="minibtn" id="odBack" style="margin-bottom:18px;">&larr; Back</button>
-        <div class="dash-pagehead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <h1 id="odTitle">Order</h1>
-          <span id="odStatusBadge"></span>
-        </div>
-        <div id="odBody" class="card"></div>
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr><th class="col-check"><input type="checkbox" id="draftsSelectAll"></th><th>Order #</th><th>Admin #</th><th>Partner</th><th>Route</th><th>Date &amp; time</th><th>Price</th><th></th></tr>
+          </thead>
+          <tbody id="draftsList"></tbody>
+        </table>
       </div>
     </section>
 
