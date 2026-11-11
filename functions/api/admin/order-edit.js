@@ -1,4 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
+import { notifyText, orderUpdatedMessage } from "../../_lib/whatsapp.js";
 
 // Edits an order's trip details in place, regardless of its current status —
 // new, accepted, completed, declined, cancelled, no-show, anything. This never
@@ -15,7 +16,9 @@ export async function onRequestPost(context) {
     const id = Number(body.id);
     if (!id) return Response.json({ error: "invalid_request" }, { status: 400 });
 
-    const order = await env.DB.prepare("SELECT id FROM orders WHERE id = ?").bind(id).first();
+    const order = await env.DB.prepare(
+      "SELECT id, partner_id, status, pickup, dropoff, order_date, order_time, price, currency, passenger_name, passenger_phone FROM orders WHERE id = ?"
+    ).bind(id).first();
     if (!order) return Response.json({ error: "not_found" }, { status: 404 });
 
     const orderNumber = (body.orderNumber || "").toString().trim().slice(0, 40);
@@ -75,6 +78,19 @@ export async function onRequestPost(context) {
         passengerName, passengerPhone, meetGreet, price, currency, notes,
         id
       ).run();
+    }
+
+    // WhatsApp: tell the partner's group only when something that matters to the
+    // trip changed (route, date, time, price, passenger name/phone) and the partner can actually see the
+    // order (offered or accepted) — not for notes/passenger-field tweaks or drafts.
+    const S = (v) => (v == null ? "" : String(v).trim());
+    const changed =
+      S(order.pickup) !== pickup || S(order.dropoff) !== dropoff ||
+      S(order.order_date) !== orderDate || S(order.order_time) !== orderTime ||
+      S(order.price) !== price || S(order.currency) !== currency ||
+      S(order.passenger_name) !== passengerName || S(order.passenger_phone) !== passengerPhone;
+    if (changed && (order.status === "offered" || order.status === "accepted")) {
+      notifyText(context, order.partner_id, orderUpdatedMessage(orderNumber));
     }
 
     return Response.json({ ok: true });

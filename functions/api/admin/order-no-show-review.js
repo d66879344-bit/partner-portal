@@ -1,5 +1,6 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { startTrialIfNeeded } from "../../_lib/trial.js";
+import { notifyText, noShowDecisionMessage } from "../../_lib/whatsapp.js";
 
 // Admin review of a Customer-no-show report. Confirming the report closes the
 // trip out as completed (so it shows as completed for the partner and will
@@ -18,7 +19,7 @@ export async function onRequestPost(context) {
       return Response.json({ error: "invalid_request" }, { status: 400 });
     }
 
-    const order = await env.DB.prepare("SELECT id, partner_id, status FROM orders WHERE id = ?").bind(id).first();
+    const order = await env.DB.prepare("SELECT id, partner_id, status, order_number FROM orders WHERE id = ?").bind(id).first();
     if (!order) return Response.json({ error: "not_found" }, { status: 404 });
     if (order.status !== "no_show") return Response.json({ error: "not_no_show" }, { status: 409 });
 
@@ -32,6 +33,8 @@ export async function onRequestPost(context) {
         "UPDATE orders SET no_show_review_status = 'rejected' WHERE id = ?"
       ).bind(id).run();
     }
+
+    notifyText(context, order.partner_id, noShowDecisionMessage(order.order_number || order.id));
 
     return Response.json({ ok: true });
   } catch (e) {

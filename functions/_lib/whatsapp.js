@@ -116,6 +116,30 @@ export async function sendRotating(env, partnerId, groupId, message) {
   return { ok: false, instance: null, errors };
 }
 
+export function orderUpdatedMessage(orderNumber) {
+  return "ℹ️ Dear Partners, order [#" + orderNumber + "] has been updated. Please log in to the platform and review the new details.";
+}
+export function orderCancelledMessage(orderNumber) {
+  return "⚠️ Dear Partners, order [#" + orderNumber + "] has been cancelled. Please check your personal account.";
+}
+export function noShowDecisionMessage(orderNumber) {
+  return "ℹ️ Dear Partners, a decision has been made on the no-show for order [#" + orderNumber + "]. Please check your personal account.";
+}
+
+// One custom text to one partner's group. Fire-and-forget.
+export function notifyText(context, partnerId, text) {
+  const env = context.env;
+  if (!env || !env.DB || !env.GREEN_API_INSTANCES || !partnerId || !text) return;
+  const task = (async function () {
+    try {
+      const groupId = await getGroupId(env.DB, partnerId);
+      if (!groupId) return;
+      await sendRotating(env, partnerId, groupId, text);
+    } catch (e) {}
+  })();
+  if (typeof context.waitUntil === "function") context.waitUntil(task);
+}
+
 // items: [{ partnerId, count }] — one message per partner. Fire-and-forget.
 export function notifyPartners(context, items) {
   const env = context.env;

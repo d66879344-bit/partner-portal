@@ -1,5 +1,6 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { startTrialIfNeeded } from "../../_lib/trial.js";
+import { notifyText, orderCancelledMessage } from "../../_lib/whatsapp.js";
 
 const VALID = ["offered", "accepted", "declined", "completed", "cancelled"];
 
@@ -13,7 +14,7 @@ export async function onRequestPost(context) {
     const id = Number(body.id);
     if (!id) return Response.json({ error: "invalid_request" }, { status: 400 });
 
-    const order = await env.DB.prepare("SELECT id, partner_id, status FROM orders WHERE id = ?").bind(id).first();
+    const order = await env.DB.prepare("SELECT id, partner_id, status, order_number FROM orders WHERE id = ?").bind(id).first();
     if (!order) return Response.json({ error: "not_found" }, { status: 404 });
 
     // Status change (optional — the same endpoint also handles a driver/vehicle reassignment only).
@@ -22,6 +23,10 @@ export async function onRequestPost(context) {
       if (VALID.indexOf(status) === -1) return Response.json({ error: "invalid_request" }, { status: 400 });
       await env.DB.prepare("UPDATE orders SET status = ? WHERE id = ?").bind(status, id).run();
       if (status === "completed") await startTrialIfNeeded(env, order.partner_id);
+      // WhatsApp: tell the partner's group when an order they could see is cancelled.
+      if (status === "cancelled" && order.status !== "cancelled" && order.status !== "draft") {
+        notifyText(context, order.partner_id, orderCancelledMessage(order.order_number || order.id));
+      }
     }
 
     // Driver/vehicle reassignment (optional) — only from this order's own partner's fleet.
