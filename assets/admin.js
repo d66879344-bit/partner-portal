@@ -1351,10 +1351,17 @@
     }
   });
 
+  var orderDetailReturnTab = "orders";
   function openOrderDetail(id) {
     // Order detail lives inside the "Orders" panel. A draft row click comes
     // from the "Create Order" tab, so switch tabs first (reusing the normal
     // tab-click handler) in case we're not already there.
+    // Remember which tab the order was opened from (only on the first open — the
+    // detail also re-opens itself after saving), so "Back" returns there.
+    if (openOrderId == null) {
+      var fromTab = $("mainTabs").querySelector('.tab[aria-pressed="true"]');
+      orderDetailReturnTab = fromTab ? fromTab.getAttribute("data-tab") : "orders";
+    }
     var ordersTabBtn = $("mainTabs").querySelector('[data-tab="orders"]');
     if (ordersTabBtn && ordersTabBtn.getAttribute("aria-pressed") !== "true") ordersTabBtn.click();
     var o = orders.filter(function (x) { return x.id === id; })[0];
@@ -1372,6 +1379,13 @@
     renderedOrderDetailId = null;
     $("orderDetailView").hidden = true;
     $("ordersListView").hidden = false;
+    // Go back to the tab the order was opened from (e.g. Create Order, so the
+    // next draft can be opened straight away).
+    if (orderDetailReturnTab && orderDetailReturnTab !== "orders") {
+      var backTab = $("mainTabs").querySelector('[data-tab="' + orderDetailReturnTab + '"]');
+      if (backTab) backTab.click();
+    }
+    orderDetailReturnTab = "orders";
   }
   if ($("odBack")) $("odBack").addEventListener("click", closeOrderDetail);
 
