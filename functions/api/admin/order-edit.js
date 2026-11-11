@@ -1,5 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
-import { notifyText, orderUpdatedMessage } from "../../_lib/whatsapp.js";
+import { notifyText, orderUpdatedMessage, flightTimeChangedMessage } from "../../_lib/whatsapp.js";
 import { ensureFlightColumns, computePickupManual } from "../../_lib/flight-track.js";
 
 // Edits an order's trip details in place, regardless of its current status —
@@ -18,7 +18,7 @@ export async function onRequestPost(context) {
     if (!id) return Response.json({ error: "invalid_request" }, { status: 400 });
 
     const order = await env.DB.prepare(
-      "SELECT id, partner_id, status, pickup, dropoff, order_date, order_time, price, currency, passenger_name, passenger_phone FROM orders WHERE id = ?"
+      "SELECT id, partner_id, status, flight_time, pickup, dropoff, order_date, order_time, price, currency, passenger_name, passenger_phone FROM orders WHERE id = ?"
     ).bind(id).first();
     if (!order) return Response.json({ error: "not_found" }, { status: 404 });
 
@@ -94,13 +94,22 @@ export async function onRequestPost(context) {
     // trip changed (route, date, time, price, passenger name/phone) and the partner can actually see the
     // order (offered or accepted) — not for notes/passenger-field tweaks or drafts.
     const S = (v) => (v == null ? "" : String(v).trim());
-    const changed =
+    // If the flight arrival time changed, the pickup time/date move with it, so those
+    // are counted as part of the flight change and the message says so specifically.
+    const flightChanged = S(order.flight_time) !== "" && S(flightTime) !== "" && S(order.flight_time) !== S(flightTime);
+    const flightAddedOrRemoved = (S(order.flight_time) === "") !== (S(flightTime) === "");
+    const otherChanged =
       S(order.pickup) !== pickup || S(order.dropoff) !== dropoff ||
-      S(order.order_date) !== orderDate || S(order.order_time) !== orderTime ||
       S(order.price) !== price || S(order.currency) !== currency ||
-      S(order.passenger_name) !== passengerName || S(order.passenger_phone) !== passengerPhone;
-    if (changed && (order.status === "offered" || order.status === "accepted")) {
-      notifyText(context, order.partner_id, orderUpdatedMessage(orderNumber));
+      S(order.passenger_name) !== passengerName || S(order.passenger_phone) !== passengerPhone ||
+      flightAddedOrRemoved ||
+      (!flightChanged && (S(order.order_date) !== orderDate || S(order.order_time) !== orderTime));
+    if (order.status === "offered" || order.status === "accepted") {
+      if (otherChanged) {
+        notifyText(context, order.partner_id, orderUpdatedMessage(orderNumber));
+      } else if (flightChanged) {
+        notifyText(context, order.partner_id, flightTimeChangedMessage(orderNumber));
+      }
     }
 
     return Response.json({ ok: true });
