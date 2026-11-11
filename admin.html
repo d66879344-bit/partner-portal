@@ -188,6 +188,24 @@
     border-radius: 5px; padding: 1px 6px; margin-left: 4px; vertical-align: 1px;
   }
 
+  /* "waiting for review" flags: sidebar badge, partner-list marker, highlighted documents */
+  .dash-nav .tab > span:not(.nav-badge) { flex: 1; min-width: 0; }
+  .nav-badge {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; flex: none;
+    border-radius: 999px; background: var(--accent-warm); color: #1a1200; font: 700 11px var(--font-mono); margin-left: auto;
+  }
+  .review-flag {
+    display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; padding: 2px 9px; border-radius: 999px;
+    background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink);
+    font-size: 10.5px; font-weight: 700; white-space: nowrap; vertical-align: 1px;
+  }
+  .review-flag i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-warm); display: inline-block; }
+  tr.row-review td { background: rgba(242,183,5,.07); }
+  .review-banner {
+    display: flex; align-items: center; gap: 10px; padding: 11px 14px; margin-bottom: 14px; border-radius: 10px;
+    background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink); font-size: 13px; font-weight: 600;
+  }
+  .docrow-new { background: var(--warn-bg); border-radius: 8px; }
   .col-check { width: 36px; padding-right: 0 !important; }
   .col-check input, th.col-check input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
   .badge-draft { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-strong); }
@@ -230,7 +248,8 @@
       </button>
       <button type="button" class="tab" data-tab="partners" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="6.6" r="3.6"/><path d="M3 17c0-4 3-6.4 7-6.4s7 2.4 7 6.4"/></svg>
-        Partners
+        <span>Partners</span>
+        <span class="nav-badge" id="partnersNavBadge" hidden title="Partners with documents waiting for review"></span>
       </button>
       <button type="button" class="tab" data-tab="finance" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5 7.5 10l3 3 6-6.5"/><path d="M12.5 6h4v4"/></svg>

@@ -46,6 +46,21 @@ export async function onRequestGet(context) {
     priceListByPartner = {};
   }
 
+  // Documents waiting for the admin's review, per partner — drives the
+  // "to review" flag in the admin. Order evidence and price lists don't count.
+  // Best effort, like the price-list lookup above.
+  let pendingDocsByPartner = {};
+  try {
+    const { results: pendingRows } = await env.DB.prepare(
+      `SELECT partner_id, COUNT(*) AS c FROM documents
+       WHERE status = 'pending' AND owner_type IN ('company', 'vehicle', 'driver', 'contract', 'other')
+       GROUP BY partner_id`
+    ).all();
+    (pendingRows || []).forEach((r) => { pendingDocsByPartner[r.partner_id] = Number(r.c) || 0; });
+  } catch (e) {
+    pendingDocsByPartner = {};
+  }
+
   const partners = (results || []).map((p) => ({
     id: p.id,
     email: p.email,
@@ -64,6 +79,7 @@ export async function onRequestGet(context) {
     billingCompany: p.billing_company || null,
     billingEmail: p.billing_email || null,
     trialSimulateEnded: Number(p.trial_simulate_ended) === 1,
+    pendingDocs: pendingDocsByPartner[p.id] || 0,
     priceListDocId: (priceListByPartner[p.id] && priceListByPartner[p.id].id) || null,
     priceListFilename: (priceListByPartner[p.id] && priceListByPartner[p.id].filename) || null,
   }));

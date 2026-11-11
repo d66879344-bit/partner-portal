@@ -110,12 +110,15 @@
   });
 
   /* ---------- partners ---------- */
-  async function loadPartners() {
-    $("partnersStatus").textContent = "Loading…";
-    $("partnersStatus").className = "status";
+  async function loadPartners(silent) {
+    if (!silent) {
+      $("partnersStatus").textContent = "Loading…";
+      $("partnersStatus").className = "status";
+    }
     try {
       var data = await api("/api/admin/partners");
       partners = data.partners || [];
+      updatePartnersNavBadge();
       renderPartnerCountryTabs();
       renderPartners();
       populatePartnerSelect();
@@ -124,6 +127,7 @@
       renderFinance();
       $("partnersStatus").textContent = partners.length + " partner(s)";
     } catch (e) {
+      if (silent) return;
       if (e.message === "unauthorized") {
         $("gateStatus").textContent = "Wrong password.";
         showGate();
@@ -132,6 +136,14 @@
         $("partnersStatus").className = "status err";
       }
     }
+  }
+
+  // Sidebar badge: how many partners currently have documents waiting for review.
+  function updatePartnersNavBadge() {
+    var n = partners.filter(function (p) { return p.pendingDocs > 0; }).length;
+    var el = $("partnersNavBadge");
+    el.textContent = n;
+    el.hidden = n === 0;
   }
 
   function matchesPartnerFilter(p) {
@@ -215,8 +227,9 @@
     var pageResult = window.Paginate ? Paginate.slice(rows, partnersPage, PAGE_SIZE) : { page: 1, pages: 1, items: rows };
     partnersPage = pageResult.page;
     $("partnersList").innerHTML = pageResult.items.map(function (p) {
-      return '<tr class="data-row" data-toggle="' + p.id + '">' +
-        '<td class="col-main">' + esc(p.companyName) + "</td>" +
+      return '<tr class="data-row' + (p.pendingDocs > 0 ? " row-review" : "") + '" data-toggle="' + p.id + '">' +
+        '<td class="col-main">' + esc(p.companyName) +
+        (p.pendingDocs > 0 ? '<span class="review-flag"><i></i>' + p.pendingDocs + " to review</span>" : "") + "</td>" +
         "<td>" + esc(p.email) + "</td>" +
         "<td>" + esc(p.countryName || p.country) + "</td>" +
         '<td class="mono">' + esc(fmtDate(p.createdAt)) + "</td>" +
@@ -279,10 +292,10 @@
     $("pdStatusBadge").innerHTML = badge(p.status);
 
 
-    function docList(docs) {
+    function docList(docs, noFlag) {
       if (!docs.length) return '<p class="docrow" style="color:var(--ink-2);">No documents.</p>';
       return docs.map(function (doc) {
-        return '<div class="docrow"><div class="docrow-main">' + esc(doc.label) +
+        return '<div class="docrow' + (!noFlag && doc.status === "pending" ? " docrow-new" : "") + '"><div class="docrow-main">' + esc(doc.label) +
           ' · <a href="' + fileUrl(doc.id) + '" target="_blank" rel="noopener">' + esc(doc.filename || "file") + "</a>" +
           ' · <a href="' + downloadUrl(doc.id) + '" download>Download</a> ' + badge(doc.status) + "</div>" +
           '<div class="docrow-actions">' +
@@ -301,7 +314,16 @@
       return '<div class="block"><div class="block-title">Driver ' + (i + 1) + (dr.fullName ? " — " + esc(dr.fullName) : "") + (sub ? " (" + esc(sub) + ")" : "") + "</div>" + docList(dr.documents) + "</div>";
     }).join("");
 
-    el.innerHTML =
+    var reviewDocs = [].concat(d.company.documents, d.other.documents, d.contract.documents,
+      [].concat.apply([], d.vehicles.map(function (v) { return v.documents; })),
+      [].concat.apply([], d.drivers.map(function (dr) { return dr.documents; })));
+    var pendingCount = reviewDocs.filter(function (doc) { return doc.status === "pending"; }).length;
+    var reviewBanner = pendingCount
+      ? '<div class="review-banner"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 6v4.5M10 13.4h.01" stroke-linecap="round"/></svg>' +
+        "<span>" + pendingCount + (pendingCount === 1 ? " document" : " documents") + " waiting for review</span></div>"
+      : "";
+
+    el.innerHTML = reviewBanner +
       '<div class="block"><div class="block-title">Contact</div>' +
       '<div class="row-meta">' + esc(p.contactName || "—") + (p.phone ? " · " + esc(p.phone) : "") + (p.accountId ? ' · <span class="mono">' + esc(p.accountId) + "</span>" : "") + "</div>" +
       (p.serviceCity || (p.airports && p.airports.length) ? '<div class="row-meta">' + esc(p.serviceCity || "") + (p.airports && p.airports.length ? (p.serviceCity ? " · " : "") + "Airports: " + esc(p.airports.join(", ")) : "") + "</div>" : "") +
@@ -378,7 +400,7 @@
       '<button type="button" class="minibtn" data-contract-upload="' + p.id + '">Upload contract</button>' +
       "</div></div>" +
       '<div class="block"><div class="block-title">Price list</div>' +
-      (d.priceList.documents.length ? docList(d.priceList.documents) : '<p class="docrow" style="color:var(--ink-2);">Not uploaded yet.</p>') +
+      (d.priceList.documents.length ? docList(d.priceList.documents, true) : '<p class="docrow" style="color:var(--ink-2);">Not uploaded yet.</p>') +
       '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
       fileChooserHtml("price-list-file-" + p.id, "data-price-list-file", p.id, ".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png") +
       '<button type="button" class="minibtn" data-price-list-upload="' + p.id + '">Upload price list</button>' +
@@ -399,6 +421,17 @@
       vehicleBlocks +
       driverBlocks +
       (d.other.documents.length ? '<div class="block"><div class="block-title">Other</div>' + docList(d.other.documents) + "</div>" : "");
+
+    // Keep the list flag and sidebar badge in step with what this fresh detail
+    // data says (e.g. right after approving/rejecting a document). Re-rendering
+    // the list only when the count actually changed also ends the loop, since
+    // renderPartners() re-renders the open detail.
+    var listed = partners.filter(function (x) { return x.id === id; })[0];
+    if (listed && listed.pendingDocs !== pendingCount) {
+      listed.pendingDocs = pendingCount;
+      updatePartnersNavBadge();
+      renderPartners();
+    }
   }
 
   // Re-fetches a partner's detail data after some change (approving a
@@ -767,6 +800,11 @@
     if (!partnerId) return;
     var p = partners.filter(function (x) { return x.id === partnerId; })[0];
     var cityCode = (window.CityCodes && window.CityCodes.codeFor(p && p.serviceCity)) || "XX";
+    // No city of service on file -> fall back to the partner's 2-letter country
+    // code (ES, GR, GB…) instead of the meaningless "XX".
+    if ((!p || !String(p.serviceCity || "").trim()) && p && /^[A-Za-z]{2}$/.test(String(p.country || ""))) {
+      cityCode = String(p.country).toUpperCase();
+    }
     $("opOrderNumber").value = generateOrderNumber(cityCode);
   }
   $("opPartner").addEventListener("change", function () {
@@ -1850,9 +1888,14 @@
 
   /* ---------- live updates: poll orders every 5s, pause while the tab is hidden ---------- */
   var POLL_MS = 5000;
+  var pollTicks = 0;
   var pollTimer = setInterval(function () {
     if ($("panelsWrap").hidden || document.hidden) return;
     loadOrders(true);
+    // Partners change less often (new uploads / registrations), so refresh
+    // them quietly about every 30s to keep the "to review" flags current.
+    // Skipped while a partner's detail is open so a refresh never wipes what's being typed there.
+    if (++pollTicks % 6 === 0 && openId == null) loadPartners(true);
   }, POLL_MS);
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden && !$("panelsWrap").hidden) loadOrders(true);
