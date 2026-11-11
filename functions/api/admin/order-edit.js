@@ -1,6 +1,6 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { notifyText, orderUpdatedMessage, flightTimeChangedMessage } from "../../_lib/whatsapp.js";
-import { ensureFlightColumns, computePickupManual } from "../../_lib/flight-track.js";
+import { ensureFlightColumns, computePickupManual, WHATSAPP_ON_FLIGHT_CHANGE } from "../../_lib/flight-track.js";
 
 // Edits an order's trip details in place, regardless of its current status —
 // new, accepted, completed, declined, cancelled, no-show, anything. This never
@@ -107,7 +107,7 @@ export async function onRequestPost(context) {
     if (order.status === "offered" || order.status === "accepted") {
       if (otherChanged) {
         notifyText(context, order.partner_id, orderUpdatedMessage(orderNumber));
-      } else if (flightChanged) {
+      } else if (flightChanged && WHATSAPP_ON_FLIGHT_CHANGE) {
         notifyText(context, order.partner_id, flightTimeChangedMessage(orderNumber));
       }
     }

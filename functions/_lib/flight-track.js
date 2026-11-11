@@ -5,8 +5,8 @@
 // expected ARRIVAL time and keeps the order's "Flight arrival" up to date. If
 // the order has a Buffer time (minutes) and its pickup time was not set by hand,
 // the pickup time (and date, across midnight) is recalculated as arrival + buffer.
-// When the arrival time moves by 20+ minutes, a short message goes to the
-// partner's WhatsApp group (see notifyFlightChange).
+// Changes of the arrival time are NOT sent to WhatsApp (they show on the driver's
+// link instead); see WHATSAPP_ON_FLIGHT_CHANGE and notifyFlightChange.
 //
 // Data is never kept as raw API responses — only the order's own fields are
 // updated (AeroDataBox terms allow storing raw data for only 7 days).
@@ -206,8 +206,13 @@ function shiftMinutes(prev, next) {
 // group (smaller wobbles in the airline's data are saved but not announced).
 export const NOTIFY_MIN_SHIFT = 20;
 
+// Flight-time changes are shown on the driver's link only. Set to true to also
+// send the WhatsApp message "the flight arrival time ... has changed" again.
+export const WHATSAPP_ON_FLIGHT_CHANGE = false;
+
 // Sends the "arrival time changed" message when the check really moved the time.
 export function notifyFlightChange(context, order, result) {
+  if (!WHATSAPP_ON_FLIGHT_CHANGE) return false;
   if (!result || !result.ok || !result.found || !result.changed) return false;
   if (result.shiftMinutes == null || result.shiftMinutes < NOTIFY_MIN_SHIFT) return false;
   if (!order.partner_id) return false;

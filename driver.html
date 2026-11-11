@@ -80,6 +80,11 @@
   .error-screen { text-align: center; padding: 60px 20px; color: var(--ink-2); }
   .error-screen h1 { font-size: 17px; color: var(--ink); margin-bottom: 8px; }
   .skeleton { opacity: .5; }
+  .upd { background: #FFF6D6; border-color: #E8B100; }
+  .upd-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .upd-row { font-size: 13.5px; margin: 4px 0; }
+  .upd-row b { font-weight: 700; }
+  button.upd-ok { margin-top: 10px; border: 1px solid #E8B100; background: #fff; color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 700; padding: 9px 16px; border-radius: 10px; cursor: pointer; }
   a { color: var(--accent); }
 </style>
 </head>
@@ -92,12 +97,12 @@
 <script>
 (function () {
   var I18N = {
-    en: { eyebrow: "Trip", pickup: "Pickup", dropoff: "Drop-off", date: "Date", time: "Pickup time", vehicle: "Vehicle", passengers: "Passengers", luggage: "Luggage", passenger: "Passenger", meet: "Meet & greet", sign: "Name sign", progress: "Trip progress", call: "Call", invalid_title: "Link not available", invalid_body: "This driver link is no longer active. Trips are only accessible while in progress.", err: "Could not update. Please try again.", done: "Trip completed — thank you!", stage_on_the_way: "On the way", stage_arrived: "Arrived at pickup", stage_in_car: "Passenger on board", stage_dropped_off: "Dropped off" },
-    ru: { eyebrow: "Поездка", pickup: "Подача", dropoff: "Высадка", date: "Дата", time: "Время подачи", vehicle: "Авто", passengers: "Пассажиры", luggage: "Багаж", passenger: "Пассажир", meet: "Встреча", sign: "Табличка с именем", progress: "Статус поездки", call: "Позвонить", invalid_title: "Ссылка недоступна", invalid_body: "Эта ссылка для водителя больше не активна. Доступ есть только пока поездка выполняется.", err: "Не удалось обновить. Попробуйте ещё раз.", done: "Поездка завершена — спасибо!", stage_on_the_way: "В пути", stage_arrived: "Прибыл на подачу", stage_in_car: "Пассажир в машине", stage_dropped_off: "Высадка выполнена" },
-    es: { eyebrow: "Viaje", pickup: "Recogida", dropoff: "Destino", date: "Fecha", time: "Hora de recogida", vehicle: "Vehículo", passengers: "Pasajeros", luggage: "Equipaje", passenger: "Pasajero", meet: "Recepción", sign: "Cartel con el nombre", progress: "Progreso del viaje", call: "Llamar", invalid_title: "Enlace no disponible", invalid_body: "Este enlace de conductor ya no está activo. Solo es accesible mientras el viaje está en curso.", err: "No se pudo actualizar. Inténtelo de nuevo.", done: "Viaje completado — ¡gracias!", stage_on_the_way: "En camino", stage_arrived: "Llegó al punto de recogida", stage_in_car: "Pasajero a bordo", stage_dropped_off: "Dejado en destino" },
-    el: { eyebrow: "Διαδρομή", pickup: "Παραλαβή", dropoff: "Προορισμός", date: "Ημερομηνία", time: "Ώρα παραλαβής", vehicle: "Όχημα", passengers: "Επιβάτες", luggage: "Αποσκευές", passenger: "Επιβάτης", meet: "Υποδοχή", sign: "Πινακίδα με όνομα", progress: "Πρόοδος διαδρομής", call: "Κλήση", invalid_title: "Ο σύνδεσμος δεν είναι διαθέσιμος", invalid_body: "Αυτός ο σύνδεσμος οδηγού δεν είναι πλέον ενεργός. Η πρόσβαση ισχύει μόνο όσο η διαδρομή βρίσκεται σε εξέλιξη.", err: "Δεν ήταν δυνατή η ενημέρωση. Δοκιμάστε ξανά.", done: "Η διαδρομή ολοκληρώθηκε — ευχαριστούμε!", stage_on_the_way: "Καθ' οδόν", stage_arrived: "Έφτασε στο σημείο παραλαβής", stage_in_car: "Ο επιβάτης επιβιβάστηκε", stage_dropped_off: "Αποβιβάστηκε" },
-    fr: { eyebrow: "Trajet", pickup: "Prise en charge", dropoff: "Destination", date: "Date", time: "Heure de prise en charge", vehicle: "Véhicule", passengers: "Passagers", luggage: "Bagages", passenger: "Passager", meet: "Accueil", sign: "Pancarte avec le nom", progress: "Progression du trajet", call: "Appeler", invalid_title: "Lien indisponible", invalid_body: "Ce lien chauffeur n'est plus actif. L'accès n'est possible que pendant que le trajet est en cours.", err: "Impossible de mettre à jour. Veuillez réessayer.", done: "Trajet terminé — merci !", stage_on_the_way: "En route", stage_arrived: "Arrivé au point de prise en charge", stage_in_car: "Passager à bord", stage_dropped_off: "Dépose effectuée" },
-    pt: { eyebrow: "Viagem", pickup: "Embarque", dropoff: "Destino", date: "Data", time: "Hora de embarque", vehicle: "Veículo", passengers: "Passageiros", luggage: "Bagagem", passenger: "Passageiro", meet: "Receção", sign: "Placa com o nome", progress: "Progresso da viagem", call: "Ligar", invalid_title: "Link não disponível", invalid_body: "Este link de motorista já não está ativo. Só é acessível enquanto a viagem está em curso.", err: "Não foi possível atualizar. Tente novamente.", done: "Viagem concluída — obrigado!", stage_on_the_way: "A caminho", stage_arrived: "Chegou ao local de recolha", stage_in_car: "Passageiro a bordo", stage_dropped_off: "Largada efetuada" }
+    en: { upd_title: "Trip details updated", upd_flight: "Flight arrival", upd_ok: "Got it", eyebrow: "Trip", pickup: "Pickup", dropoff: "Drop-off", date: "Date", time: "Pickup time", vehicle: "Vehicle", passengers: "Passengers", luggage: "Luggage", passenger: "Passenger", meet: "Meet & greet", sign: "Name sign", progress: "Trip progress", call: "Call", invalid_title: "Link not available", invalid_body: "This driver link is no longer active. Trips are only accessible while in progress.", err: "Could not update. Please try again.", done: "Trip completed — thank you!", stage_on_the_way: "On the way", stage_arrived: "Arrived at pickup", stage_in_car: "Passenger on board", stage_dropped_off: "Dropped off" },
+    ru: { upd_title: "Данные поездки обновлены", upd_flight: "Прилёт рейса", upd_ok: "Понятно", eyebrow: "Поездка", pickup: "Подача", dropoff: "Высадка", date: "Дата", time: "Время подачи", vehicle: "Авто", passengers: "Пассажиры", luggage: "Багаж", passenger: "Пассажир", meet: "Встреча", sign: "Табличка с именем", progress: "Статус поездки", call: "Позвонить", invalid_title: "Ссылка недоступна", invalid_body: "Эта ссылка для водителя больше не активна. Доступ есть только пока поездка выполняется.", err: "Не удалось обновить. Попробуйте ещё раз.", done: "Поездка завершена — спасибо!", stage_on_the_way: "В пути", stage_arrived: "Прибыл на подачу", stage_in_car: "Пассажир в машине", stage_dropped_off: "Высадка выполнена" },
+    es: { upd_title: "Datos del viaje actualizados", upd_flight: "Llegada del vuelo", upd_ok: "Entendido", eyebrow: "Viaje", pickup: "Recogida", dropoff: "Destino", date: "Fecha", time: "Hora de recogida", vehicle: "Vehículo", passengers: "Pasajeros", luggage: "Equipaje", passenger: "Pasajero", meet: "Recepción", sign: "Cartel con el nombre", progress: "Progreso del viaje", call: "Llamar", invalid_title: "Enlace no disponible", invalid_body: "Este enlace de conductor ya no está activo. Solo es accesible mientras el viaje está en curso.", err: "No se pudo actualizar. Inténtelo de nuevo.", done: "Viaje completado — ¡gracias!", stage_on_the_way: "En camino", stage_arrived: "Llegó al punto de recogida", stage_in_car: "Pasajero a bordo", stage_dropped_off: "Dejado en destino" },
+    el: { upd_title: "Τα στοιχεία της διαδρομής ενημερώθηκαν", upd_flight: "Άφιξη πτήσης", upd_ok: "Εντάξει", eyebrow: "Διαδρομή", pickup: "Παραλαβή", dropoff: "Προορισμός", date: "Ημερομηνία", time: "Ώρα παραλαβής", vehicle: "Όχημα", passengers: "Επιβάτες", luggage: "Αποσκευές", passenger: "Επιβάτης", meet: "Υποδοχή", sign: "Πινακίδα με όνομα", progress: "Πρόοδος διαδρομής", call: "Κλήση", invalid_title: "Ο σύνδεσμος δεν είναι διαθέσιμος", invalid_body: "Αυτός ο σύνδεσμος οδηγού δεν είναι πλέον ενεργός. Η πρόσβαση ισχύει μόνο όσο η διαδρομή βρίσκεται σε εξέλιξη.", err: "Δεν ήταν δυνατή η ενημέρωση. Δοκιμάστε ξανά.", done: "Η διαδρομή ολοκληρώθηκε — ευχαριστούμε!", stage_on_the_way: "Καθ' οδόν", stage_arrived: "Έφτασε στο σημείο παραλαβής", stage_in_car: "Ο επιβάτης επιβιβάστηκε", stage_dropped_off: "Αποβιβάστηκε" },
+    fr: { upd_title: "Informations du trajet mises à jour", upd_flight: "Arrivée du vol", upd_ok: "Compris", eyebrow: "Trajet", pickup: "Prise en charge", dropoff: "Destination", date: "Date", time: "Heure de prise en charge", vehicle: "Véhicule", passengers: "Passagers", luggage: "Bagages", passenger: "Passager", meet: "Accueil", sign: "Pancarte avec le nom", progress: "Progression du trajet", call: "Appeler", invalid_title: "Lien indisponible", invalid_body: "Ce lien chauffeur n'est plus actif. L'accès n'est possible que pendant que le trajet est en cours.", err: "Impossible de mettre à jour. Veuillez réessayer.", done: "Trajet terminé — merci !", stage_on_the_way: "En route", stage_arrived: "Arrivé au point de prise en charge", stage_in_car: "Passager à bord", stage_dropped_off: "Dépose effectuée" },
+    pt: { upd_title: "Dados da viagem atualizados", upd_flight: "Chegada do voo", upd_ok: "Entendi", eyebrow: "Viagem", pickup: "Embarque", dropoff: "Destino", date: "Data", time: "Hora de embarque", vehicle: "Veículo", passengers: "Passageiros", luggage: "Bagagem", passenger: "Passageiro", meet: "Receção", sign: "Placa com o nome", progress: "Progresso da viagem", call: "Ligar", invalid_title: "Link não disponível", invalid_body: "Este link de motorista já não está ativo. Só é acessível enquanto a viagem está em curso.", err: "Não foi possível atualizar. Tente novamente.", done: "Viagem concluída — obrigado!", stage_on_the_way: "A caminho", stage_arrived: "Chegou ao local de recolha", stage_in_car: "Passageiro a bordo", stage_dropped_off: "Largada efetuada" }
   };
   var STAGES = ["on_the_way", "arrived", "in_car", "dropped_off"];
 
@@ -116,7 +121,6 @@
 
   function renderError(lang) {
     t = I18N[lang] || I18N.en;
-    document.getElementById("eyebrow").textContent = "";
     app.innerHTML = '<div class="error-screen"><h1>' + esc(t.invalid_title) + "</h1><p>" + esc(t.invalid_body) + "</p></div>";
   }
 
@@ -146,9 +150,62 @@
     }).join("");
   }
 
+  // Remembers what the driver last saw so a change of flight arrival / pickup time
+  // can be pointed out until the driver taps "Got it".
+  var SEEN_KEY = "drvseen:" + token;
+  var memState = null;
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "null"); } catch (e) { return memState; }
+  }
+  function saveState(st) {
+    memState = st;
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify(st)); } catch (e) {}
+  }
+  function trackChanges(o) {
+    var cur = { ft: o.flightTime || "", od: o.orderDate || "", ot: o.orderTime || "" };
+    var st = loadState();
+    if (!st || !st.seen) {
+      st = { seen: cur, pending: null };
+    } else {
+      var s = st.seen;
+      if (s.ft !== cur.ft || s.od !== cur.od || s.ot !== cur.ot) {
+        st.pending = { from: st.pending ? st.pending.from : s };
+        st.seen = cur;
+      }
+      if (st.pending) {
+        var f = st.pending.from;
+        if (f.ft === cur.ft && f.od === cur.od && f.ot === cur.ot) st.pending = null;
+      }
+    }
+    saveState(st);
+    return st.pending ? { from: st.pending.from, to: cur } : null;
+  }
+  function dismissChanges() {
+    var st = loadState();
+    if (st) { st.pending = null; saveState(st); }
+  }
+  function changeBannerHtml(ch) {
+    if (!ch) return "";
+    function row(label, from, to) {
+      if (from === to) return "";
+      return '<div class="upd-row">' + esc(label) + ": " + esc(from || "—") + " &rarr; <b>" + esc(to || "—") + "</b></div>";
+    }
+    return '<div class="card upd"><div class="upd-title">&#9888; ' + esc(t.upd_title) + "</div>" +
+      row(t.upd_flight, ch.from.ft, ch.to.ft) +
+      row(t.date, fmtDay(ch.from.od), fmtDay(ch.to.od)) +
+      row(t.time, ch.from.ot, ch.to.ot) +
+      '<button type="button" class="upd-ok" id="updOk">' + esc(t.upd_ok) + "</button></div>";
+  }
+
+  var busy = false;      // a status button request is in progress
+  var finished = false;  // trip completed: stop refreshing
+
   function render(o) {
     t = I18N[o.lang] || I18N.en;
-    document.getElementById("eyebrow").textContent = t.eyebrow + (o.orderNumber ? " #" + o.orderNumber : "");
+    var eyebrowHtml = '<div class="eyebrow" id="eyebrow">' + esc(t.eyebrow + (o.orderNumber ? " #" + o.orderNumber : "")) + "</div>";
+    var oldBar = document.querySelector(".actionbar");
+    if (oldBar) oldBar.remove();
+    var changes = trackChanges(o);
 
     var currentIndex = o.tripStage ? STAGES.indexOf(o.tripStage) : -1;
     var nextStage = currentIndex < STAGES.length - 1 ? STAGES[currentIndex + 1] : null;
@@ -185,7 +242,9 @@
 
     var progressCard = '<div class="card"><h2>' + esc(t.progress) + '</h2><div class="stage-list">' + stageListHtml(currentIndex) + "</div></div>";
 
-    app.innerHTML = tripCard + passengerCard + progressCard;
+    app.innerHTML = eyebrowHtml + changeBannerHtml(changes) + tripCard + passengerCard + progressCard;
+    var okBtn = document.getElementById("updOk");
+    if (okBtn) okBtn.addEventListener("click", function () { dismissChanges(); render(o); });
 
     if (nextStage) {
       var bar = document.createElement("div");
@@ -198,6 +257,7 @@
       document.getElementById("nextBtn").addEventListener("click", function () {
         var btn = this;
         btn.disabled = true;
+        busy = true;
         document.getElementById("statusLine").textContent = "";
         fetch("/api/driver/status", {
           method: "POST",
@@ -206,9 +266,11 @@
         }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
           .then(function (res) {
             if (!res.ok) throw new Error((res.data && res.data.error) || "error");
+            busy = false;
             if (nextStage === "dropped_off") {
+              finished = true;
               bar.remove();
-              app.innerHTML = tripCard + passengerCard +
+              app.innerHTML = eyebrowHtml + tripCard + passengerCard +
                 '<div class="card"><div class="done-banner">' + esc(t.done) + "</div></div>";
             } else {
               o.tripStage = nextStage;
@@ -216,6 +278,7 @@
             }
           })
           .catch(function () {
+            busy = false;
             document.getElementById("statusLine").textContent = t.err;
             btn.disabled = false;
           });
@@ -223,13 +286,33 @@
     }
   }
 
-  fetch("/api/driver/view?t=" + encodeURIComponent(token))
-    .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
-    .then(function (res) {
-      if (!res.ok || !res.data || !res.data.ok) { renderError((res.data && res.data.lang) || "en"); return; }
-      render(res.data);
-    })
-    .catch(function () { renderError("en"); });
+  var lastJson = null;
+  function load(first) {
+    return fetch("/api/driver/view?t=" + encodeURIComponent(token))
+      .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.data || !res.data.ok) {
+          // First load, or the link has been switched off: show the error screen.
+          // A temporary server hiccup while refreshing keeps what is on screen.
+          if (first || res.status === 404) renderError((res.data && res.data.lang) || "en");
+          return;
+        }
+        var js = JSON.stringify(res.data);
+        if (!first && js === lastJson) return;
+        lastJson = js;
+        render(res.data);
+      })
+      .catch(function () { if (first) renderError("en"); });
+  }
+  function refresh() {
+    if (busy || finished) return;
+    load(false);
+  }
+  load(true);
+  setInterval(refresh, 60000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) refresh(); });
+  window.addEventListener("focus", refresh);
+  window.addEventListener("online", refresh);
 })();
 </script>
 </body>
