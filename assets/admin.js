@@ -655,15 +655,74 @@
   });
 
   /* ---------- orders: create form ---------- */
+  // Create Order: country tabs, then a partner list narrowed to that country.
+  // Both are ordered by how many orders we actually SENT (drafts don't count)
+  // in the last 2 months, most-used first; ties/zero fall back to A-Z. The
+  // numbers themselves are never shown. Until the admin clicks a tab / picks a
+  // partner themselves, the top country and top partner are the defaults, so
+  // the background order refresh can re-rank without overriding a manual pick.
+  var OP_RECENT_DAYS = 60;
+  var opCountry = "", opCountryTouched = false, opPartnerTouched = false, opLastKey = "";
+
+  function recentSentCounts() {
+    var cutoff = Date.now() - OP_RECENT_DAYS * 86400000;
+    var counts = {};
+    orders.forEach(function (o) {
+      if (o.status === "draft" || !o.createdAt) return;
+      var t = Date.parse(String(o.createdAt).replace(" ", "T") + "Z");
+      if (isNaN(t) || t < cutoff) return;
+      counts[o.partnerId] = (counts[o.partnerId] || 0) + 1;
+    });
+    return counts;
+  }
+
   function populatePartnerSelect() {
     var active = partners.filter(function (p) { return p.status === "active"; });
-    $("opPartner").innerHTML = active.length
-      ? active.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
+    var counts = recentSentCounts();
+    var byCountry = {};
+    active.forEach(function (p) {
+      var code = p.country || "__other";
+      if (!byCountry[code]) byCountry[code] = { name: p.countryName || p.country || "Other", score: 0, partners: [] };
+      byCountry[code].score += counts[p.id] || 0;
+      byCountry[code].partners.push(p);
+    });
+    var codes = Object.keys(byCountry).sort(function (a, b) {
+      return (byCountry[b].score - byCountry[a].score) || byCountry[a].name.localeCompare(byCountry[b].name);
+    });
+    if (!opCountryTouched || !byCountry[opCountry]) opCountry = codes[0] || "";
+    var list = opCountry ? byCountry[opCountry].partners.slice().sort(function (a, b) {
+      return ((counts[b.id] || 0) - (counts[a.id] || 0)) || String(a.companyName).localeCompare(String(b.companyName));
+    }) : [];
+    var prev = Number($("opPartner").value);
+    var chosen = list.length ? list[0].id : "";
+    if (opPartnerTouched && list.some(function (p) { return p.id === prev; })) chosen = prev;
+
+    // The order refresh runs every few seconds; skip the rebuild (and the side
+    // effects below) unless something the admin can see actually changed.
+    var key = JSON.stringify([codes, opCountry, list.map(function (p) { return p.id; }), chosen]);
+    if (key === opLastKey) return;
+    opLastKey = key;
+
+    $("opCountryTabs").hidden = !codes.length;
+    $("opCountryTabs").innerHTML = codes.map(function (code) {
+      return '<button type="button" class="tab" data-op-country="' + esc(code) + '" aria-pressed="' + (code === opCountry ? "true" : "false") + '">' + esc(byCountry[code].name) + "</button>";
+    }).join("");
+    $("opPartner").innerHTML = list.length
+      ? list.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
       : '<option value="">No active partners yet</option>';
+    if (chosen) $("opPartner").value = String(chosen);
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
     renderOpPriceListLink();
     applyAutoCurrency();
   }
+  $("opCountryTabs").addEventListener("click", function (e) {
+    var tab = e.target.closest("[data-op-country]");
+    if (!tab) return;
+    opCountry = tab.getAttribute("data-op-country");
+    opCountryTouched = true;
+    opPartnerTouched = false;
+    populatePartnerSelect();
+  });
 
   // Link to the selected partner's attached price list, shown at the top of
   // the Create Order form — opens in a new tab, and is simply left out when
@@ -711,6 +770,7 @@
     $("opOrderNumber").value = generateOrderNumber(cityCode);
   }
   $("opPartner").addEventListener("change", function () {
+    opPartnerTouched = true;
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
     renderOpPriceListLink();
     applyAutoCurrency();
@@ -1073,6 +1133,7 @@
       orders = data.orders || [];
       renderOrders();
       renderFinance();
+      populatePartnerSelect();
       $("ordersStatus").textContent = orders.length + " order(s)";
       $("ordersStatus").className = "status";
     } catch (e) {
