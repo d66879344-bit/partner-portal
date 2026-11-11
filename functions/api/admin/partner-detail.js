@@ -1,4 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
+import { getGroupId } from "../../_lib/whatsapp.js";
 
 function docShape(d) {
   return {
@@ -81,9 +82,12 @@ export async function onRequestGet(context) {
   const vehicles = (vehiclesRes.results || []).map((v) => ({ id: v.id, plate: v.plate, category: v.category, make: v.make, documents: byOwner("vehicle", v.id) }));
   const drivers = (driversRes.results || []).map((d) => ({ id: d.id, fullName: d.full_name, phone: d.phone, language: d.language, documents: byOwner("driver", d.id) }));
 
+  const whatsappGroupId = await getGroupId(env.DB, id);
+
   return Response.json({
     ok: true,
     partner: {
+      whatsappGroupId: whatsappGroupId || "",
       id: partner.id,
       email: partner.email,
       companyName: partner.company_name,

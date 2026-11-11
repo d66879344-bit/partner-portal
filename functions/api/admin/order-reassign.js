@@ -1,4 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
+import { notifyPartners } from "../../_lib/whatsapp.js";
 
 // Reassigns a declined/cancelled order to a different (active) partner, optionally
 // tweaking a few fields along the way, without recreating the order from scratch.
@@ -45,6 +46,8 @@ export async function onRequestPost(context) {
     vals.push(id);
 
     await env.DB.prepare(`UPDATE orders SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+
+    notifyPartners(context, [{ partnerId: partnerId, count: 1 }]);
 
     return Response.json({ ok: true });
   } catch (e) {

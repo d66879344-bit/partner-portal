@@ -1,4 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
+import { notifyPartners } from "../../_lib/whatsapp.js";
 
 // Flips one or more draft orders to "offered" in a single request, so an
 // admin can create several orders as drafts (hidden from the partner) and
@@ -23,7 +24,7 @@ export async function onRequestPost(context) {
 
     const placeholders = ids.map(() => "?").join(", ");
     const { results } = await env.DB.prepare(
-      `SELECT id FROM orders WHERE status = 'draft' AND id IN (${placeholders})`
+      `SELECT id, partner_id FROM orders WHERE status = 'draft' AND id IN (${placeholders})`
     ).bind(...ids).all();
     const draftIds = (results || []).map((r) => r.id);
     if (!draftIds.length) return Response.json({ error: "no_drafts_found" }, { status: 404 });
@@ -32,6 +33,11 @@ export async function onRequestPost(context) {
     await env.DB.prepare(
       `UPDATE orders SET status = 'offered' WHERE status = 'draft' AND id IN (${updatePlaceholders})`
     ).bind(...draftIds).run();
+
+    // One WhatsApp message per partner with the number of orders just sent to them.
+    const perPartner = {};
+    (results || []).forEach((r) => { perPartner[r.partner_id] = (perPartner[r.partner_id] || 0) + 1; });
+    notifyPartners(context, Object.keys(perPartner).map((pid) => ({ partnerId: Number(pid), count: perPartner[pid] })));
 
     return Response.json({ ok: true, sent: draftIds.length, ids: draftIds });
   } catch (e) {

@@ -443,6 +443,16 @@
       "</select></label>" +
       '<button type="button" class="minibtn" data-organization-save="' + p.id + '">Save</button>' +
       "</div>" +
+      '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<label style="font-size:12.5px;color:var(--ink-2);">WhatsApp group ID' +
+      '<input type="text" data-wa-group="' + p.id + '" value="' + esc(p.whatsappGroupId || "") + '" placeholder="1203630xxxxxxxx@g.us" style="margin-left:6px;width:230px;">' +
+      "</label>" +
+      '<button type="button" class="minibtn" data-wa-save="' + p.id + '">Save</button>' +
+      '<button type="button" class="minibtn" data-wa-pick="' + p.id + '">Find group</button>' +
+      '<button type="button" class="minibtn" data-wa-test="' + p.id + '">Send test</button>' +
+      '<span class="status" data-wa-status="' + p.id + '" style="margin:0;"></span>' +
+      "</div>" +
+      '<div data-wa-list="' + p.id + '"></div>' +
       '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
       '<button type="button" class="minibtn good" data-partner-approve="' + p.id + '">Activate account</button>' +
       '<button type="button" class="minibtn crit" data-partner-reject="' + p.id + '">Block account</button>' +
@@ -656,6 +666,68 @@
       renderPartners();
     } catch (err) {
       alert("Could not save the organization. Try again.");
+    }
+  });
+
+  /* ---------- WhatsApp group (per partner) ---------- */
+  $("partnerDetailView").addEventListener("click", async function (e) {
+    var save = e.target.closest("[data-wa-save]");
+    var pick = e.target.closest("[data-wa-pick]");
+    var test = e.target.closest("[data-wa-test]");
+    var choose = e.target.closest("[data-wa-choose]");
+    if (!save && !pick && !test && !choose) return;
+    e.stopPropagation();
+    var pid = Number((save || pick || test || choose).getAttribute(save ? "data-wa-save" : pick ? "data-wa-pick" : test ? "data-wa-test" : "data-wa-pid"));
+    var input = document.querySelector('[data-wa-group="' + pid + '"]');
+    var st = document.querySelector('[data-wa-status="' + pid + '"]');
+    var listEl = document.querySelector('[data-wa-list="' + pid + '"]');
+    function say(t, cls) { if (st) { st.textContent = t; st.className = "status" + (cls ? " " + cls : ""); } }
+    async function saveGroup(val) {
+      var r = await api("/api/admin/whatsapp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: pid, groupId: val })
+      });
+      if (input) input.value = r.groupId || "";
+      if (detailCache[pid]) detailCache[pid].partner.whatsappGroupId = r.groupId || "";
+      return r;
+    }
+    try {
+      if (choose) {
+        say("Saving…");
+        await saveGroup(choose.getAttribute("data-wa-choose"));
+        if (listEl) listEl.innerHTML = "";
+        say("Group saved.", "ok");
+      } else if (save) {
+        say("Saving…");
+        await saveGroup(input ? input.value.trim() : "");
+        say(input && input.value.trim() ? "Saved." : "Removed.", "ok");
+      } else if (test) {
+        say("Sending test…");
+        var t = await api("/api/admin/whatsapp", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: pid, test: true })
+        });
+        if (t.ok) say("Test sent from number #" + t.instance + ".", "ok");
+        else say("Not sent: " + (t.errors || []).join(" | "), "err");
+      } else if (pick) {
+        say("Loading groups…");
+        var g = await api("/api/admin/whatsapp?action=groups");
+        var p = partners.filter(function (x) { return x.id === pid; })[0];
+        var words = ((p && p.companyName) || "").toLowerCase().split(/[^a-z0-9а-яё]+/).filter(function (w) { return w.length > 2; });
+        function score(n) { n = (n || "").toLowerCase(); return words.filter(function (w) { return n.indexOf(w) !== -1; }).length; }
+        var gs = g.groups.slice().sort(function (a, b) { return score(b.name) - score(a.name) || (a.name || "").localeCompare(b.name || ""); });
+        if (!gs.length) { say("No groups found (" + (g.error || "empty") + "). Try again in a minute.", "err"); return; }
+        say(gs.length + " groups — click the right one:");
+        listEl.innerHTML = '<div style="margin-top:8px;max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:4px;">' +
+          gs.map(function (x) {
+            return '<button type="button" class="minibtn" style="text-align:left;" data-wa-choose="' + esc(x.id) + '" data-wa-pid="' + pid + '">' + esc(x.name || "(no name)") + "</button>";
+          }).join("") + "</div>";
+      }
+    } catch (err) {
+      var m = err && err.message;
+      say(m === "whatsapp_not_configured" ? "WhatsApp is not set up yet (GREEN_API_INSTANCES)." :
+          m === "no_group" ? "Save a group ID first." :
+          m === "invalid_group_id" ? "Group ID must look like 1203630…@g.us" : "Error: " + m, "err");
     }
   });
 

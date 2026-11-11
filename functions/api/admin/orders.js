@@ -1,4 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
+import { notifyPartners } from "../../_lib/whatsapp.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -155,6 +156,9 @@ export async function onRequestPost(context) {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(...insertValues, status).run();
     }
+
+    // Tell the partner's WhatsApp group (only when the order is really sent, not a draft).
+    if (status === "offered") notifyPartners(context, [{ partnerId: partnerId, count: 1 }]);
 
     return Response.json({ ok: true, id: r.meta.last_row_id });
   } catch (e) {
