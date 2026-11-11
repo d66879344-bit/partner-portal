@@ -119,6 +119,9 @@ export async function sendRotating(env, partnerId, groupId, message) {
 export function orderUpdatedMessage(orderNumber) {
   return "ℹ️ Dear Partners, order [#" + orderNumber + "] has been updated. Please log in to the platform and review the new details.";
 }
+export function flightTimeChangedMessage(orderNumber) {
+  return "ℹ️ Dear Partners, the flight arrival time for order [#" + orderNumber + "] has changed. Please log in to the platform and review the new details.";
+}
 export function orderCancelledMessage(orderNumber) {
   return "⚠️ Dear Partners, order [#" + orderNumber + "] has been cancelled. Please check your personal account.";
 }

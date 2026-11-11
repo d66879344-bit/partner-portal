@@ -5,7 +5,8 @@
 // expected ARRIVAL time and keeps the order's "Flight arrival" up to date. If
 // the order has a Buffer time (minutes) and its pickup time was not set by hand,
 // the pickup time (and date, across midnight) is recalculated as arrival + buffer.
-// These automatic updates never send WhatsApp messages.
+// When the arrival time moves by 20+ minutes, a short message goes to the
+// partner's WhatsApp group (see notifyFlightChange).
 //
 // Data is never kept as raw API responses — only the order's own fields are
 // updated (AeroDataBox terms allow storing raw data for only 7 days).
@@ -13,6 +14,7 @@
 // New order columns are added automatically on first use (no manual migration):
 //   flight_buffer_minutes, pickup_manual, flight_status, flight_checked_at,
 //   flight_arrival_utc, flight_stage, flight_auto_note
+import { notifyText, flightTimeChangedMessage } from "./whatsapp.js";
 
 const COLUMNS = [
   ["flight_buffer_minutes", "INTEGER"],
@@ -185,13 +187,39 @@ export async function trackOrder(env, order) {
   else sets.push("flight_auto_note = CASE WHEN flight_auto_note = 'Flight not found for this date' THEN NULL ELSE flight_auto_note END");
   vals.push(order.id);
   await env.DB.prepare("UPDATE orders SET " + sets.join(", ") + " WHERE id = ?").bind(...vals).run();
-  return { ok: true, found: true, changed, arrival: f.arrivalTime, status: f.status, pickup };
+  return { ok: true, found: true, changed, arrival: f.arrivalTime, status: f.status, pickup, prevArrival: order.flight_time || null, shiftMinutes: shiftMinutes(order.flight_time, f.arrivalTime) };
+}
+
+function hhmmToMin(t) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t || ""));
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+// How far the arrival moved, in minutes (null when there was no earlier time).
+function shiftMinutes(prev, next) {
+  const a = hhmmToMin(prev), b = hhmmToMin(next);
+  if (a == null || b == null) return null;
+  const d = Math.abs(a - b);
+  return Math.min(d, 1440 - d);
+}
+
+// A shift of at least this many minutes is reported to the partner's WhatsApp
+// group (smaller wobbles in the airline's data are saved but not announced).
+export const NOTIFY_MIN_SHIFT = 20;
+
+// Sends the "arrival time changed" message when the check really moved the time.
+export function notifyFlightChange(context, order, result) {
+  if (!result || !result.ok || !result.found || !result.changed) return false;
+  if (result.shiftMinutes == null || result.shiftMinutes < NOTIFY_MIN_SHIFT) return false;
+  if (!order.partner_id) return false;
+  if (order.status !== "offered" && order.status !== "accepted") return false;
+  notifyText(context, order.partner_id, flightTimeChangedMessage(order.order_number || order.id));
+  return true;
 }
 
 // Orders that need a check right now (used by the scheduled job).
 export async function dueOrders(db, limit) {
   const { results } = await db.prepare(
-    `SELECT id, order_number, flight_number, flight_time, flight_buffer_minutes, pickup_manual, order_date, order_time,
+    `SELECT id, order_number, partner_id, status, flight_number, flight_time, flight_buffer_minutes, pickup_manual, order_date, order_time,
             flight_checked_at, flight_arrival_utc, flight_stage, flight_status
      FROM orders
      WHERE flight_number IS NOT NULL AND TRIM(flight_number) != ''

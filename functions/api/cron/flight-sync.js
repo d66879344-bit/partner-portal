@@ -1,5 +1,5 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
-import { ensureFlightColumns, dueOrders, trackOrder } from "../../_lib/flight-track.js";
+import { ensureFlightColumns, dueOrders, trackOrder, notifyFlightChange } from "../../_lib/flight-track.js";
 
 // Called on a schedule (every ~15 minutes, see flight-cron-worker.js).
 // Checks only the orders whose flight is due for a look, one at a time.
@@ -16,7 +16,8 @@ export async function onRequest(context) {
     for (const o of due) {
       try {
         const r = await trackOrder(env, o);
-        out.push({ id: o.id, order: o.order_number, ...r });
+        const notified = notifyFlightChange(context, o, r);
+        out.push({ id: o.id, order: o.order_number, ...r, notified });
       } catch (e) {
         out.push({ id: o.id, ok: false, error: String((e && e.message) || e).slice(0, 120) });
       }
