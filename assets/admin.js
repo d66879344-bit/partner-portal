@@ -1165,6 +1165,10 @@
 
   function renderOrders() {
     updateOrderTabCounts();
+    // Drafts live on their own "Create Order" tab, independent of whichever
+    // Orders sub-tab is open (and of whether that sub-tab is empty, which
+    // returns early below) — so always refresh them first.
+    renderDrafts();
     var rows = orders.filter(matchesOrderFilter);
     var dir = $("fSort").value === "desc" ? -1 : 1;
     rows = rows.slice().sort(function (a, b) {
@@ -1193,10 +1197,6 @@
     }).join("");
     $("ordersPager").innerHTML = window.Paginate ? Paginate.barHtml(pageResult.page, pageResult.pages) : "";
     if (openOrderId != null) renderOrderDetail(openOrderId);
-    // Drafts now live on their own "Create Order" tab rather than behind a
-    // view toggle inside Orders, so keep them rendered in step with the
-    // underlying orders data every time, not only while that tab is open.
-    renderDrafts();
   }
 
   /* ---------- orders: Drafts list + bulk send ---------- */
