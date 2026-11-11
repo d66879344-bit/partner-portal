@@ -1,5 +1,6 @@
 import { hashPassword } from "../_lib/auth.js";
 import { generateUniqueAccountId } from "../_lib/account-id.js";
+import { notifySheet } from "../_lib/sheet-sync.js";
 
 const COUNTRY_RE = /^[A-Z]{2}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,6 +60,8 @@ export async function onRequestPost(context) {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
     ).bind(email, hash, salt, company.slice(0, 200), phone, accountId, JSON.stringify(airports), serviceCity || null, country, countryName || country, referredBy).run();
     const partnerId = partnerInsert.meta.last_row_id;
+
+    notifySheet(context, "registered", email);
 
     return Response.json({ ok: true, id: partnerId });
   } catch (e) {
