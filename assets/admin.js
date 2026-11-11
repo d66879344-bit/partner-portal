@@ -299,6 +299,37 @@
     if (openId != null) renderDetail(openId);
   }
 
+  // One-off catch-up: push every existing partner to the Google Sheet (in chunks of 15).
+  $("btnSheetSync").addEventListener("click", async function () {
+    var btn = $("btnSheetSync"), st = $("sheetSyncStatus");
+    if (!confirm("Mark ALL partners in the Google Sheet now? Rows of registered partners turn yellow, and rows of partners who already took an order turn turquoise. It is safe to run again.")) return;
+    btn.disabled = true;
+    st.className = "status";
+    var offset = 0, matched = 0, total = 0;
+    try {
+      while (true) {
+        st.textContent = "Syncing… " + offset + (total ? " / " + total : "");
+        var r = await api("/api/admin/sheet-sync-all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offset: offset, limit: 15 })
+        });
+        total = r.total;
+        matched += r.matched || 0;
+        offset = r.nextOffset;
+        if (r.done) break;
+      }
+      st.className = "status ok";
+      st.textContent = "Done: " + total + " partner(s) checked, " + matched + " row(s) updated in the sheet.";
+    } catch (err) {
+      st.className = "status err";
+      st.textContent = err.message === "sheet_not_configured" ? "Google Sheet is not connected (SHEET_WEBHOOK_URL is not set)."
+        : "Sync stopped at " + offset + (total ? " / " + total : "") + " (" + err.message + "). Run again — it is safe.";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   $("partnersList").addEventListener("click", function (e) {
     var toggle = e.target.closest("[data-toggle]");
     if (!toggle) return;
