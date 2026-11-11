@@ -34,8 +34,8 @@ export async function onRequestPost(context) {
           "SELECT COUNT(*) AS n FROM orders WHERE partner_id = ? AND id != ? AND status IN ('accepted','completed','no_show')"
         ).bind(partnerId, id).first();
         if (!earlier || !earlier.n) {
-          const me = await env.DB.prepare("SELECT email FROM partners WHERE id = ?").bind(partnerId).first();
-          if (me && me.email) notifySheet(context, "first_trip", me.email);
+          const me = await env.DB.prepare("SELECT email, company_name FROM partners WHERE id = ?").bind(partnerId).first();
+          if (me && me.email) notifySheet(context, "first_trip", me.email, me.company_name);
         }
       } catch (e) { /* sheet sync must never break accepting */ }
     }

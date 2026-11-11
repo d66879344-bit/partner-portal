@@ -61,7 +61,7 @@ export async function onRequestPost(context) {
     ).bind(email, hash, salt, company.slice(0, 200), phone, accountId, JSON.stringify(airports), serviceCity || null, country, countryName || country, referredBy).run();
     const partnerId = partnerInsert.meta.last_row_id;
 
-    notifySheet(context, "registered", email);
+    notifySheet(context, "registered", email, company);
 
     return Response.json({ ok: true, id: partnerId });
   } catch (e) {

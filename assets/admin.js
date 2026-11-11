@@ -305,7 +305,7 @@
     if (!confirm("Mark ALL partners in the Google Sheet now? Rows of registered partners turn yellow, and rows of partners who already took an order turn turquoise. It is safe to run again.")) return;
     btn.disabled = true;
     st.className = "status";
-    var offset = 0, matched = 0, total = 0;
+    var offset = 0, matched = 0, total = 0, missing = [], fuzzy = [];
     try {
       while (true) {
         st.textContent = "Syncing… " + offset + (total ? " / " + total : "");
@@ -316,11 +316,15 @@
         });
         total = r.total;
         matched += r.matched || 0;
+        missing = missing.concat(r.missing || []);
+        fuzzy = fuzzy.concat(r.fuzzy || []);
         offset = r.nextOffset;
         if (r.done) break;
       }
       st.className = "status ok";
-      st.textContent = "Done: " + total + " partner(s) checked, " + matched + " row(s) updated in the sheet.";
+      st.textContent = "Done: " + total + " partner(s) checked, " + matched + " row(s) updated in the sheet." +
+        (fuzzy.length ? " Matched by company name/domain (e-mail differs): " + fuzzy.join(", ") + "." : "") +
+        (missing.length ? " Not found in the sheet: " + missing.join(", ") + "." : "");
     } catch (err) {
       st.className = "status err";
       st.textContent = err.message === "sheet_not_configured" ? "Google Sheet is not connected (SHEET_WEBHOOK_URL is not set)."

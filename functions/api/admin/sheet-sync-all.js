@@ -21,7 +21,7 @@ export async function onRequestPost(context) {
     const total = totalRow ? totalRow.n : 0;
 
     const partners = await env.DB.prepare(
-      "SELECT id, email, created_at FROM partners ORDER BY id LIMIT ? OFFSET ?"
+      "SELECT id, email, company_name, created_at FROM partners ORDER BY id LIMIT ? OFFSET ?"
     ).bind(limit, offset).all();
     const rows = partners.results || [];
 
@@ -32,13 +32,13 @@ export async function onRequestPost(context) {
         "SELECT MIN(COALESCE(responded_at, created_at)) AS d FROM orders WHERE partner_id = ? AND status IN ('accepted','completed','no_show')"
       ).bind(p.id).first();
       if (first && first.d) {
-        events.push({ email: String(p.email).toLowerCase(), event: "first_trip", date: String(first.d).slice(0, 10) });
+        events.push({ email: String(p.email).toLowerCase(), company: p.company_name || "", event: "first_trip", date: String(first.d).slice(0, 10) });
       } else {
-        events.push({ email: String(p.email).toLowerCase(), event: "registered", date: String(p.created_at || "").slice(0, 10) });
+        events.push({ email: String(p.email).toLowerCase(), company: p.company_name || "", event: "registered", date: String(p.created_at || "").slice(0, 10) });
       }
     }
 
-    let matched = 0;
+    let matched = 0, missing = [], fuzzy = [];
     if (events.length) {
       const res = await fetch(env.SHEET_WEBHOOK_URL, {
         method: "POST",
@@ -53,10 +53,12 @@ export async function onRequestPost(context) {
         return Response.json({ error: "sheet_error", detail: out && out.error ? String(out.error).slice(0, 200) : "bad_response" }, { status: 502 });
       }
       matched = out.rows || 0;
+      missing = Array.isArray(out.missing) ? out.missing : [];
+      fuzzy = Array.isArray(out.fuzzy) ? out.fuzzy : [];
     }
 
     const next = offset + rows.length;
-    return Response.json({ ok: true, total, sent: events.length, matched, nextOffset: next, done: next >= total || rows.length === 0 });
+    return Response.json({ ok: true, total, sent: events.length, matched, missing, fuzzy, nextOffset: next, done: next >= total || rows.length === 0 });
   } catch (e) {
     return Response.json({ error: "server_error" }, { status: 500 });
   }

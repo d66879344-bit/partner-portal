@@ -6,7 +6,7 @@
 // event: "registered" | "first_trip"
 // Never throws and never delays the response: runs in the background via
 // context.waitUntil, so a Google outage can't break registration or accepting.
-export function notifySheet(context, event, email) {
+export function notifySheet(context, event, email, company) {
   const env = context.env;
   if (!env || !env.SHEET_WEBHOOK_URL || !email) return;
   const task = fetch(env.SHEET_WEBHOOK_URL, {
@@ -16,6 +16,7 @@ export function notifySheet(context, event, email) {
       secret: env.SHEET_WEBHOOK_SECRET || "",
       event: event,
       email: String(email).trim().toLowerCase(),
+      company: String(company || "").slice(0, 200),
       date: new Date().toISOString().slice(0, 10),
     }),
     redirect: "follow",
