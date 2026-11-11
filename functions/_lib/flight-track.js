@@ -182,6 +182,7 @@ export async function trackOrder(env, order) {
     }
   }
   if (note) { sets.push("flight_auto_note = ?"); vals.push(note); }
+  else sets.push("flight_auto_note = CASE WHEN flight_auto_note = 'Flight not found for this date' THEN NULL ELSE flight_auto_note END");
   vals.push(order.id);
   await env.DB.prepare("UPDATE orders SET " + sets.join(", ") + " WHERE id = ?").bind(...vals).run();
   return { ok: true, found: true, changed, arrival: f.arrivalTime, status: f.status, pickup };
