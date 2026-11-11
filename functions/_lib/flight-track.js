@@ -129,7 +129,7 @@ export async function fetchFlight(env, flightNumber, dateStr) {
   };
 }
 
-const THRESHOLDS_MIN = [360, 240, 180, 120, 60, 30]; // minutes before arrival
+const THRESHOLDS_MIN = [120, 60, 30]; // minutes before arrival at which a check is made
 
 function stageFor(arrivalUtcMs, nowMs) {
   let n = 0;
@@ -235,7 +235,11 @@ export async function dueOrders(db, limit) {
     const arr = o.flight_arrival_utc ? Date.parse(o.flight_arrival_utc) : NaN;
     if (!Number.isFinite(arr)) return;
     if (now > arr + 2 * 3600000) return; // long past
-    if (stageFor(arr, now) > Number(o.flight_stage || 0)) due.push(o);
+    // Due when a check point (2 h / 1 h / 30 min before arrival) has passed since the last check.
+    // Based on the last check time, so it does not depend on any earlier stored stage.
+    let latest = null;
+    THRESHOLDS_MIN.forEach((m) => { if (now >= arr - m * 60000 && (latest === null || m < latest)) latest = m; });
+    if (latest !== null && Date.parse(o.flight_checked_at) < arr - latest * 60000) due.push(o);
   });
   return due.slice(0, limit || 12);
 }
