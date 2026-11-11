@@ -95,8 +95,57 @@
         passengersLoaded = true;
         loadPassengers();
       }
+      syncHash();
     });
   });
+
+  // The URL hash records where the admin is, so a page refresh lands in the same
+  // place: #orders?sub=accepted&open=123 (Orders tab, "In progress" sub-tab, order
+  // 123 open) or #partners?country=ES&open=5. Default values are left out.
+  function syncHash() {
+    var active = $("mainTabs").querySelector('.tab[aria-pressed="true"]');
+    if (!active) return;
+    var name = active.getAttribute("data-tab");
+    var q = [];
+    if (name === "orders") {
+      if (orderTab !== "offered") q.push("sub=" + orderTab);
+      if (openOrderId != null) q.push("open=" + openOrderId);
+    } else if (name === "partners") {
+      if (partnerCountryTab) q.push("country=" + encodeURIComponent(partnerCountryTab));
+      if (openId != null) q.push("open=" + openId);
+    }
+    try { history.replaceState(null, "", "#" + name + (q.length ? "?" + q.join("&") : "")); } catch (e) {}
+  }
+
+  // Which order / partner to reopen once their data has finished loading.
+  var pendingOpenOrderId = null, pendingOpenPartnerId = null;
+
+  // After unlocking, restore the place named in the URL instead of always opening
+  // Orders. Runs only once the admin secret is set, because some tabs
+  // (Passengers) load their data the first time they're opened.
+  function restoreTabFromHash() {
+    var parts = (location.hash || "").replace(/^#/, "").split("?");
+    var wanted = parts[0].replace(/[^a-z-]/gi, "");
+    if (!wanted) return;
+    var params = {};
+    (parts[1] || "").split("&").forEach(function (kv) {
+      var i = kv.split("=");
+      if (i[0]) params[i[0]] = decodeURIComponent(i[1] || "");
+    });
+    if (wanted === "orders") {
+      var subBtn = params.sub && $("orderTabs").querySelector('[data-order-tab="' + params.sub.replace(/[^a-z_]/gi, "") + '"]');
+      if (subBtn) {
+        orderTab = subBtn.getAttribute("data-order-tab");
+        $("orderTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === subBtn)); });
+      }
+      if (Number(params.open)) pendingOpenOrderId = Number(params.open);
+    } else if (wanted === "partners") {
+      if (params.country) partnerCountryTab = params.country;
+      if (Number(params.open)) pendingOpenPartnerId = Number(params.open);
+    }
+    var btn = $("mainTabs").querySelector('[data-tab="' + wanted + '"]');
+    if (btn) btn.click();
+  }
 
   /* ---------- order sub-tabs (Not accepted / In progress / Completed / Declined-cancelled) ---------- */
   var orderTab = "offered";
@@ -106,6 +155,7 @@
       orderTab = tab.getAttribute("data-order-tab");
       ordersPage = 1;
       renderOrders();
+      syncHash();
     });
   });
 
@@ -121,6 +171,11 @@
       updatePartnersNavBadge();
       renderPartnerCountryTabs();
       renderPartners();
+      if (pendingOpenPartnerId != null) {
+        var reopenPid = pendingOpenPartnerId;
+        pendingOpenPartnerId = null;
+        if (partners.some(function (x) { return x.id === reopenPid; })) openPartnerDetail(reopenPid);
+      }
       populatePartnerSelect();
       populateOrderPartnerFilter();
       populateFinancePartnerFilter();
@@ -213,6 +268,7 @@
         partnerCountryTab = tab.getAttribute("data-country-tab");
         partnersPage = 1;
         renderPartners();
+        syncHash();
       });
     });
   }
@@ -265,11 +321,13 @@
     $("partnerDetailView").hidden = false;
     window.scrollTo(0, 0);
     renderDetail(id);
+    syncHash();
   }
   function closePartnerDetail() {
     openId = null;
     $("partnerDetailView").hidden = true;
     $("partnersListView").hidden = false;
+    syncHash();
   }
   if ($("pdBack")) $("pdBack").addEventListener("click", closePartnerDetail);
 
@@ -1172,6 +1230,11 @@
       renderOrders();
       renderFinance();
       populatePartnerSelect();
+      if (pendingOpenOrderId != null) {
+        var reopenId = pendingOpenOrderId;
+        pendingOpenOrderId = null;
+        if (orders.some(function (o) { return o.id === reopenId; })) openOrderDetail(reopenId);
+      }
       $("ordersStatus").textContent = orders.length + " order(s)";
       $("ordersStatus").className = "status";
     } catch (e) {
@@ -1411,6 +1474,7 @@
     window.scrollTo(0, 0);
     renderOrderDetail(id);
     if (o && o.status === "no_show" && !evidenceCache[id]) loadOrderEvidence(id);
+    syncHash();
   }
   function closeOrderDetail() {
     openOrderId = null;
@@ -1424,6 +1488,7 @@
       if (backTab) backTab.click();
     }
     orderDetailReturnTab = "orders";
+    syncHash();
   }
   if ($("odBack")) $("odBack").addEventListener("click", closeOrderDetail);
 
@@ -1868,6 +1933,7 @@
     $("panelsWrap").hidden = false;
     loadPartners();
     loadOrders();
+    restoreTabFromHash();
   }
   $("unlock").addEventListener("click", tryUnlock);
   $("secret").addEventListener("keydown", function (e) {
@@ -1883,6 +1949,7 @@
       $("panelsWrap").hidden = false;
       loadPartners();
       loadOrders();
+      restoreTabFromHash();
     }
   } catch (e) {}
 
