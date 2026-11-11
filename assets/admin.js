@@ -286,7 +286,7 @@
       return '<tr class="data-row' + (p.pendingDocs > 0 ? " row-review" : "") + '" data-toggle="' + p.id + '">' +
         '<td class="col-main">' + esc(p.companyName) +
         (p.pendingDocs > 0 ? '<span class="review-flag"><i></i>' + p.pendingDocs + " to review</span>" : "") + "</td>" +
-        "<td>" + esc(p.email) + "</td>" +
+        '<td class="cell-email" style="user-select:text;cursor:text;">' + esc(p.email) + "</td>" +
         "<td>" + esc(p.countryName || p.country) + "</td>" +
         '<td class="mono">' + esc(fmtDate(p.createdAt)) + "</td>" +
         "<td>" + badge(p.status) + "</td>" +
@@ -302,7 +302,18 @@
   $("partnersList").addEventListener("click", function (e) {
     var toggle = e.target.closest("[data-toggle]");
     if (!toggle) return;
-    openPartnerDetail(Number(toggle.getAttribute("data-toggle")));
+    var pid = Number(toggle.getAttribute("data-toggle"));
+    function hasSelection() { var sel = window.getSelection && window.getSelection(); return !!(sel && String(sel).length); }
+    // Text was just selected (e.g. dragging over the e-mail to copy it) — don't open the card.
+    if (hasSelection()) return;
+    // E-mail cell: wait a moment so a double/triple click (select word / whole address) can win.
+    if (e.target.closest(".cell-email")) {
+      clearTimeout(window.__partnerOpenTimer);
+      if (e.detail > 1) return;
+      window.__partnerOpenTimer = setTimeout(function () { if (!hasSelection()) openPartnerDetail(pid); }, 300);
+      return;
+    }
+    openPartnerDetail(pid);
   });
 
   // Opens the full-page partner detail view in place of the list — same
