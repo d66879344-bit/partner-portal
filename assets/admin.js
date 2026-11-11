@@ -1267,6 +1267,34 @@
     renderPassengers();
   });
 
+  /* ---------- buffer time: pickup = flight arrival + buffer (typing the pickup by hand still works) ---------- */
+  var opDateBase = "";
+  function addMinutesClient(dateStr, timeStr, minutes) {
+    var m = /^(\d{2}):(\d{2})$/.exec(timeStr || "");
+    var d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || "");
+    if (!m) return null;
+    var t = d ? Date.UTC(+d[1], +d[2] - 1, +d[3], +m[1], +m[2]) : Date.UTC(2000, 0, 1, +m[1], +m[2]);
+    var x = new Date(t + minutes * 60000);
+    function p2(n) { return String(n).padStart(2, "0"); }
+    return {
+      time: p2(x.getUTCHours()) + ":" + p2(x.getUTCMinutes()),
+      date: d ? x.getUTCFullYear() + "-" + p2(x.getUTCMonth() + 1) + "-" + p2(x.getUTCDate()) : ""
+    };
+  }
+  function applyFlightBuffer() {
+    var ft = $("opFlightTime").value;
+    var raw = $("opFlightBuffer").value.trim();
+    if (!ft || raw === "" || !isFinite(Number(raw))) return;
+    var base = opDateBase || $("opDate").value;
+    var r = addMinutesClient(base, ft, Number(raw));
+    if (!r) return;
+    $("opTime").value = r.time;
+    if (base && r.date) $("opDate").value = r.date;
+  }
+  $("opFlightTime").addEventListener("input", applyFlightBuffer);
+  $("opFlightBuffer").addEventListener("input", applyFlightBuffer);
+  $("opDate").addEventListener("input", function () { opDateBase = $("opDate").value; });
+
   (function initVehicleTypes() {
     var types = (window.VEHICLE_TYPES || []);
     $("opVehicleType").innerHTML = types.map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + "</option>"; }).join("");
@@ -1291,7 +1319,7 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderNumber: $("opOrderNumber").value.trim(), adminNumber: $("opAdminNumber").value.trim(), partnerId: partnerId, pickup: pickup, dropoff: dropoff, orderDate: orderDate,
-            flightNumber: $("opFlight").value.trim(), flightTime: $("opFlightTime").value, bufferMinutes: $("opBuffer").value.trim(),
+            flightNumber: $("opFlight").value.trim(), flightTime: $("opFlightTime").value, bufferMinutes: $("opBuffer").value.trim(), flightBufferMinutes: $("opFlightBuffer").value.trim(),
             orderTime: $("opTime").value, vehicleType: $("opVehicleType").value,
             vehiclesNeeded: $("opVehiclesNeeded").value.trim() || "1",
             passengers: $("opPassengers").value.trim(), luggage: $("opLuggage").value.trim(),
@@ -1301,9 +1329,10 @@
             status: asDraft ? "draft" : "offered"
           })
         });
-        ["opOrderNumber", "opAdminNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
+        ["opOrderNumber", "opAdminNumber", "opPickup", "opDropoff", "opFlight", "opFlightTime", "opFlightBuffer", "opBuffer", "opDate", "opTime", "opPassengers", "opLuggage",
           "opPassengerName", "opPassengerPhone", "opPrice", "opMeetGreet", "opNotes"].forEach(function (id) { $(id).value = ""; });
         $("opVehiclesNeeded").value = "1";
+        opDateBase = "";
         orderNumberManual = false;
         bufferManual = false;
         currencyManual = false;
@@ -1570,6 +1599,51 @@
     }
   });
 
+  /* ---------- flight tracking: edit-form recalculation + "Refresh flight" ---------- */
+  document.addEventListener("input", function (e) {
+    var t = e.target;
+    var f = t && t.getAttribute ? t.getAttribute("data-edit-field") : null;
+    if (!f) return;
+    var box = t.closest("details");
+    if (!box) return;
+    if (f === "orderDate") { box.setAttribute("data-date-base", t.value); return; }
+    if (f !== "flightTime" && f !== "flightBuffer") return;
+    var ft = box.querySelector('[data-edit-field="flightTime"]').value;
+    var bufEl = box.querySelector('[data-edit-field="flightBuffer"]');
+    var raw = bufEl ? bufEl.value.trim() : "";
+    if (!ft || raw === "" || !isFinite(Number(raw))) return;
+    var base = box.getAttribute("data-date-base") || box.querySelector('[data-edit-field="orderDate"]').value;
+    var r = addMinutesClient(base, ft, Number(raw));
+    if (!r) return;
+    box.querySelector('[data-edit-field="orderTime"]').value = r.time;
+    if (base && r.date) box.querySelector('[data-edit-field="orderDate"]').value = r.date;
+  });
+  document.addEventListener("click", async function (e) {
+    var btn = e.target.closest ? e.target.closest("[data-flight-refresh]") : null;
+    if (!btn) return;
+    e.stopPropagation();
+    var oid = Number(btn.getAttribute("data-flight-refresh"));
+    var st = $("flightStatus-" + oid);
+    function say(t, cls) { if (st) { st.textContent = t; st.className = "status" + (cls ? " " + cls : ""); } }
+    btn.disabled = true;
+    say("Checking…");
+    try {
+      var r = await api("/api/admin/order-flight-refresh", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: oid })
+      });
+      if (r.found === false) { say("Flight not found for this date.", "err"); btn.disabled = false; return; }
+      await loadOrders(true);
+      renderOrderDetail(oid, true);
+    } catch (err) {
+      var m = err && err.message;
+      say(m === "flight_not_configured" ? "Flight tracking is not set up (AERODATABOX_KEY)." :
+          m === "no_flight_number" ? "This order has no flight number." :
+          m === "flight_api_error" ? "The flight service did not answer. Try again." : "Error: " + m, "err");
+      btn.disabled = false;
+    }
+  });
+
   var orderDetailReturnTab = "orders";
   function openOrderDetail(id) {
     // Order detail lives inside the "Orders" panel. A draft row click comes
@@ -1700,7 +1774,7 @@
       return '<option value="' + esc(t) + '"' + (t === o.vehicleType ? " selected" : "") + '>' + esc(t) + "</option>";
     }).join("");
     var editBlock =
-      '<details class="block">' +
+      '<details class="block" data-date-base="' + esc(o.orderDate || "") + '">' +
       '<summary class="minibtn" style="display:inline-block;">Edit order</summary>' +
       '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">' +
       '<div class="field" style="min-width:160px;flex:1 1 160px;margin-bottom:0;"><label>Order number</label><input type="text" data-edit-field="orderNumber" value="' + esc(o.orderNumber || "") + '"></div>' +
@@ -1709,6 +1783,7 @@
       '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Dropoff</label><input type="text" data-edit-field="dropoff" value="' + esc(o.dropoff) + '"></div>' +
       '<div class="field" style="min-width:120px;flex:1 1 120px;margin-bottom:0;"><label>Flight number</label><input type="text" data-edit-field="flightNumber" value="' + esc(o.flightNumber || "") + '"></div>' +
       '<div class="field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Flight arrival</label><input type="time" data-edit-field="flightTime" value="' + esc(o.flightTime || "") + '"></div>' +
+      '<div class="field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Buffer time <span class="hint">min</span></label><input type="text" inputmode="numeric" data-edit-field="flightBuffer" value="' + esc(o.flightBufferMinutes != null ? o.flightBufferMinutes : "") + '"></div>' +
       '<div class="field" style="min-width:130px;flex:1 1 130px;margin-bottom:0;"><label>Date</label><input type="date" data-edit-field="orderDate" value="' + esc(o.orderDate) + '"></div>' +
       '<div class="field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Pickup time</label><input type="time" data-edit-field="orderTime" value="' + esc(o.orderTime || "") + '"></div>' +
       '<div class="field" style="min-width:120px;flex:1 1 120px;margin-bottom:0;"><label>Waiting time <span class="hint">min</span></label><input type="text" inputmode="numeric" data-edit-field="bufferMinutes" value="' + esc(o.bufferMinutes != null ? o.bufferMinutes : "") + '"></div>' +
@@ -1754,7 +1829,7 @@
         "</div></div></details>";
     }
 
-    var dateLine = esc(fmtDay(o.orderDate)) + (o.orderTime ? " · pickup " + esc(o.orderTime) : "") + (o.bufferMinutes != null ? " · waiting " + esc(o.bufferMinutes) + " min" : "");
+    var dateLine = esc(fmtDay(o.orderDate)) + (o.orderTime ? " · pickup " + esc(o.orderTime) : "") + (o.flightBufferMinutes != null ? " · buffer " + esc(o.flightBufferMinutes) + " min" : "") + (o.bufferMinutes != null ? " · waiting " + esc(o.bufferMinutes) + " min" : "");
 
     var routeBlock =
       '<div style="display:flex;gap:10px;">' +
@@ -1766,7 +1841,12 @@
       '<div style="flex:1;min-width:0;padding-bottom:4px;">' +
       '<div style="font-weight:700;font-size:14px;">' + addressLinkHtml(o.pickup) + "</div>" +
       (o.flightNumber
-        ? '<div style="margin:7px 0;"><span class="badge" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);">Flight ' + esc(o.flightNumber) + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + "</span></div>"
+        ? '<div style="margin:7px 0;"><span class="badge" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);">Flight ' + esc(o.flightNumber) + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + "</span>" +
+          (o.flightStatus ? ' <span class="row-meta" style="display:inline;">' + esc(o.flightStatus) + "</span>" : "") +
+          ' <button type="button" class="minibtn" data-flight-refresh="' + o.id + '" style="margin-left:6px;">Refresh flight</button>' +
+          ' <span class="status" id="flightStatus-' + o.id + '" style="margin:0;display:inline;"></span>' +
+          (o.flightAutoNote ? '<div class="row-meta" style="margin-top:4px;">✈ ' + esc(o.flightAutoNote) + (o.pickupManual ? " · pickup set by hand (not auto-changed)" : "") + "</div>" : "") +
+          "</div>"
         : "") +
       '<div style="font-weight:700;font-size:14px;margin-top:' + (o.flightNumber ? "20" : "7") + 'px;">' + addressLinkHtml(o.dropoff) + "</div>" +
       "</div></div>" +
@@ -1952,7 +2032,7 @@
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: editId, orderNumber: editFields.orderNumber, adminNumber: editFields.adminNumber, pickup: editFields.pickup, dropoff: editFields.dropoff,
-            flightNumber: editFields.flightNumber, flightTime: editFields.flightTime, bufferMinutes: editFields.bufferMinutes,
+            flightNumber: editFields.flightNumber, flightTime: editFields.flightTime, bufferMinutes: editFields.bufferMinutes, flightBufferMinutes: editFields.flightBuffer,
             orderDate: editFields.orderDate, orderTime: editFields.orderTime, vehicleType: editFields.vehicleType,
             vehiclesNeeded: editFields.vehiclesNeeded || "1",
             passengers: editFields.passengers, luggage: editFields.luggage,

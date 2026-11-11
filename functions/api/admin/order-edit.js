@@ -1,5 +1,6 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { notifyText, orderUpdatedMessage } from "../../_lib/whatsapp.js";
+import { ensureFlightColumns, computePickupManual } from "../../_lib/flight-track.js";
 
 // Edits an order's trip details in place, regardless of its current status —
 // new, accepted, completed, declined, cancelled, no-show, anything. This never
@@ -79,6 +80,15 @@ export async function onRequestPost(context) {
         id
       ).run();
     }
+
+    // Buffer time (flight arrival -> pickup) and whether the pickup was typed by hand.
+    try {
+      await ensureFlightColumns(env.DB);
+      const fb = body.flightBufferMinutes !== undefined && body.flightBufferMinutes !== "" && body.flightBufferMinutes !== null && Number.isFinite(Number(body.flightBufferMinutes))
+        ? Math.max(0, Math.min(Math.round(Number(body.flightBufferMinutes)), 1440)) : null;
+      await env.DB.prepare("UPDATE orders SET flight_buffer_minutes = ?, pickup_manual = ? WHERE id = ?")
+        .bind(fb, computePickupManual(flightTime, fb, orderTime), id).run();
+    } catch (e) {}
 
     // WhatsApp: tell the partner's group only when something that matters to the
     // trip changed (route, date, time, price, passenger name/phone) and the partner can actually see the

@@ -1,5 +1,6 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { notifyPartners } from "../../_lib/whatsapp.js";
+import { ensureFlightColumns, computePickupManual } from "../../_lib/flight-track.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -24,11 +25,18 @@ export async function onRequestGet(context) {
      WHERE o.hidden_from_admin = 0
      ORDER BY o.order_date DESC, o.order_time DESC`;
 
+  const FLIGHT_FIELDS =
+    `o.flight_buffer_minutes, o.pickup_manual, o.flight_status, o.flight_checked_at, o.flight_auto_note`;
   let results;
   try {
-    ({ results } = await env.DB.prepare(`SELECT o.admin_number, ${BASE_FIELDS} ${FROM_CLAUSE}`).all());
-  } catch (e) {
-    ({ results } = await env.DB.prepare(`SELECT ${BASE_FIELDS} ${FROM_CLAUSE}`).all());
+    await ensureFlightColumns(env.DB);
+    ({ results } = await env.DB.prepare(`SELECT o.admin_number, ${FLIGHT_FIELDS}, ${BASE_FIELDS} ${FROM_CLAUSE}`).all());
+  } catch (e0) {
+    try {
+      ({ results } = await env.DB.prepare(`SELECT o.admin_number, ${BASE_FIELDS} ${FROM_CLAUSE}`).all());
+    } catch (e) {
+      ({ results } = await env.DB.prepare(`SELECT ${BASE_FIELDS} ${FROM_CLAUSE}`).all());
+    }
   }
 
   const orders = (results || []).map((o) => ({
@@ -42,6 +50,11 @@ export async function onRequestGet(context) {
     flightNumber: o.flight_number,
     flightTime: o.flight_time,
     bufferMinutes: o.buffer_minutes,
+    flightBufferMinutes: o.flight_buffer_minutes != null ? o.flight_buffer_minutes : null,
+    pickupManual: Number(o.pickup_manual || 0) === 1,
+    flightStatus: o.flight_status || null,
+    flightCheckedAt: o.flight_checked_at || null,
+    flightAutoNote: o.flight_auto_note || null,
     orderDate: o.order_date,
     orderTime: o.order_time,
     vehicleType: o.vehicle_type,
@@ -156,6 +169,15 @@ export async function onRequestPost(context) {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(...insertValues, status).run();
     }
+
+    // Buffer time (flight arrival -> pickup) and whether the pickup was typed by hand.
+    try {
+      await ensureFlightColumns(env.DB);
+      const fb = body.flightBufferMinutes !== undefined && body.flightBufferMinutes !== "" && Number.isFinite(Number(body.flightBufferMinutes))
+        ? Math.max(0, Math.min(Math.round(Number(body.flightBufferMinutes)), 1440)) : null;
+      await env.DB.prepare("UPDATE orders SET flight_buffer_minutes = ?, pickup_manual = ? WHERE id = ?")
+        .bind(fb, computePickupManual(flightTime, fb, orderTime), r.meta.last_row_id).run();
+    } catch (e) {}
 
     // Tell the partner's WhatsApp group (only when the order is really sent, not a draft).
     if (status === "offered") notifyPartners(context, [{ partnerId: partnerId, count: 1 }]);
