@@ -1600,6 +1600,7 @@
   });
 
   /* ---------- flight tracking: edit-form recalculation + "Refresh flight" ---------- */
+  var flightMsgs = {};
   document.addEventListener("input", function (e) {
     var t = e.target;
     var f = t && t.getAttribute ? t.getAttribute("data-edit-field") : null;
@@ -1632,14 +1633,21 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: oid })
       });
-      if (r.found === false) { say("Flight not found for this date.", "err"); btn.disabled = false; return; }
+      if (r.found === false) { flightMsgs[oid] = { t: "Flight not found for this date.", cls: "err" }; await loadOrders(true); renderOrderDetail(oid, true); return; }
+      flightMsgs[oid] = {
+        t: r.changed
+          ? "Updated: arrival " + r.arrival + (r.pickup ? ", pickup " + r.pickup : "") + "."
+          : "Checked: no change (arrival " + r.arrival + (r.status ? ", " + r.status : "") + ").",
+        cls: "ok"
+      };
       await loadOrders(true);
       renderOrderDetail(oid, true);
     } catch (err) {
       var m = err && err.message;
-      say(m === "flight_not_configured" ? "Flight tracking is not set up (AERODATABOX_KEY)." :
+      flightMsgs[oid] = { t: m === "flight_not_configured" ? "Flight tracking is not set up (AERODATABOX_KEY)." :
           m === "no_flight_number" ? "This order has no flight number." :
-          m === "flight_api_error" ? "The flight service did not answer. Try again." : "Error: " + m, "err");
+          m === "flight_api_error" ? "The flight service did not answer. Try again." : "Error: " + m, cls: "err" };
+      say(flightMsgs[oid].t, "err");
       btn.disabled = false;
     }
   });
@@ -1844,7 +1852,8 @@
         ? '<div style="margin:7px 0;"><span class="badge" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);">Flight ' + esc(o.flightNumber) + (o.flightTime ? " · arrives " + esc(o.flightTime) : "") + "</span>" +
           (o.flightStatus ? ' <span class="row-meta" style="display:inline;">' + esc(o.flightStatus) + "</span>" : "") +
           ' <button type="button" class="minibtn" data-flight-refresh="' + o.id + '" style="margin-left:6px;">Refresh flight</button>' +
-          ' <span class="status" id="flightStatus-' + o.id + '" style="margin:0;display:inline;"></span>' +
+          ' <span class="status' + (flightMsgs[o.id] ? " " + flightMsgs[o.id].cls : "") + '" id="flightStatus-' + o.id + '" style="margin:0;display:inline;">' + esc(flightMsgs[o.id] ? flightMsgs[o.id].t : "") + "</span>" +
+          (o.flightCheckedAt ? '<div class="row-meta" style="margin-top:4px;">Last flight check: ' + esc(new Date(String(o.flightCheckedAt).replace(" ", "T") + (/[zZ]|[+-]\d\d:?\d\d$/.test(String(o.flightCheckedAt)) ? "" : "Z")).toLocaleString()) + (o.flightStatus ? " · " + esc(o.flightStatus) : "") + "</div>" : "") +
           (o.flightAutoNote ? '<div class="row-meta" style="margin-top:4px;">✈ ' + esc(o.flightAutoNote) + (o.pickupManual ? " · pickup set by hand (not auto-changed)" : "") + "</div>" : "") +
           "</div>"
         : "") +

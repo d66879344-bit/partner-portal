@@ -87,8 +87,17 @@ function pickArrival(arrival) {
   return sched.local ? sched : pred || null;
 }
 
+// "RYANAIR FR983" / "RYANAIRFR983" / "FR 983" / "FR-983" -> "FR983".
+// Already-valid codes (IATA "FR983", ICAO "RYR983") are kept as they are.
+export function normalizeFlightNumber(raw) {
+  const s = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (/^[A-Z0-9]{2,3}\d{1,4}[A-Z]?$/.test(s)) return s;
+  const m = s.match(/[A-Z0-9]{2}\d{1,4}[A-Z]?$/);
+  return m ? m[0] : s;
+}
+
 export async function fetchFlight(env, flightNumber, dateStr) {
-  const num = String(flightNumber || "").replace(/\s+/g, "").toUpperCase();
+  const num = normalizeFlightNumber(flightNumber);
   const url = "https://aerodatabox.p.rapidapi.com/flights/number/" + encodeURIComponent(num) + "/" + encodeURIComponent(dateStr);
   const res = await fetch(url, {
     headers: { "x-rapidapi-key": env.AERODATABOX_KEY, "x-rapidapi-host": "aerodatabox.p.rapidapi.com" },
