@@ -1,5 +1,6 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
-import { notifyText, orderUpdatedMessage, flightTimeChangedMessage } from "../../_lib/whatsapp.js";
+import { notifyText, orderChangesMessage, flightTimeChangedMessage } from "../../_lib/whatsapp.js";
+import { buildChanges, withinWindow } from "../../_lib/order-changes.js";
 import { ensureFlightColumns, computePickupManual, WHATSAPP_ON_FLIGHT_CHANGE } from "../../_lib/flight-track.js";
 
 // Edits an order's trip details in place, regardless of its current status —
@@ -90,24 +91,23 @@ export async function onRequestPost(context) {
         .bind(fb, computePickupManual(flightTime, fb, orderTime), id).run();
     } catch (e) {}
 
-    // WhatsApp: tell the partner's group only when something that matters to the
-    // trip changed (route, date, time, price, passenger name/phone) and the partner can actually see the
-    // order (offered or accepted) — not for notes/passenger-field tweaks or drafts.
+    // WhatsApp: tell the partner's group what changed - but only when the trip is
+    // close (pickup within 4 h, London time) and the partner can actually see the
+    // order (offered or accepted). Earlier edits are saved quietly to avoid spam.
+    // The flight arrival time (and the pickup shift it causes) is never sent to the
+    // group - it shows up only on the driver link.
     const S = (v) => (v == null ? "" : String(v).trim());
-    // If the flight arrival time changed, the pickup time/date move with it, so those
-    // are counted as part of the flight change and the message says so specifically.
     const flightChanged = S(order.flight_time) !== "" && S(flightTime) !== "" && S(order.flight_time) !== S(flightTime);
-    const flightAddedOrRemoved = (S(order.flight_time) === "") !== (S(flightTime) === "");
-    const otherChanged =
-      S(order.pickup) !== pickup || S(order.dropoff) !== dropoff ||
-      S(order.price) !== price || S(order.currency) !== currency ||
-      S(order.passenger_name) !== passengerName || S(order.passenger_phone) !== passengerPhone ||
-      flightAddedOrRemoved ||
-      (!flightChanged && (S(order.order_date) !== orderDate || S(order.order_time) !== orderTime));
     if (order.status === "offered" || order.status === "accepted") {
-      if (otherChanged) {
-        notifyText(context, order.partner_id, orderUpdatedMessage(orderNumber));
-      } else if (flightChanged && WHATSAPP_ON_FLIGHT_CHANGE) {
+      const lines = buildChanges(
+        order,
+        { order_date: orderDate, order_time: orderTime, pickup, dropoff, price, currency, passenger_name: passengerName, passenger_phone: passengerPhone },
+        { flightChanged }
+      );
+      const close = withinWindow(order.order_date, order.order_time, orderDate, orderTime);
+      if (lines.length && close) {
+        notifyText(context, order.partner_id, orderChangesMessage(orderNumber, lines));
+      } else if (!lines.length && flightChanged && WHATSAPP_ON_FLIGHT_CHANGE && close) {
         notifyText(context, order.partner_id, flightTimeChangedMessage(orderNumber));
       }
     }
