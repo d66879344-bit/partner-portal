@@ -6,7 +6,7 @@ import { parseInstances, ensureTables, callApi, sendRotating } from "../../_lib/
 //   GET  ?action=groups → the WhatsApp groups visible to the numbers (name + id)
 //   POST { id, groupId } → save a partner's WhatsApp group ID (empty = remove)
 //   POST { id, test: true } → send a test message to that partner's group
-//   POST { id, instance: 0|1|2|… } → pin the partner's group to that number (0 = rotate)
+//   POST { id, instance: 0|1|2|…|-1 } → pin the partner's group to that number (0 = rotate, -1 = off)
 export async function onRequestGet(context) {
   const { request, env } = context;
   if (!checkAdminSecret(request, env)) return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -58,7 +58,7 @@ export async function onRequestPost(context) {
     await ensureTables(env.DB);
 
     if (body.instance !== undefined) {
-      const n = Math.max(0, Math.min(Math.round(Number(body.instance) || 0), 20));
+      const n = Math.max(-1, Math.min(Math.round(Number(body.instance) || 0), 20)); // -1 = off
       const row = await env.DB.prepare("SELECT group_id FROM partner_whatsapp WHERE partner_id = ?").bind(id).first();
       if (!row) return Response.json({ error: "no_group" }, { status: 400 });
       await env.DB.prepare("UPDATE partner_whatsapp SET wa_instance = ? WHERE partner_id = ?").bind(n || null, id).run();

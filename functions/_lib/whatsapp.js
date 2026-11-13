@@ -60,12 +60,13 @@ export async function getGroupId(db, partnerId) {
   }
 }
 
-// Which number (1-based) is this partner's group pinned to? null = rotate as usual.
+// Which number (1-based) is this partner's group pinned to? null = rotate as usual, -1 = off.
 export async function getPinnedInstance(db, partnerId) {
   try {
     await ensureTables(db);
     const r = await db.prepare("SELECT wa_instance FROM partner_whatsapp WHERE partner_id = ?").bind(partnerId).first();
     const n = r && r.wa_instance != null ? Number(r.wa_instance) : 0;
+    if (n < 0) return -1; // WhatsApp switched off for this partner
     return n > 0 ? n : null;
   } catch (e) {
     return null;
@@ -126,6 +127,7 @@ export async function sendRotating(env, partnerId, groupId, message) {
   // plan each number may only talk to 3 chats, so spilling over to another number
   // would use up that number's slots.
   const pinned = partnerId ? await getPinnedInstance(db, partnerId) : null;
+  if (pinned === -1) return { ok: false, instance: null, errors: ["WhatsApp is switched off for this partner"] };
   if (pinned) {
     if (pinned > insts.length) return { ok: false, instance: null, errors: ["pinned number #" + pinned + " is not configured"] };
     const pidx = pinned - 1;

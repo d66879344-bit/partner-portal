@@ -450,7 +450,7 @@
       '<button type="button" class="minibtn" data-wa-save="' + p.id + '">Save</button>' +
       '<label style="font-size:12.5px;color:var(--ink-2);margin-left:6px;">Sends from' +
       '<select data-wa-instance="' + p.id + '" style="margin-left:6px;">' +
-      [["0", "Auto (rotate)"], ["1", "Number 1"], ["2", "Number 2"], ["3", "Number 3"]].map(function (o) {
+      [["0", "Auto (rotate)"], ["1", "Number 1"], ["2", "Number 2"], ["3", "Number 3"], ["-1", "Off (no WhatsApp)"]].map(function (o) {
         return '<option value="' + o[0] + '"' + (String(p.whatsappInstance || 0) === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
       }).join("") + "</select></label>" +
       '<button type="button" class="minibtn" data-wa-pick="' + p.id + '">Find group</button>' +
@@ -750,7 +750,7 @@
         body: JSON.stringify({ id: pid, instance: Number(sel.value) })
       });
       if (detailCache[pid]) detailCache[pid].partner.whatsappInstance = Number(sel.value);
-      say(Number(sel.value) ? "Notifications go through number " + sel.value + "." : "Auto: numbers rotate.", "ok");
+      say(Number(sel.value) < 0 ? "WhatsApp notifications are off for this partner." : Number(sel.value) ? "Notifications go through number " + sel.value + "." : "Auto: numbers rotate.", "ok");
     } catch (err) {
       say(err && err.message === "no_group" ? "Save a group ID first." : "Could not save.", "err");
     }
