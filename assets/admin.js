@@ -1781,10 +1781,19 @@
     var vehicleTypeOpts = (window.VEHICLE_TYPES || []).map(function (t) {
       return '<option value="' + esc(t) + '"' + (t === o.vehicleType ? " selected" : "") + '>' + esc(t) + "</option>";
     }).join("");
+    // Drafts haven't been sent yet, so the partner can still be changed here.
+    var draftPartnerField = "";
+    if (o.status === "draft") {
+      var draftPartnerOpts = partners.filter(function (p) { return p.status === "active" || p.id === o.partnerId; }).map(function (p) {
+        return '<option value="' + p.id + '"' + (p.id === o.partnerId ? " selected" : "") + ">" + esc(p.companyName) + "</option>";
+      }).join("");
+      draftPartnerField = '<div class="field" style="min-width:220px;flex:1 1 100%;margin-bottom:0;"><label>Partner <span class="hint">draft - not sent yet</span></label><select data-edit-field="partnerId">' + draftPartnerOpts + "</select></div>";
+    }
     var editBlock =
       '<details class="block" data-date-base="' + esc(o.orderDate || "") + '">' +
       '<summary class="minibtn" style="display:inline-block;">Edit order</summary>' +
       '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">' +
+      draftPartnerField +
       '<div class="field" style="min-width:160px;flex:1 1 160px;margin-bottom:0;"><label>Order number</label><input type="text" data-edit-field="orderNumber" value="' + esc(o.orderNumber || "") + '"></div>' +
       '<div class="field admin-field" style="min-width:110px;flex:1 1 110px;margin-bottom:0;"><label>Admin # <span class="tag">Admin only</span></label><input type="text" data-edit-field="adminNumber" value="' + esc(o.adminNumber || "") + '"></div>' +
       '<div class="field" style="min-width:150px;flex:1 1 150px;margin-bottom:0;"><label>Pickup</label><input type="text" data-edit-field="pickup" value="' + esc(o.pickup) + '"></div>' +
@@ -1809,6 +1818,7 @@
       '<div class="field" style="min-width:220px;flex:1 1 220px;margin-bottom:0;"><label>Additional instructions</label><input type="text" data-edit-field="notes" value="' + esc(o.notes || "") + '"></div>' +
       '<div style="flex:1 1 100%;display:flex;align-items:center;gap:10px;">' +
       '<button type="button" class="minibtn good" data-order-edit-save="' + o.id + '">Save changes</button>' +
+      (o.status === "draft" ? '<button type="button" class="minibtn good" data-order-edit-send="' + o.id + '">Save &amp; send to partner</button>' : "") +
       '<span class="status" id="editStatus-' + o.id + '" style="margin:0;"></span>' +
       "</div></div></details>";
 
@@ -1956,7 +1966,7 @@
     var cancel = e.target.closest("[data-order-cancel]");
     var del = e.target.closest("[data-order-delete]");
     var reassign = e.target.closest("[data-order-reassign]");
-    var editSave = e.target.closest("[data-order-edit-save]");
+    var editSave = e.target.closest("[data-order-edit-save], [data-order-edit-send]");
     var noshowConfirm = e.target.closest("[data-noshow-confirm]");
     var noshowReject = e.target.closest("[data-noshow-reject]");
 
@@ -2011,7 +2021,8 @@
     }
     if (editSave) {
       e.stopPropagation();
-      var editId = Number(editSave.getAttribute("data-order-edit-save"));
+      var editId = Number(editSave.getAttribute("data-order-edit-save") || editSave.getAttribute("data-order-edit-send"));
+      var sendAfter = editSave.hasAttribute("data-order-edit-send");
       var editForm = editSave.closest("details");
       var editStatusEl = $("editStatus-" + editId);
       var editFields = {};
@@ -2020,13 +2031,18 @@
         if (editStatusEl) { editStatusEl.textContent = "Order number, pickup, dropoff and date are required."; editStatusEl.className = "status err"; }
         return;
       }
+      if (sendAfter) {
+        var sendSel = editForm.querySelector('[data-edit-field="partnerId"]');
+        var sendName = sendSel && sendSel.options[sendSel.selectedIndex] ? sendSel.options[sendSel.selectedIndex].text : "the partner";
+        if (!confirm("Save this order and send it to " + sendName + " now? The partner will be notified.")) return;
+      }
       editSave.disabled = true;
-      if (editStatusEl) { editStatusEl.textContent = "Saving…"; editStatusEl.className = "status"; }
+      if (editStatusEl) { editStatusEl.textContent = sendAfter ? "Saving and sending…" : "Saving…"; editStatusEl.className = "status"; }
       try {
         await api("/api/admin/order-edit", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: editId, orderNumber: editFields.orderNumber, adminNumber: editFields.adminNumber, pickup: editFields.pickup, dropoff: editFields.dropoff,
+            id: editId, partnerId: editFields.partnerId, orderNumber: editFields.orderNumber, adminNumber: editFields.adminNumber, pickup: editFields.pickup, dropoff: editFields.dropoff,
             flightNumber: editFields.flightNumber, flightTime: editFields.flightTime, bufferMinutes: editFields.bufferMinutes, flightBufferMinutes: editFields.flightBuffer,
             orderDate: editFields.orderDate, orderTime: editFields.orderTime, vehicleType: editFields.vehicleType,
             vehiclesNeeded: editFields.vehiclesNeeded || "1",
@@ -2036,6 +2052,12 @@
             meetGreet: editFields.meetGreet, notes: editFields.notes
           })
         });
+        if (sendAfter) {
+          await api("/api/admin/order-send-drafts", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [editId] })
+          });
+        }
         // The reload below re-renders this same detail panel (it stays open,
         // since openOrderId is unchanged) with the freshly saved values —
         // that's the visible confirmation, so there's no separate "Saved"
@@ -2045,7 +2067,9 @@
         await loadOrders(true);
         renderOrderDetail(editId, true);
       } catch (err) {
-        var editMsg = (err && err.message === "order_number_taken") ? "This order number is already in use." : "Could not save. Try again.";
+        var editMsg = (err && err.message === "order_number_taken") ? "This order number is already in use."
+          : (err && err.message === "partner_not_active") ? "That partner is not active."
+          : sendAfter ? "Could not save and send. Check the order and try again." : "Could not save. Try again.";
         if (editStatusEl) { editStatusEl.textContent = editMsg; editStatusEl.className = "status err"; }
         editSave.disabled = false;
       }
