@@ -37,8 +37,14 @@ export function parseInstances(env) {
     .filter(Boolean);
 }
 
+let instanceColumnReady = false;
 export async function ensureTables(db) {
   await db.prepare("CREATE TABLE IF NOT EXISTS partner_whatsapp (partner_id INTEGER PRIMARY KEY, group_id TEXT NOT NULL)").run();
+  // Optional: pin a partner's group to one specific number (1-based). Empty = rotate.
+  if (!instanceColumnReady) {
+    try { await db.prepare("ALTER TABLE partner_whatsapp ADD COLUMN wa_instance INTEGER").run(); } catch (e) {}
+    instanceColumnReady = true;
+  }
   await db.prepare(
     "CREATE TABLE IF NOT EXISTS whatsapp_log (id INTEGER PRIMARY KEY AUTOINCREMENT, partner_id INTEGER, instance_idx INTEGER, ok INTEGER NOT NULL DEFAULT 0, info TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))"
   ).run();
@@ -51,6 +57,18 @@ export async function getGroupId(db, partnerId) {
     return r ? r.group_id : "";
   } catch (e) {
     return "";
+  }
+}
+
+// Which number (1-based) is this partner's group pinned to? null = rotate as usual.
+export async function getPinnedInstance(db, partnerId) {
+  try {
+    await ensureTables(db);
+    const r = await db.prepare("SELECT wa_instance FROM partner_whatsapp WHERE partner_id = ?").bind(partnerId).first();
+    const n = r && r.wa_instance != null ? Number(r.wa_instance) : 0;
+    return n > 0 ? n : null;
+  } catch (e) {
+    return null;
   }
 }
 
@@ -103,6 +121,22 @@ export async function sendRotating(env, partnerId, groupId, message) {
   let start = 0;
   try { await ensureTables(db); start = await nextStart(db, insts.length); } catch (e) {}
   const errors = [];
+
+  // Pinned partner: always the same number, never a fallback - on a free (Developer)
+  // plan each number may only talk to 3 chats, so spilling over to another number
+  // would use up that number's slots.
+  const pinned = partnerId ? await getPinnedInstance(db, partnerId) : null;
+  if (pinned) {
+    if (pinned > insts.length) return { ok: false, instance: null, errors: ["pinned number #" + pinned + " is not configured"] };
+    const pidx = pinned - 1;
+    const pr = await sendText(insts[pidx], groupId, message);
+    try {
+      await db.prepare("INSERT INTO whatsapp_log (partner_id, instance_idx, ok, info) VALUES (?, ?, ?, ?)")
+        .bind(partnerId || null, pidx, pr.ok ? 1 : 0, pr.info).run();
+    } catch (e) {}
+    if (pr.ok) return { ok: true, instance: pinned, errors };
+    return { ok: false, instance: null, errors: ["#" + pinned + ": " + pr.info] };
+  }
   for (let k = 0; k < insts.length; k++) {
     const idx = (start + k) % insts.length;
     const r = await sendText(insts[idx], groupId, message);

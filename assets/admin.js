@@ -448,6 +448,11 @@
       '<input type="text" data-wa-group="' + p.id + '" value="' + esc(p.whatsappGroupId || "") + '" placeholder="1203630xxxxxxxx@g.us" style="margin-left:6px;width:230px;">' +
       "</label>" +
       '<button type="button" class="minibtn" data-wa-save="' + p.id + '">Save</button>' +
+      '<label style="font-size:12.5px;color:var(--ink-2);margin-left:6px;">Sends from' +
+      '<select data-wa-instance="' + p.id + '" style="margin-left:6px;">' +
+      [["0", "Auto (rotate)"], ["1", "Number 1"], ["2", "Number 2"], ["3", "Number 3"]].map(function (o) {
+        return '<option value="' + o[0] + '"' + (String(p.whatsappInstance || 0) === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
+      }).join("") + "</select></label>" +
       '<button type="button" class="minibtn" data-wa-pick="' + p.id + '">Find group</button>' +
       '<button type="button" class="minibtn" data-wa-test="' + p.id + '">Send test</button>' +
       '<span class="status" data-wa-status="' + p.id + '" style="margin:0;"></span>' +
@@ -731,6 +736,26 @@
     }
   });
 
+  // WhatsApp: which number sends this partner's notifications (Auto = rotate).
+  $("partnerDetailView").addEventListener("change", async function (e) {
+    var sel = e.target.closest ? e.target.closest("[data-wa-instance]") : null;
+    if (!sel) return;
+    var pid = Number(sel.getAttribute("data-wa-instance"));
+    var st = document.querySelector('[data-wa-status="' + pid + '"]');
+    function say(t, cls) { if (st) { st.textContent = t; st.className = "status" + (cls ? " " + cls : ""); } }
+    say("Saving…");
+    try {
+      await api("/api/admin/whatsapp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: pid, instance: Number(sel.value) })
+      });
+      if (detailCache[pid]) detailCache[pid].partner.whatsappInstance = Number(sel.value);
+      say(Number(sel.value) ? "Notifications go through number " + sel.value + "." : "Auto: numbers rotate.", "ok");
+    } catch (err) {
+      say(err && err.message === "no_group" ? "Save a group ID first." : "Could not save.", "err");
+    }
+  });
+
   $("partnerDetailView").addEventListener("click", async function (e) {
     var saveBilling = e.target.closest("[data-billing-save]");
     var savePay = e.target.closest("[data-pay-save]");
@@ -971,18 +996,36 @@
     } while (orderNumberExists(candidate) && attempts < 20);
     return candidate;
   }
-  function regenerateOrderNumberForSelectedPartner() {
-    var partnerId = Number($("opPartner").value);
-    if (!partnerId) return;
-    var p = partners.filter(function (x) { return x.id === partnerId; })[0];
+  function cityCodeForPartner(p) {
     var cityCode = (window.CityCodes && window.CityCodes.codeFor(p && p.serviceCity)) || "XX";
     // No city of service on file -> fall back to the partner's 2-letter country
     // code (ES, GR, GB…) instead of the meaningless "XX".
     if ((!p || !String(p.serviceCity || "").trim()) && p && /^[A-Za-z]{2}$/.test(String(p.country || ""))) {
       cityCode = String(p.country).toUpperCase();
     }
-    $("opOrderNumber").value = generateOrderNumber(cityCode);
+    return cityCode;
   }
+  function regenerateOrderNumberForSelectedPartner() {
+    var partnerId = Number($("opPartner").value);
+    if (!partnerId) return;
+    var p = partners.filter(function (x) { return x.id === partnerId; })[0];
+    $("opOrderNumber").value = generateOrderNumber(cityCodeForPartner(p));
+  }
+  // Edit order (drafts): picking another partner re-generates the order number with
+  // that partner's city code - unless the number was typed in by hand.
+  document.addEventListener("input", function (e) {
+    var t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-edit-field") === "orderNumber") t.setAttribute("data-manual", "1");
+  });
+  document.addEventListener("change", function (e) {
+    var t = e.target;
+    if (!t || !t.getAttribute || t.getAttribute("data-edit-field") !== "partnerId") return;
+    var box = t.closest("details");
+    var numEl = box && box.querySelector('[data-edit-field="orderNumber"]');
+    if (!numEl || numEl.getAttribute("data-manual") === "1") return;
+    var p = partners.filter(function (x) { return x.id === Number(t.value); })[0];
+    numEl.value = generateOrderNumber(cityCodeForPartner(p));
+  });
   $("opPartner").addEventListener("change", function () {
     opPartnerTouched = true;
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
