@@ -1926,8 +1926,7 @@
       "</div>" +
       evidenceBlock +
       '<div class="block" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' + actions +
-      '<button type="button" class="minibtn ghost-crit" data-order-hide="' + o.id + '" style="margin-left:auto;">Delete order</button>' +
-      '<button type="button" class="linkbtn-crit" data-order-delete="' + o.id + '" title="Permanently deletes this order from the database. Use only for cleaning up test data.">Delete permanently</button>' +
+      '<button type="button" class="minibtn ghost-crit" data-order-delete="' + o.id + '" data-order-status="' + esc(o.status || "") + '" style="margin-left:auto;">Delete order</button>' +
       "</div>" +
       editBlock +
       reassignBlock;
@@ -1955,33 +1954,20 @@
     }
     var complete = e.target.closest("[data-order-complete]");
     var cancel = e.target.closest("[data-order-cancel]");
-    var hide = e.target.closest("[data-order-hide]");
     var del = e.target.closest("[data-order-delete]");
     var reassign = e.target.closest("[data-order-reassign]");
     var editSave = e.target.closest("[data-order-edit-save]");
     var noshowConfirm = e.target.closest("[data-noshow-confirm]");
     var noshowReject = e.target.closest("[data-noshow-reject]");
 
-    if (hide) {
-      e.stopPropagation();
-      var hideId = Number(hide.getAttribute("data-order-hide"));
-      if (!confirm("Delete this order from your admin view? It stays untouched and visible to the partner.")) return;
-      try {
-        await api("/api/admin/order-hide", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: hideId })
-        });
-        closeOrderDetail();
-        await loadOrders();
-      } catch (err) {
-        alert("Could not delete the order.");
-      }
-      return;
-    }
     if (del) {
       e.stopPropagation();
       var delId = Number(del.getAttribute("data-order-delete"));
-      if (!confirm("Permanently delete this order from the database? This removes it for the partner too and cannot be undone. Use this only to clean up test data.")) return;
+      var delSt = del.getAttribute("data-order-status") || "";
+      var delMsg = "Delete this order everywhere? It will be removed for you and for the partner, and this cannot be undone.";
+      if (delSt === "offered" || delSt === "accepted") delMsg += "\n\nThe partner will be notified in WhatsApp that the order is cancelled.";
+      if (delSt === "completed") delMsg += "\n\nThis order is completed - deleting it also removes it from earnings and invoices.";
+      if (!confirm(delMsg)) return;
       try {
         await api("/api/admin/order-delete", {
           method: "POST", headers: { "Content-Type": "application/json" },
