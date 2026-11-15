@@ -216,6 +216,9 @@
   var RP_PLACE_WORDS = ["Hotel", "Resort", "Suites", "Inn", "Residence"];
   var rpTimer = null;
   var rpCount = 0;
+  // The pool always shows the volume partners get once the trial is over, so
+  // they can see during the trial what to expect afterwards.
+  function rpRollCount() { return rpRandomInt(35, 60); }
 
   function rpRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function rpRandomInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
@@ -312,11 +315,11 @@
 
   function initRidePool() {
     if (!$("ridePoolList") || rpTimer) return;
-    rpCount = rpRandomInt(7, 20);
+    rpCount = rpRollCount();
     rpRenderList(rpCount);
     rpSetBadge(rpCount);
     rpTimer = setInterval(function () {
-      rpCount = rpRandomInt(7, 20);
+      rpCount = rpRollCount();
       rpRenderList(rpCount);
       rpSetBadge(rpCount);
     }, 300000);
@@ -1011,7 +1014,7 @@
     if (o.bufferMinutes != null) cells += cell("", ICON.wait, I18N.t("tt_waiting"), esc(o.bufferMinutes) + " <small>" + min + "</small>", I18N.t("tt_cap_wait"));
     return '<div class="tt-box">' +
       '<div class="tt-head"><div class="tt-title">' + ICON.clock + esc(I18N.t("tt_title")) + '</div><div class="tt-note">' + esc(I18N.t("tt_note")) + "</div></div>" +
-      '<div class="tt-grid">' + cells + "</div>" +
+      '<div class="tt-grid" style="--tt-n:' + Math.max(1, Math.min(4, (cells.match(/class="tt-cell/g) || []).length)) + '">' + cells + "</div>" +
       (buffer != null ? '<div class="tt-help" hidden>' + esc(I18N.t("tt_help_text")) + "</div>" : "") + "</div>";
   }
 

@@ -116,7 +116,7 @@
   .tt-label { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
   .tt-val { margin-top: 6px; font-size: 22px; font-weight: 800; line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums; }
   .tt-val small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
-  @container (min-width: 430px) { .tt-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tt-label { flex-wrap: nowrap; font-size: 10.5px; letter-spacing: 0; white-space: nowrap; } .tt-label svg { display: none; } .tt-q { flex: none; } .tt-val { font-size: 20px; } }
+  @container (min-width: 430px) { .tt-grid { grid-template-columns: repeat(var(--tt-n, 4), minmax(0, 1fr)); } .tt-label { flex-wrap: nowrap; font-size: 10.5px; letter-spacing: 0; white-space: nowrap; } .tt-label svg { display: none; } .tt-q { flex: none; } .tt-val { font-size: 20px; } }
   .tt-cap { margin-top: 3px; font-size: 10.5px; line-height: 1.25; color: var(--ink-2); font-weight: 500; }
   .tt-q { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 4px; padding: 0; border-radius: 50%; border: 1.5px solid var(--focus); background: transparent; color: var(--focus); font-size: 10px; font-weight: 800; line-height: 1; cursor: pointer; }
   .tt-help { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 12.5px; line-height: 1.45; color: var(--ink); }
