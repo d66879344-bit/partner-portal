@@ -978,6 +978,53 @@
     return "";
   }
 
+  // Minutes from "HH:MM" `from` to "HH:MM" `to` (rolls over midnight), or null.
+  function minutesBetween(from, to) {
+    var a = /^(\d{1,2}):(\d{2})/.exec(from || ""), b = /^(\d{1,2}):(\d{2})/.exec(to || "");
+    if (!a || !b) return null;
+    var d = (Number(b[1]) * 60 + Number(b[2])) - (Number(a[1]) * 60 + Number(a[2]));
+    return d < 0 ? d + 1440 : d;
+  }
+
+  // "Trip timing" box: flight arrival, buffer (arrival -> pickup), pickup time, waiting time.
+  function tripTimingHtml(o) {
+    var ic = function (d) { return '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + "</svg>"; };
+    var ICON = {
+      clock: ic('<circle cx="10" cy="10" r="7.5"/><path d="M10 5.5V10l3 2"/>'),
+      plane: ic('<path d="M2.5 11.5 17 4l-4 12-3.2-4.2L6 13l.6-3.4-4.1 1.9Z"/>'),
+      hourglass: ic('<path d="M5 3h10M5 17h10M6 3c0 4 4 4.5 4 7s-4 3-4 7M14 3c0 4-4 4.5-4 7s4 3 4 7"/>'),
+      flag: ic('<path d="M5 17V3M5 4h9l-2 3 2 3H5"/>'),
+      wait: ic('<circle cx="10" cy="10" r="7.5"/><path d="M10 5.5V10l3 2"/>')
+    };
+    var min = esc(I18N.t("tt_min"));
+    var cell = function (cls, icon, label, valueHtml, cap, extra) {
+      return '<div class="tt-cell ' + cls + '"><div class="tt-label">' + icon + esc(label) + (extra || "") + '</div><div class="tt-val">' + valueHtml + "</div>" +
+        (cap ? '<div class="tt-cap">' + esc(cap) + "</div>" : "") + "</div>";
+    };
+    var helpBtn = '<button type="button" class="tt-q" data-tt-help aria-expanded="false" aria-label="' + esc(I18N.t("tt_help_aria")) + '">?</button>';
+    var buffer = o.flightTime && o.orderTime ? minutesBetween(o.flightTime, o.orderTime) : null;
+    if (buffer != null && buffer > 720) buffer = null;
+    var cells = "";
+    if (o.flightTime) cells += cell("", ICON.plane, I18N.t("tt_flight"), esc(String(o.flightTime).slice(0, 5)), I18N.t("tt_cap_flight"));
+    if (buffer != null) cells += cell("", ICON.hourglass, I18N.t("tt_buffer"), esc(buffer) + " <small>" + min + "</small>", I18N.t("tt_cap_buffer"), helpBtn);
+    cells += cell("tt-pickup", ICON.flag, I18N.t("tt_pickup"), "<span>" + esc(o.orderTime || "—") + "</span>", buffer != null ? I18N.t("tt_cap_pickup") : "");
+    if (o.bufferMinutes != null) cells += cell("", ICON.wait, I18N.t("tt_waiting"), esc(o.bufferMinutes) + " <small>" + min + "</small>", I18N.t("tt_cap_wait"));
+    return '<div class="tt-box">' +
+      '<div class="tt-head"><div class="tt-title">' + ICON.clock + esc(I18N.t("tt_title")) + '</div><div class="tt-note">' + esc(I18N.t("tt_note")) + "</div></div>" +
+      '<div class="tt-grid">' + cells + "</div>" +
+      (buffer != null ? '<div class="tt-help" hidden>' + esc(I18N.t("tt_help_text")) + "</div>" : "") + "</div>";
+  }
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("[data-tt-help]") : null;
+    if (!b) return;
+    var box = b.closest(".tt-box");
+    var help = box && box.querySelector(".tt-help");
+    if (!help) return;
+    help.hidden = !help.hidden;
+    b.setAttribute("aria-expanded", help.hidden ? "false" : "true");
+  });
+
   function openOrderDetail(id) {
     var o = lastOrders.filter(function (x) { return x.id === id; })[0];
     if (!o) return;
@@ -1004,10 +1051,9 @@
           esc(window.I18N ? I18N.t("od_route_link") : "Route: pickup → dropoff") + "</a></div>"
         : "") +
       "</div></div>" +
+      tripTimingHtml(o) +
       '<div class="od-fields">' +
       '<div class="field"><div class="field-label">' + esc(I18N.t("fl_date")) + '</div><div class="field-val">' + esc(fmtDay(o.orderDate)) + "</div></div>" +
-      '<div class="field"><div class="field-label">' + esc(I18N.t("fl_pickup_time")) + '</div><div class="field-val">' + esc(o.orderTime || "—") + "</div></div>" +
-      (o.bufferMinutes != null ? '<div class="field"><div class="field-label">' + esc(I18N.t("fl_buffer_time")) + '</div><div class="field-val">' + esc(o.bufferMinutes) + " min</div></div>" : "") +
       '<div class="field"><div class="field-label">' + esc(I18N.t("fl_vehicle_type")) + '</div><div class="field-val">' + esc(o.vehicleType || "—") + copyBtnHtml(o.vehicleType) + "</div></div>" +
       '<div class="field"><div class="field-label">' + esc(I18N.t("fl_vehicles_needed")) + '</div><div class="field-val">' + esc(o.vehiclesNeeded != null ? o.vehiclesNeeded : 1) + "</div></div>" +
       "</div></div>";
@@ -1016,11 +1062,11 @@
       '<h2 style="margin:0 0 10px;font-size:14px;">' + esc(I18N.t("od_passenger_price")) + "</h2>" +
       '<div class="icon-row">' +
       '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>' +
-      esc(o.passengerName || "—") + copyBtnHtml(o.passengerName) +
+      (o.contactsHidden ? '<span class="row-meta">' + esc(I18N.t("pc_hidden")) + "</span>" : esc(o.passengerName || "—") + copyBtnHtml(o.passengerName)) +
       "</div>" +
       '<div class="icon-row">' +
       '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5.6 2.3c.5-.2 1 0 1.3.4l1.4 2.1c.3.4.2 1-.2 1.4l-1.1 1c-.2.2-.2.5-.1.7.6 1.2 1.6 2.2 2.8 2.8.2.1.5.1.7-.1l1-1.1c.4-.4 1-.5 1.4-.2l2.1 1.4c.5.3.6.9.4 1.3l-.8 1.5c-.3.5-.8.8-1.4.7-4-.6-7.2-3.8-7.8-7.8-.1-.6.2-1.1.7-1.4l1.5-.7Z"/></svg></div>' +
-      esc(o.passengerPhone || "—") + copyBtnHtml(o.passengerPhone) +
+      (o.contactsHidden ? '<span class="row-meta">' + esc(I18N.t("pc_hidden")) + "</span>" : esc(o.passengerPhone || "—") + copyBtnHtml(o.passengerPhone)) +
       "</div>" +
       '<div class="icon-row">' +
       '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2 3 6v5c0 4 3 6.5 7 7 4-.5 7-3 7-7V6l-7-4Z"/></svg></div>' +
@@ -1031,6 +1077,7 @@
       '<div class="icon-dot"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2" y="5" width="16" height="10" rx="2"/><circle cx="10" cy="10" r="2.1" fill="currentColor" stroke="none"/></svg></div>' +
       (o.price ? esc(o.price) + " " + esc(o.currency || "") : "—") +
       "</div>" +
+      (o.contactsHidden ? '<div class="row-meta" style="margin-top:10px;">' + esc(I18N.t("pc_hidden_note")) + "</div>" : "") +
       (o.notes ? '<div class="row-meta" style="margin-top:10px;">Instructions: ' + esc(o.notes) + "</div>" : "") +
       (o.meetGreet
         ? '<div class="meetgreet-box">' +
@@ -1047,7 +1094,7 @@
       : "";
     var actionBar = actionBarHtml(o);
 
-    var body = '<div class="od-grid">' + tripCard + passengerCard + "</div>" +
+    var body = '<div class="od-grid od-top">' + tripCard + passengerCard + "</div>" +
       bottomRow +
       (actionBar
         ? '<div class="od-actionbar"><div style="display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap;">' + actionBar + "</div>" +

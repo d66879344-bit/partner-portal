@@ -102,9 +102,25 @@
 
   /* ---------- order detail: full-screen 2-column layout + compact assignment row ---------- */
   .od-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .od-grid.od-top { grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); }
   .od-grid > .card { margin-top: 0; }
   .od-grid + .od-grid { margin-top: 16px; }
   .od-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 14px; }
+  /* Trip timing block: arrival, buffer, pickup (highlighted), waiting */
+  .tt-box { container-type: inline-size; border: 1.5px solid var(--focus); background: var(--accent-soft); border-radius: 12px; padding: 12px 14px 14px; margin: 0 0 16px; }
+  .tt-head { display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tt-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: var(--focus); }
+  .tt-note { font-size: 11.5px; color: var(--ink-2); }
+  .tt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1px; background: var(--surface); border-radius: 10px; overflow: hidden; }
+  .tt-cell { background: var(--surface); padding: 10px 8px 12px; text-align: center; min-width: 0; box-shadow: -1px 0 0 var(--line), 0 -1px 0 var(--line); }
+  .tt-label { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
+  .tt-val { margin-top: 6px; font-size: 22px; font-weight: 800; line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .tt-val small { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+  @container (min-width: 430px) { .tt-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tt-label { flex-wrap: nowrap; font-size: 10.5px; letter-spacing: 0; white-space: nowrap; } .tt-label svg { display: none; } .tt-q { flex: none; } .tt-val { font-size: 20px; } }
+  .tt-cap { margin-top: 3px; font-size: 10.5px; line-height: 1.25; color: var(--ink-2); font-weight: 500; }
+  .tt-q { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 4px; padding: 0; border-radius: 50%; border: 1.5px solid var(--focus); background: transparent; color: var(--focus); font-size: 10px; font-weight: 800; line-height: 1; cursor: pointer; }
+  .tt-help { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 12.5px; line-height: 1.45; color: var(--ink); }
+  .tt-cell.tt-pickup .tt-val span { display: inline-block; padding: 3px 14px; border-radius: 9px; background: var(--accent-soft); border: 1.5px solid var(--focus); color: var(--focus); }
   .field { margin-bottom: 12px; }
   .field-label { font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
   .field-val { margin-top: 3px; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
@@ -114,7 +130,7 @@
     display: flex; gap: 10px; align-items: center;
   }
   @media (max-width: 960px) {
-    .od-grid { grid-template-columns: 1fr; }
+    .od-grid, .od-grid.od-top { grid-template-columns: 1fr; }
   }
   .minibtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 8px 14px; min-height: 38px; cursor: pointer; font-weight: 600; font-size: 13px; transition: border-color .12s, background .12s; }
   .minibtn:hover:not(:disabled) { border-color: var(--ink); }

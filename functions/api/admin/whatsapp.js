@@ -19,7 +19,13 @@ export async function onRequestGet(context) {
     for (let i = 0; i < insts.length; i++) {
       try {
         const r = await callApi(insts[i], "GET", "getStateInstance");
-        out.push({ number: i + 1, id: insts[i].id, state: (r.json && r.json.stateInstance) || ("HTTP " + r.status) });
+        const tok = String(insts[i].token || "");
+        out.push({
+          number: i + 1, id: insts[i].id, state: (r.json && r.json.stateInstance) || ("HTTP " + r.status),
+          // diagnostics (no secrets): shape of what is stored in GREEN_API_INSTANCES
+          host: insts[i].apiUrl, tokenLength: tok.length, tokenCharsOk: /^[A-Za-z0-9]+$/.test(tok),
+          reply: String(r.text || "").replace(/\s+/g, " ").slice(0, 120),
+        });
       } catch (e) {
         out.push({ number: i + 1, id: insts[i].id, state: "error" });
       }

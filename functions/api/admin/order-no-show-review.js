@@ -1,5 +1,6 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { startTrialIfNeeded } from "../../_lib/trial.js";
+import { ensureCompletedColumn, nowIso } from "../../_lib/contact-lock.js";
 import { notifyText, noShowDecisionMessage } from "../../_lib/whatsapp.js";
 
 // Admin review of a Customer-no-show report. Confirming the report closes the
@@ -24,9 +25,10 @@ export async function onRequestPost(context) {
     if (order.status !== "no_show") return Response.json({ error: "not_no_show" }, { status: 409 });
 
     if (action === "confirm") {
+      await ensureCompletedColumn(env.DB);
       await env.DB.prepare(
-        "UPDATE orders SET status = 'completed', no_show_review_status = 'confirmed' WHERE id = ?"
-      ).bind(id).run();
+        "UPDATE orders SET status = 'completed', no_show_review_status = 'confirmed', completed_at = ? WHERE id = ?"
+      ).bind(nowIso(), id).run();
       await startTrialIfNeeded(env, order.partner_id);
     } else {
       await env.DB.prepare(

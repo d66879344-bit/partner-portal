@@ -1,5 +1,6 @@
 import { getPartnerId } from "../../_lib/auth.js";
 import { startTrialIfNeeded } from "../../_lib/trial.js";
+import { ensureCompletedColumn, nowIso } from "../../_lib/contact-lock.js";
 
 // Trip-progress stages a partner walks an accepted order through, in order.
 // Reaching the last one also completes the order.
@@ -28,7 +29,8 @@ export async function onRequestPost(context) {
     }
 
     if (stage === "dropped_off") {
-      await env.DB.prepare("UPDATE orders SET trip_stage = ?, status = 'completed' WHERE id = ?").bind(stage, id).run();
+      await ensureCompletedColumn(env.DB);
+      await env.DB.prepare("UPDATE orders SET trip_stage = ?, status = 'completed', completed_at = ? WHERE id = ?").bind(stage, nowIso(), id).run();
       await startTrialIfNeeded(env, partnerId);
     } else {
       await env.DB.prepare("UPDATE orders SET trip_stage = ? WHERE id = ?").bind(stage, id).run();

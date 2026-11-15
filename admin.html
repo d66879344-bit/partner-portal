@@ -126,6 +126,18 @@
   .panel.active { display: block; }
   .addform { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 4px; }
   .addform .field { margin-bottom: 0; min-width: 140px; flex: 1 1 140px; }
+  .tt-box { border: 1.5px solid var(--focus); background: var(--accent-soft); border-radius: 12px; padding: 12px 14px 14px; }
+  .tt-head { display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tt-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: var(--focus); }
+  .tt-note { font-size: 11.5px; color: var(--ink-2); }
+  .tt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-radius: 10px; overflow: hidden; background: var(--surface); }
+  .tt-cell { padding: 10px 10px 12px; text-align: center; min-width: 0; box-shadow: -1px 0 0 var(--line), 0 -1px 0 var(--line); }
+  .tt-cell .tt-label { display: block; margin: 0 0 6px; font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
+  .tt-cell input { width: 100%; height: 46px; box-sizing: border-box; text-align: center; font-size: 18px; font-weight: 700; }
+  .tt-cell.tt-pickup input { border: 1.5px solid var(--focus); background: var(--accent-soft); color: var(--focus); }
+  .tt-hint { margin-top: 4px; font-size: 11px; color: var(--ink-2); }
+  .buffer-note { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--ink-2); font-size: 12.5px; line-height: 1.5; }
+  .buffer-note strong { color: var(--ink); }
 
   @media (max-width: 860px) {
     /* Below this width the sidebar becomes a horizontal top bar, so the page scrolls as a whole again. */
@@ -448,8 +460,6 @@
             <div class="field"><label for="opPickup">Pickup</label><input type="text" id="opPickup"></div>
             <div class="addform" style="margin-top:8px;">
               <div class="field"><label for="opFlight">Flight number <span class="hint">optional</span></label><input type="text" id="opFlight"></div>
-              <div class="field"><label for="opFlightTime">Flight arrival <span class="hint">optional</span></label><input type="time" id="opFlightTime"></div>
-              <div class="field"><label for="opFlightBuffer">Buffer time <span class="hint">minutes</span></label><input type="text" id="opFlightBuffer" inputmode="numeric" placeholder="e.g. 30"></div>
             </div>
             <div class="field" style="margin-top:16px;"><label for="opDropoff">Dropoff</label><input type="text" id="opDropoff"></div>
           </div>
@@ -457,12 +467,24 @@
       </div>
 
       <div class="card">
-        <div class="addform">
+        <div class="tt-box">
+          <div class="tt-head">
+            <div class="tt-title"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 5.5V10l3 2"/></svg>Trip timing</div>
+            <div class="tt-note">The partner sees these four values together</div>
+          </div>
+          <div class="tt-grid">
+            <div class="tt-cell"><label class="tt-label" for="opFlightTime">&#9992; Flight arrival</label><input type="time" id="opFlightTime"><div class="tt-hint">optional</div></div>
+            <div class="tt-cell"><label class="tt-label" for="opFlightBuffer">&#8987; Buffer time</label><input type="text" id="opFlightBuffer" inputmode="numeric" placeholder="30"><div class="tt-hint">minutes after landing</div></div>
+            <div class="tt-cell tt-pickup"><label class="tt-label" for="opTime">&#9873; Pickup time</label><input type="time" id="opTime"><div class="tt-hint">= arrival + buffer</div></div>
+            <div class="tt-cell"><label class="tt-label" for="opBuffer">&#9201; Waiting time</label><input type="text" id="opBuffer" inputmode="numeric" placeholder="60"><div class="tt-hint">minutes at pickup</div></div>
+          </div>
+        </div>
+        <div class="addform" style="margin-top:12px;">
           <div class="field"><label for="opDate">Date</label><input type="date" id="opDate"></div>
-          <div class="field"><label for="opTime">Pickup time</label><input type="time" id="opTime"></div>
-          <div class="field"><label for="opBuffer">Waiting time <span class="hint">minutes</span></label><input type="text" id="opBuffer" inputmode="numeric" placeholder="e.g. 60"></div>
-          <div class="field"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
-          <div class="field"><label for="opVehiclesNeeded">Vehicles needed</label><input type="number" id="opVehiclesNeeded" min="1" max="20" value="1"></div>
+        </div>
+        <div class="addform" style="margin-top:12px;">
+          <div class="field" style="flex:1 1 260px;"><label for="opVehicleType">Vehicle type</label><select id="opVehicleType"></select></div>
+          <div class="field" style="flex:0 0 150px;margin-left:auto;"><label for="opVehiclesNeeded">Vehicles needed</label><input type="number" id="opVehiclesNeeded" min="1" max="20" value="1"></div>
         </div>
       </div>
 

@@ -90,6 +90,9 @@
 
       od_trip: "Trip", od_passenger_price: "Passenger & price", od_vehicle_driver: "Vehicle & driver", od_trip_progress: "Trip progress", od_route_link: "Route: pickup → dropoff",
       fl_date: "Date", fl_pickup_time: "Pickup time", fl_buffer_time: "Waiting time", fl_vehicle_type: "Vehicle type", fl_vehicles_needed: "Vehicles needed", fl_meet_greet: "Meet & greet sign",
+      tt_title: "Trip timing", tt_note: "Please follow the timing below", tt_flight: "Flight arrival", tt_buffer: "Buffer time", tt_pickup: "Pickup time", tt_waiting: "Waiting time", tt_min: "min",
+      pc_hidden: "Hidden", pc_hidden_note: "Passenger contacts are hidden 24 hours after the trip is completed.",
+      tt_cap_flight: "landing time", tt_cap_buffer: "after landing", tt_cap_pickup: "arrival + buffer", tt_cap_wait: "at pickup", tt_help_aria: "What is buffer time?", tt_help_text: "Buffer time is the time between the flight landing and the pickup. It covers passport control and baggage. If the flight is delayed, the pickup time moves automatically and the driver sees the new time.",
       btn_accept: "Accept", btn_decline: "Decline", btn_save: "Save", btn_more: "More", btn_back_to_orders: "Back to orders",
       btn_driver_link: "Driver link", driver_link_err: "Could not create the link. Try again.",
       no_show_pending: "Reported as a customer no-show — pending review.",
@@ -216,6 +219,9 @@
 
       od_trip: "Поездка", od_passenger_price: "Пассажир и цена", od_vehicle_driver: "Авто и водитель", od_trip_progress: "Статус поездки", od_route_link: "Маршрут: подача → высадка",
       fl_date: "Дата", fl_pickup_time: "Время подачи", fl_buffer_time: "Время ожидания", fl_vehicle_type: "Тип авто", fl_vehicles_needed: "Количество машин", fl_meet_greet: "Табличка для встречи",
+      tt_title: "Время поездки", tt_note: "Придерживайтесь указанного времени", tt_flight: "Прилёт рейса", tt_buffer: "Буфер после прилёта", tt_pickup: "Время подачи", tt_waiting: "Время ожидания", tt_min: "мин",
+      pc_hidden: "Скрыто", pc_hidden_note: "Контакты пассажира скрываются через 24 часа после завершения поездки.",
+      tt_cap_flight: "время посадки", tt_cap_buffer: "после посадки", tt_cap_pickup: "прилёт + буфер", tt_cap_wait: "на месте подачи", tt_help_aria: "Что такое буфер?", tt_help_text: "Буфер — это время между посадкой рейса и подачей. Оно нужно на паспортный контроль и багаж. Если рейс задерживается, время подачи сдвигается автоматически, а водитель видит новое время.",
       btn_accept: "Принять", btn_decline: "Отклонить", btn_save: "Сохранить", btn_more: "Ещё", btn_back_to_orders: "Назад к заказам",
       btn_driver_link: "Ссылка для водителя", driver_link_err: "Не удалось создать ссылку. Попробуйте ещё раз.",
       no_show_pending: "Заявлено как неявка пассажира — ожидает проверки.",
@@ -342,6 +348,9 @@
 
       od_trip: "Viaje", od_passenger_price: "Pasajero y precio", od_vehicle_driver: "Vehículo y conductor", od_trip_progress: "Progreso del viaje", od_route_link: "Ruta: recogida → destino",
       fl_date: "Fecha", fl_pickup_time: "Hora de recogida", fl_buffer_time: "Tiempo de espera", fl_vehicle_type: "Tipo de vehículo", fl_vehicles_needed: "Vehículos necesarios", fl_meet_greet: "Cartel de bienvenida",
+      tt_title: "Horario del viaje", tt_note: "Siga los horarios indicados", tt_flight: "Llegada del vuelo", tt_buffer: "Margen tras el aterrizaje", tt_pickup: "Hora de recogida", tt_waiting: "Tiempo de espera", tt_min: "min",
+      pc_hidden: "Oculto", pc_hidden_note: "Los datos de contacto del pasajero se ocultan 24 horas después de completar el viaje.",
+      tt_cap_flight: "hora de aterrizaje", tt_cap_buffer: "tras el aterrizaje", tt_cap_pickup: "llegada + margen", tt_cap_wait: "en la recogida", tt_help_aria: "¿Qué es el margen?", tt_help_text: "El margen es el tiempo entre el aterrizaje del vuelo y la recogida. Cubre el control de pasaportes y el equipaje. Si el vuelo se retrasa, la hora de recogida se ajusta automáticamente y el conductor ve la nueva hora.",
       btn_accept: "Aceptar", btn_decline: "Rechazar", btn_save: "Guardar", btn_more: "Más", btn_back_to_orders: "Volver a pedidos",
       btn_driver_link: "Enlace para el conductor", driver_link_err: "No se pudo crear el enlace. Inténtelo de nuevo.",
       no_show_pending: "Reportado como no presentación del pasajero — pendiente de revisión.",
@@ -468,6 +477,9 @@
 
       od_trip: "Διαδρομή", od_passenger_price: "Επιβάτης & τιμή", od_vehicle_driver: "Όχημα & οδηγός", od_trip_progress: "Πρόοδος διαδρομής", od_route_link: "Διαδρομή: παραλαβή → προορισμός",
       fl_date: "Ημερομηνία", fl_pickup_time: "Ώρα παραλαβής", fl_buffer_time: "Χρόνος αναμονής", fl_vehicle_type: "Τύπος οχήματος", fl_vehicles_needed: "Απαιτούμενα οχήματα", fl_meet_greet: "Πινακίδα υποδοχής",
+      tt_title: "Χρονοδιάγραμμα διαδρομής", tt_note: "Τηρήστε τους παρακάτω χρόνους", tt_flight: "Άφιξη πτήσης", tt_buffer: "Περιθώριο μετά την προσγείωση", tt_pickup: "Ώρα παραλαβής", tt_waiting: "Χρόνος αναμονής", tt_min: "λεπτά",
+      pc_hidden: "Κρυφό", pc_hidden_note: "Τα στοιχεία επικοινωνίας του επιβάτη αποκρύπτονται 24 ώρες μετά την ολοκλήρωση της διαδρομής.",
+      tt_cap_flight: "ώρα προσγείωσης", tt_cap_buffer: "μετά την προσγείωση", tt_cap_pickup: "άφιξη + περιθώριο", tt_cap_wait: "στην παραλαβή", tt_help_aria: "Τι είναι το περιθώριο;", tt_help_text: "Το περιθώριο είναι ο χρόνος ανάμεσα στην προσγείωση της πτήσης και την παραλαβή. Καλύπτει τον έλεγχο διαβατηρίων και τις αποσκευές. Αν η πτήση καθυστερήσει, η ώρα παραλαβής μετακινείται αυτόματα και ο οδηγός βλέπει τη νέα ώρα.",
       btn_accept: "Αποδοχή", btn_decline: "Απόρριψη", btn_save: "Αποθήκευση", btn_more: "Περισσότερα", btn_back_to_orders: "Πίσω στις παραγγελίες",
       btn_driver_link: "Σύνδεσμος οδηγού", driver_link_err: "Δεν ήταν δυνατή η δημιουργία του συνδέσμου. Δοκιμάστε ξανά.",
       no_show_pending: "Αναφέρθηκε ως μη εμφάνιση επιβάτη — σε αναμονή ελέγχου.",
@@ -594,6 +606,9 @@
 
       od_trip: "Trajet", od_passenger_price: "Passager & prix", od_vehicle_driver: "Véhicule & chauffeur", od_trip_progress: "Progression du trajet", od_route_link: "Itinéraire : prise en charge → destination",
       fl_date: "Date", fl_pickup_time: "Heure de prise en charge", fl_buffer_time: "Temps d'attente", fl_vehicle_type: "Type de véhicule", fl_vehicles_needed: "Véhicules nécessaires", fl_meet_greet: "Pancarte d'accueil",
+      tt_title: "Horaires du trajet", tt_note: "Merci de respecter les horaires ci-dessous", tt_flight: "Arrivée du vol", tt_buffer: "Marge après l'atterrissage", tt_pickup: "Heure de prise en charge", tt_waiting: "Temps d'attente", tt_min: "min",
+      pc_hidden: "Masqué", pc_hidden_note: "Les coordonnées du passager sont masquées 24 heures après la fin du trajet.",
+      tt_cap_flight: "heure d'atterrissage", tt_cap_buffer: "après l'atterrissage", tt_cap_pickup: "arrivée + marge", tt_cap_wait: "sur place", tt_help_aria: "Qu'est-ce que la marge ?", tt_help_text: "La marge est le temps entre l'atterrissage du vol et la prise en charge. Elle couvre le contrôle des passeports et les bagages. Si le vol est retardé, l'heure de prise en charge se décale automatiquement et le chauffeur voit la nouvelle heure.",
       btn_accept: "Accepter", btn_decline: "Refuser", btn_save: "Enregistrer", btn_more: "Plus", btn_back_to_orders: "Retour aux commandes",
       btn_driver_link: "Lien chauffeur", driver_link_err: "Impossible de créer le lien. Veuillez réessayer.",
       no_show_pending: "Signalé comme no-show du passager — en attente de vérification.",
@@ -720,6 +735,9 @@
 
       od_trip: "Viagem", od_passenger_price: "Passageiro e preço", od_vehicle_driver: "Veículo e motorista", od_trip_progress: "Progresso da viagem", od_route_link: "Rota: embarque → destino",
       fl_date: "Data", fl_pickup_time: "Hora de recolha", fl_buffer_time: "Tempo de espera", fl_vehicle_type: "Tipo de veículo", fl_vehicles_needed: "Veículos necessários", fl_meet_greet: "Placa de boas-vindas",
+      tt_title: "Horários da viagem", tt_note: "Siga os horários abaixo", tt_flight: "Chegada do voo", tt_buffer: "Margem após a aterragem", tt_pickup: "Hora de recolha", tt_waiting: "Tempo de espera", tt_min: "min",
+      pc_hidden: "Oculto", pc_hidden_note: "Os contactos do passageiro ficam ocultos 24 horas após a conclusão da viagem.",
+      tt_cap_flight: "hora de aterragem", tt_cap_buffer: "após a aterragem", tt_cap_pickup: "chegada + margem", tt_cap_wait: "no local", tt_help_aria: "O que é a margem?", tt_help_text: "A margem é o tempo entre a aterragem do voo e a recolha. Cobre o controlo de passaportes e a bagagem. Se o voo atrasar, a hora de recolha ajusta-se automaticamente e o motorista vê a nova hora.",
       btn_accept: "Aceitar", btn_decline: "Recusar", btn_save: "Guardar", btn_more: "Mais", btn_back_to_orders: "Voltar aos pedidos",
       btn_driver_link: "Link do motorista", driver_link_err: "Não foi possível criar o link. Tente novamente.",
       no_show_pending: "Reportado como não comparência do passageiro — a aguardar revisão.",

@@ -1,4 +1,5 @@
 import { startTrialIfNeeded } from "../../_lib/trial.js";
+import { ensureCompletedColumn, nowIso } from "../../_lib/contact-lock.js";
 
 // Public, no-login endpoint behind driver.html. Lets the holder of a valid,
 // active driver token advance THAT ONE trip to the next stage only — same
@@ -31,9 +32,10 @@ export async function onRequestPost(context) {
     }
 
     if (stage === "dropped_off") {
+      await ensureCompletedColumn(env.DB);
       await env.DB.prepare(
-        "UPDATE orders SET trip_stage = ?, status = 'completed', driver_token_active = 0 WHERE id = ?"
-      ).bind(stage, order.id).run();
+        "UPDATE orders SET trip_stage = ?, status = 'completed', driver_token_active = 0, completed_at = ? WHERE id = ?"
+      ).bind(stage, nowIso(), order.id).run();
       await startTrialIfNeeded(env, order.partner_id);
     } else {
       await env.DB.prepare("UPDATE orders SET trip_stage = ? WHERE id = ?").bind(stage, order.id).run();
