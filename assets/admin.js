@@ -942,7 +942,7 @@
       return '<button type="button" class="tab" data-op-country="' + esc(code) + '" aria-pressed="' + (code === opCountry ? "true" : "false") + '">' + esc(byCountry[code].name) + "</button>";
     }).join("");
     $("opPartner").innerHTML = list.length
-      ? list.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
+      ? list.map(function (p) { return '<option value="' + p.id + '"' + (p.id === o.partnerId ? " selected" : "") + ">" + esc(p.companyName) + "</option>"; }).join("")
       : '<option value="">No active partners yet</option>';
     if (chosen) $("opPartner").value = String(chosen);
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
@@ -1508,11 +1508,28 @@
     if (openOrderId === id) renderOrderDetail(id);
   }
 
+  var CR_WHAT = { time: "Pickup time", price: "Price", pickup: "Pickup address", dropoff: "Drop-off address", vehicle: "Vehicle type", other: "Other" };
+  var CR_REASON = { no_vehicle: "No suitable vehicle available", no_driver: "No driver available", time_conflict: "Conflicts with another trip", price_low: "Price is too low for this route", route_issue: "Address or route problem", other: "Other" };
   function statusBadge(o) {
     if (o.status === "accepted" && o.tripStage && STAGE_LABELS[o.tripStage]) {
       return '<span class="badge badge-accepted">' + esc(STAGE_LABELS[o.tripStage]) + "</span>";
     }
+    if (o.status === "declined" && o.changeRequest) {
+      return '<span class="badge" style="background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-border);">Change requested</span>';
+    }
     return badge(o.status);
+  }
+  function changeRequestBlockHtml(o) {
+    var c = o.changeRequest;
+    if (!c || o.status !== "declined") return "";
+    return '<div class="block" style="margin-top:0;margin-bottom:14px;padding:12px 14px;border:1px solid var(--warn-border);background:var(--warn-bg);border-radius:10px;color:var(--warn-ink);">' +
+      '<div style="font-weight:700;margin-bottom:6px;">The partner asked for a change and sent the order back</div>' +
+      '<div><strong>What to change:</strong> ' + esc(CR_WHAT[c.what] || c.what || "—") + "</div>" +
+      '<div><strong>Reason:</strong> ' + esc(CR_REASON[c.reason] || c.reason || "—") + "</div>" +
+      '<div><strong>Details:</strong> ' + esc(c.comment || "—") + "</div>" +
+      (c.at ? '<div style="margin-top:6px;font-size:12px;opacity:.8;">' + esc(fmtDate(c.at)) + "</div>" : "") +
+      '<div style="margin-top:8px;font-size:12.5px;">Fix the order, then open “Reassign to another partner” below, keep the same partner selected and press “Reassign &amp; offer” to send it again.</div>' +
+      "</div>";
   }
 
   function renderOrders() {
@@ -1969,6 +1986,7 @@
       "</div></div>";
 
     el.innerHTML =
+      changeRequestBlockHtml(o) +
       quickCopyBlock +
       '<div class="block">' +
       routeBlock +

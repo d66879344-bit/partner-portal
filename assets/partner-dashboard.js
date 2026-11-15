@@ -557,6 +557,63 @@
     if ($("statClosed")) $("statClosed").textContent = lastClosedCount;
   }
 
+  // Until the trial is over an order can't be declined; the partner asks for a change instead.
+  function inTrial() {
+    if (!me || !window.TrialInfo) return false;
+    // Applies from the very first order (trial not started yet) until the trial has ended.
+    return TrialInfo.compute(me.trialStartedAt, me.trialSimulateEnded).state !== "ended";
+  }
+  function declineBtnHtml(o) {
+    return inTrial()
+      ? '<button type="button" class="minibtn decline" data-request-change="' + o.id + '">' + esc(I18N.t("rq_btn")) + "</button>"
+      : '<button type="button" class="minibtn decline" data-decline="' + o.id + '">' + esc(I18N.t("btn_decline")) + "</button>";
+  }
+  var rqOrderId = null, rqDone = false;
+  function rqShowForm(show) {
+    var parts = $("rqModal").querySelectorAll(".rq-intro, .rq-field");
+    for (var i = 0; i < parts.length; i++) parts[i].style.display = show ? "" : "none";
+    $("rqSend").style.display = show ? "" : "none";
+  }
+  function openRequestModal(id) {
+    rqOrderId = id; rqDone = false;
+    $("rqWhat").value = ""; $("rqReason").value = ""; $("rqComment").value = "";
+    $("rqStatus").textContent = ""; $("rqStatus").className = "status";
+    $("rqSend").disabled = false;
+    $("rqCancel").textContent = I18N.t("rq_cancel");
+    rqShowForm(true);
+    $("rqModal").hidden = false;
+  }
+  function closeRequestModal() {
+    var wasDone = rqDone;
+    $("rqModal").hidden = true; rqOrderId = null; rqDone = false;
+    if (wasDone) { closeOrderDetail(); loadOrders(); }
+  }
+  if ($("rqModal")) {
+    $("rqCloseX").addEventListener("click", closeRequestModal);
+    $("rqCancel").addEventListener("click", closeRequestModal);
+    $("rqSend").addEventListener("click", async function () {
+      var what = $("rqWhat").value, reason = $("rqReason").value, comment = $("rqComment").value.trim();
+      if (!what || !reason || !comment) {
+        $("rqStatus").textContent = I18N.t("rq_need"); $("rqStatus").className = "status err"; return;
+      }
+      $("rqSend").disabled = true;
+      try {
+        await api("/api/partner/order-request", { method: "POST", json: true, body: JSON.stringify({ id: rqOrderId, what: what, reason: reason, comment: comment }) });
+        rqDone = true;
+        rqShowForm(false);
+        $("rqStatus").textContent = I18N.t("rq_sent"); $("rqStatus").className = "status ok rq-done";
+        $("rqCancel").textContent = I18N.t("rq_ok");
+      } catch (err) {
+        $("rqSend").disabled = false;
+        $("rqStatus").textContent = I18N.t("rq_err"); $("rqStatus").className = "status err";
+      }
+    });
+  }
+  document.addEventListener("click", function (e) {
+    var rq = e.target.closest ? e.target.closest("[data-request-change]") : null;
+    if (rq) { e.stopPropagation(); openRequestModal(Number(rq.getAttribute("data-request-change"))); }
+  });
+
   // Shared by the Orders table and the Today table — same row shape either
   // way, just with the Date column dropped on Today (every row there is
   // already today by definition).
@@ -565,7 +622,7 @@
     return o.status === "offered"
       ? '<div style="display:flex;gap:8px;">' +
         '<button type="button" class="minibtn accept" data-accept="' + o.id + '">' + esc(I18N.t("btn_accept")) + '</button>' +
-        '<button type="button" class="minibtn decline" data-decline="' + o.id + '">' + esc(I18N.t("btn_decline")) + '</button>' +
+        declineBtnHtml(o) +
         "</div>"
       : (stageObj ? '<span class="badge badge-accepted">' + esc(stageLabel(stageObj.key)) + "</span>" : badge(o.status));
   }
@@ -609,6 +666,8 @@
       })();
       return;
     }
+    var rqb = e.target.closest("[data-request-change]");
+    if (rqb) { e.stopPropagation(); openRequestModal(Number(rqb.getAttribute("data-request-change"))); return; }
     var open = e.target.closest("[data-order-open]");
     if (open) openOrderDetail(Number(open.getAttribute("data-order-open")));
   }
@@ -963,7 +1022,7 @@
   function actionBarHtml(o) {
     if (o.status === "offered") {
       return '<button type="button" class="minibtn accept" style="flex:1;max-width:320px;" data-accept="' + o.id + '">' + esc(I18N.t("btn_accept")) + '</button>' +
-        '<button type="button" class="minibtn decline" data-decline="' + o.id + '">' + esc(I18N.t("btn_decline")) + "</button>";
+        declineBtnHtml(o);
     }
     if (o.status === "no_show") {
       return '<p class="status" style="margin:0;">' + esc(I18N.t("no_show_pending")) + "</p>";
@@ -1096,9 +1155,12 @@
       ? '<div class="od-grid">' + (assignBlock || "<div></div>") + (stageBlock || "<div></div>") + "</div>"
       : "";
     var actionBar = actionBarHtml(o);
+    var rqNotice = (o.status === "offered" && inTrial())
+      ? '<div class="rq-notice"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v5M10 6.2v.1"/></svg><span>' + esc(I18N.t("rq_info")) + "</span></div>"
+      : "";
 
     var body = '<div class="od-grid od-top">' + tripCard + passengerCard + "</div>" +
-      bottomRow +
+      bottomRow + rqNotice +
       (actionBar
         ? '<div class="od-actionbar"><div style="display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap;">' + actionBar + "</div>" +
           '<p class="status" id="omStageStatus" style="margin:0;"></p></div>'

@@ -336,6 +336,13 @@
   .invoice-card-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .invoice-card-num { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-2); }
   .invoice-card-note { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .rq-notice { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--focus); color: var(--ink); font-size: 13px; line-height: 1.45; }
+  .rq-notice svg { flex: none; margin-top: 1px; color: var(--focus); }
+  .rq-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .rq-field label { font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
+  .rq-field select, .rq-field textarea { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; }
+  .status.rq-done { font-size: 14px; line-height: 1.5; margin: 0; color: var(--ink); background: var(--good-bg); border: 1px solid var(--good); border-radius: 10px; padding: 12px 14px; }
+  .rq-intro { margin: 0 0 14px; font-size: 13px; color: var(--ink-2); line-height: 1.5; }
   .invoice-modal-overlay {
     position: fixed; inset: 0; background: rgba(16,24,40,.5); display: flex; align-items: center;
     justify-content: center; padding: 24px; z-index: 50; overflow-y: auto;
@@ -832,6 +839,45 @@
     <div class="invoice-modal-actions">
       <button type="button" class="minibtn" id="invoiceModalCloseBtn" data-i18n="btn_close">Close</button>
       <button type="button" class="minibtn good" id="invoiceSendBtn" data-i18n="btn_send_invoice">Send Invoice</button>
+    </div>
+  </div>
+</div>
+
+<div class="invoice-modal-overlay" id="rqModal" hidden>
+  <div class="invoice-modal" style="max-width:520px;">
+    <div class="invoice-modal-bar">
+      <span data-i18n="rq_title">Need a change?</span>
+      <button type="button" class="invoice-modal-close" id="rqCloseX" aria-label="Close">&times;</button>
+    </div>
+    <div class="invoice-modal-body">
+      <p class="rq-intro" data-i18n="rq_intro"></p>
+      <div class="rq-field"><label for="rqWhat" data-i18n="rq_what">What should change?</label>
+        <select id="rqWhat">
+          <option value="" data-i18n="rq_choose">Select…</option>
+          <option value="time" data-i18n="rq_w_time">Pickup time</option>
+          <option value="price" data-i18n="rq_w_price">Price</option>
+          <option value="pickup" data-i18n="rq_w_pickup">Pickup address</option>
+          <option value="dropoff" data-i18n="rq_w_dropoff">Drop-off address</option>
+          <option value="vehicle" data-i18n="rq_w_vehicle">Vehicle type</option>
+          <option value="other" data-i18n="rq_w_other">Other</option>
+        </select></div>
+      <div class="rq-field"><label for="rqReason" data-i18n="rq_reason">Reason</label>
+        <select id="rqReason">
+          <option value="" data-i18n="rq_choose">Select…</option>
+          <option value="no_vehicle" data-i18n="rq_r_no_vehicle">No suitable vehicle available</option>
+          <option value="no_driver" data-i18n="rq_r_no_driver">No driver available</option>
+          <option value="time_conflict" data-i18n="rq_r_time_conflict">Conflicts with another trip</option>
+          <option value="price_low" data-i18n="rq_r_price_low">Price is too low for this route</option>
+          <option value="route_issue" data-i18n="rq_r_route_issue">Address or route problem</option>
+          <option value="other" data-i18n="rq_r_other">Other</option>
+        </select></div>
+      <div class="rq-field"><label for="rqComment" data-i18n="rq_comment">Details</label>
+        <textarea id="rqComment" rows="3" maxlength="500" data-i18n-placeholder="rq_comment_ph" placeholder="e.g. A pickup at 14:30 would work for us"></textarea></div>
+      <p class="status" id="rqStatus"></p>
+    </div>
+    <div class="invoice-modal-actions">
+      <button type="button" class="minibtn" id="rqCancel" data-i18n="rq_cancel">Cancel</button>
+      <button type="button" class="minibtn good" id="rqSend" data-i18n="rq_send">Send to dispatcher</button>
     </div>
   </div>
 </div>

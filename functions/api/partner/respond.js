@@ -1,5 +1,6 @@
 import { getPartnerId } from "../../_lib/auth.js";
 import { notifySheet } from "../../_lib/sheet-sync.js";
+import { computeTrial } from "../../_lib/trial.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -21,6 +22,14 @@ export async function onRequestPost(context) {
     }
     if (order.status !== "offered") {
       return Response.json({ error: "already_responded", status: order.status }, { status: 409 });
+    }
+
+    // From the very first order until the 30-day trial is over a partner can't decline; they ask for a change instead
+    // (/api/partner/order-request). Enforced here, not only by hiding the button.
+    if (action === "decline") {
+      const partner = await env.DB.prepare("SELECT trial_started_at, trial_simulate_ended FROM partners WHERE id = ?").bind(partnerId).first();
+      const trial = computeTrial(partner);
+      if (!trial.ended) return Response.json({ error: "decline_not_allowed_in_trial" }, { status: 403 });
     }
 
     const newStatus = action === "accept" ? "accepted" : "declined";

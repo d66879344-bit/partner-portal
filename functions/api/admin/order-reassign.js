@@ -1,5 +1,6 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { notifyPartners } from "../../_lib/whatsapp.js";
+import { ensureChangeRequestColumn } from "../../_lib/change-request.js";
 
 // Reassigns a declined/cancelled order to a different (active) partner, optionally
 // tweaking a few fields along the way, without recreating the order from scratch.
@@ -34,7 +35,8 @@ export async function onRequestPost(context) {
     const currency = (body.currency || "").toString().trim().slice(0, 10);
     const signText = body.signText !== undefined ? (body.signText || "").toString().trim().slice(0, 200) : null;
 
-    const sets = ["partner_id = ?", "status = 'offered'", "trip_stage = NULL", "responded_at = NULL", "driver_id = NULL", "vehicle_id = NULL"];
+    await ensureChangeRequestColumn(env.DB);
+    const sets = ["partner_id = ?", "status = 'offered'", "trip_stage = NULL", "responded_at = NULL", "driver_id = NULL", "vehicle_id = NULL", "change_request = NULL"];
     const vals = [partnerId];
     if (pickup) { sets.push("pickup = ?"); vals.push(pickup); }
     if (dropoff) { sets.push("dropoff = ?"); vals.push(dropoff); }

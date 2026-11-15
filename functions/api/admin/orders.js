@@ -1,6 +1,7 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { notifyPartners } from "../../_lib/whatsapp.js";
 import { ensureFlightColumns, computePickupManual } from "../../_lib/flight-track.js";
+import { ensureChangeRequestColumn, parseChangeRequest } from "../../_lib/change-request.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -26,10 +27,11 @@ export async function onRequestGet(context) {
      ORDER BY o.order_date DESC, o.order_time DESC`;
 
   const FLIGHT_FIELDS =
-    `o.flight_buffer_minutes, o.pickup_manual, o.flight_status, o.flight_checked_at, o.flight_auto_note`;
+    `o.flight_buffer_minutes, o.pickup_manual, o.flight_status, o.flight_checked_at, o.flight_auto_note, o.change_request`;
   let results;
   try {
     await ensureFlightColumns(env.DB);
+    await ensureChangeRequestColumn(env.DB);
     ({ results } = await env.DB.prepare(`SELECT o.admin_number, ${FLIGHT_FIELDS}, ${BASE_FIELDS} ${FROM_CLAUSE}`).all());
   } catch (e0) {
     try {
@@ -52,6 +54,7 @@ export async function onRequestGet(context) {
     bufferMinutes: o.buffer_minutes,
     flightBufferMinutes: o.flight_buffer_minutes != null ? o.flight_buffer_minutes : null,
     pickupManual: Number(o.pickup_manual || 0) === 1,
+    changeRequest: parseChangeRequest(o.change_request),
     flightStatus: o.flight_status || null,
     flightCheckedAt: o.flight_checked_at || null,
     flightAutoNote: o.flight_auto_note || null,
