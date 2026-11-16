@@ -942,7 +942,7 @@
       return '<button type="button" class="tab" data-op-country="' + esc(code) + '" aria-pressed="' + (code === opCountry ? "true" : "false") + '">' + esc(byCountry[code].name) + "</button>";
     }).join("");
     $("opPartner").innerHTML = list.length
-      ? list.map(function (p) { return '<option value="' + p.id + '"' + (p.id === o.partnerId ? " selected" : "") + ">" + esc(p.companyName) + "</option>"; }).join("")
+      ? list.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
       : '<option value="">No active partners yet</option>';
     if (chosen) $("opPartner").value = String(chosen);
     if (!orderNumberManual) regenerateOrderNumberForSelectedPartner();
@@ -1886,7 +1886,7 @@
     if (CLOSED_STATUSES.indexOf(o.status) !== -1) {
       var activePartners = partners.filter(function (p) { return p.status === "active"; });
       var partnerOpts = activePartners.length
-        ? activePartners.map(function (p) { return '<option value="' + p.id + '">' + esc(p.companyName) + "</option>"; }).join("")
+        ? activePartners.map(function (p) { return '<option value="' + p.id + '"' + (p.id === o.partnerId ? " selected" : "") + ">" + esc(p.companyName) + "</option>"; }).join("")
         : '<option value="">No active partners</option>';
       reassignBlock =
         '<details class="block">' +
