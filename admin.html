@@ -68,6 +68,12 @@
   .stat-value { font-size: 18px; font-weight: 700; margin-top: 0; order: 1; flex: none; }
   @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
   @media (max-width: 560px) { .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  .stat-grid.six { grid-template-columns: repeat(6, minmax(0,1fr)); }
+  @media (max-width: 1100px) { .stat-grid.six { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+  @media (max-width: 560px) { .stat-grid.six { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  .stat-card.cr-card.has { background: var(--warn-bg); border-color: var(--warn-border); }
+  .stat-card.cr-card.has .stat-label, .stat-card.cr-card.has .stat-value { color: var(--warn-ink); }
+  #orderTabs .tab .tab-count.has { background: var(--accent-warm); color: #1a1200; font-weight: 700; }
 
   /* ---------- toolbar ---------- */
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: 14px; }
@@ -252,7 +258,8 @@
     <nav class="dash-nav" id="mainTabs">
       <button type="button" class="tab" data-tab="orders" aria-pressed="true">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.3 12.2c0-.5.15-1 .45-1.4l1.7-2.5c.45-.95 1.4-1.55 2.45-1.55h4.2c1.05 0 2 .6 2.45 1.55l1.7 2.5c.3.4.45.9.45 1.4V15a1 1 0 0 1-1 1h-.6a1 1 0 0 1-1-.9l-.05-.5H6l-.05.5a1 1 0 0 1-1 .9H4.3a1 1 0 0 1-1-1v-2.8Z"/></svg>
-        Orders
+        <span>Orders</span>
+        <span class="nav-badge" id="ordersNavBadge" hidden title="Orders sent back by partners with a change request"></span>
       </button>
       <button type="button" class="tab" data-tab="create-order" aria-pressed="false">
         <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>
@@ -383,10 +390,11 @@
       </div>
 
       <div id="ordersNormalView">
-        <div class="stat-grid">
+        <div class="stat-grid six">
           <div class="card stat-card"><div class="stat-label">Not accepted</div><div class="stat-value mono" id="statOffered">0</div></div>
           <div class="card stat-card"><div class="stat-label">In progress</div><div class="stat-value mono" id="statAccepted">0</div></div>
           <div class="card stat-card"><div class="stat-label">Completed</div><div class="stat-value mono" id="statCompleted">0</div></div>
+          <div class="card stat-card cr-card" id="statChangeReqCard" title="Orders partners sent back asking for a change"><div class="stat-label">Change requested</div><div class="stat-value mono" id="statChangeReq">0</div></div>
           <div class="card stat-card"><div class="stat-label">Declined / cancelled</div><div class="stat-value mono" id="statClosed">0</div></div>
           <div class="card stat-card"><div class="stat-label">Customer no-show</div><div class="stat-value mono" id="statNoShow">0</div></div>
         </div>
@@ -397,6 +405,7 @@
           <button type="button" class="tab" data-order-tab="accepted" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M6.8 10.2l2.1 2.1 4.3-4.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>In progress <span class="tab-count" id="countAccepted"></span></button>
           <button type="button" class="tab" data-order-tab="completed" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 17V3" stroke-linecap="round"/><path d="M5 4h8l-2 3 2 3H5" stroke-linejoin="round"/></svg></span>Completed <span class="tab-count" id="countCompleted"></span></button>
           <button type="button" class="tab" data-order-tab="closed" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M7.5 7.5l5 5m0-5-5 5" stroke-linecap="round"/></svg></span>Declined / cancelled <span class="tab-count" id="countClosed"></span></button>
+          <button type="button" class="tab" data-order-tab="change_req" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 10a6 6 0 0 1 10.2-4.2L16 7.5M16 10a6 6 0 0 1-10.2 4.2L4 12.5M16 3.5v4h-4M4 16.5v-4h4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Change requested <span class="tab-count" id="countChangeReq"></span></button>
           <button type="button" class="tab" data-order-tab="no_show" aria-pressed="false"><span class="tab-ico"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10 3.5 17 16H3L10 3.5Z" stroke-linejoin="round"/><path d="M10 8.3v3.2M10 14h.01" stroke-linecap="round"/></svg></span>Customer no-show <span class="tab-count" id="countNoShow"></span></button>
         </div>
         <div class="toolbar">

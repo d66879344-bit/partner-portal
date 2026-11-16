@@ -565,18 +565,26 @@
   }
   function declineBtnHtml(o) {
     return inTrial()
-      ? '<button type="button" class="minibtn decline" data-request-change="' + o.id + '">' + esc(I18N.t("rq_btn")) + "</button>"
+      ? '<button type="button" class="minibtn decline" data-request-change="' + o.id + '" data-currency="' + esc(o.currency || "") + '">' + esc(I18N.t("rq_btn")) + "</button>"
       : '<button type="button" class="minibtn decline" data-decline="' + o.id + '">' + esc(I18N.t("btn_decline")) + "</button>";
   }
   var rqOrderId = null, rqDone = false;
+  // The form has a "what" select; the price box or the comment box shows under it.
+  function rqSync() {
+    var w = $("rqWhat").value;
+    $("rqPriceRow").style.display = w === "price" ? "" : "none";
+    $("rqCommentRow").style.display = w === "details" ? "" : "none";
+  }
   function rqShowForm(show) {
-    var parts = $("rqModal").querySelectorAll(".rq-intro, .rq-field");
-    for (var i = 0; i < parts.length; i++) parts[i].style.display = show ? "" : "none";
+    $("rqModal").querySelector(".rq-intro").style.display = show ? "" : "none";
+    $("rqWhat").closest(".rq-field").style.display = show ? "" : "none";
+    if (show) rqSync(); else { $("rqPriceRow").style.display = "none"; $("rqCommentRow").style.display = "none"; }
     $("rqSend").style.display = show ? "" : "none";
   }
-  function openRequestModal(id) {
+  function openRequestModal(id, currency) {
     rqOrderId = id; rqDone = false;
-    $("rqWhat").value = ""; $("rqReason").value = ""; $("rqComment").value = "";
+    $("rqWhat").value = ""; $("rqPrice").value = ""; $("rqComment").value = "";
+    $("rqCur").value = currency || "";
     $("rqStatus").textContent = ""; $("rqStatus").className = "status";
     $("rqSend").disabled = false;
     $("rqCancel").textContent = I18N.t("rq_cancel");
@@ -591,14 +599,20 @@
   if ($("rqModal")) {
     $("rqCloseX").addEventListener("click", closeRequestModal);
     $("rqCancel").addEventListener("click", closeRequestModal);
+    $("rqWhat").addEventListener("change", function () { $("rqStatus").textContent = ""; $("rqStatus").className = "status"; rqSync(); });
+    ["rqPrice", "rqComment"].forEach(function (id) {
+      $(id).addEventListener("input", function () { if (!rqDone) { $("rqStatus").textContent = ""; $("rqStatus").className = "status"; } });
+    });
     $("rqSend").addEventListener("click", async function () {
-      var what = $("rqWhat").value, reason = $("rqReason").value, comment = $("rqComment").value.trim();
-      if (!what || !reason || !comment) {
+      var what = $("rqWhat").value, comment = $("rqComment").value.trim();
+      var price = $("rqPrice").value.trim().replace(",", ".");
+      var bad = !what || (what === "price" && !/^\d+(\.\d{1,2})?$/.test(price)) || (what === "details" && !comment);
+      if (bad) {
         $("rqStatus").textContent = I18N.t("rq_need"); $("rqStatus").className = "status err"; return;
       }
       $("rqSend").disabled = true;
       try {
-        await api("/api/partner/order-request", { method: "POST", json: true, body: JSON.stringify({ id: rqOrderId, what: what, reason: reason, comment: comment }) });
+        await api("/api/partner/order-request", { method: "POST", json: true, body: JSON.stringify(what === "price" ? { id: rqOrderId, what: what, price: price } : { id: rqOrderId, what: what, comment: comment }) });
         rqDone = true;
         rqShowForm(false);
         $("rqStatus").textContent = I18N.t("rq_sent"); $("rqStatus").className = "status ok rq-done";
@@ -611,7 +625,7 @@
   }
   document.addEventListener("click", function (e) {
     var rq = e.target.closest ? e.target.closest("[data-request-change]") : null;
-    if (rq) { e.stopPropagation(); openRequestModal(Number(rq.getAttribute("data-request-change"))); }
+    if (rq) { e.stopPropagation(); openRequestModal(Number(rq.getAttribute("data-request-change")), rq.getAttribute("data-currency")); }
   });
 
   // Shared by the Orders table and the Today table — same row shape either
@@ -667,7 +681,7 @@
       return;
     }
     var rqb = e.target.closest("[data-request-change]");
-    if (rqb) { e.stopPropagation(); openRequestModal(Number(rqb.getAttribute("data-request-change"))); return; }
+    if (rqb) { e.stopPropagation(); openRequestModal(Number(rqb.getAttribute("data-request-change")), rqb.getAttribute("data-currency"));  return; }
     var open = e.target.closest("[data-order-open]");
     if (open) openOrderDetail(Number(open.getAttribute("data-order-open")));
   }

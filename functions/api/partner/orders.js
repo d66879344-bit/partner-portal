@@ -1,5 +1,6 @@
 import { getPartnerId } from "../../_lib/auth.js";
-import { ensureCompletedColumn, contactsLocked } from "../../_lib/contact-lock.js";
+import { ensureCompletedColumn } from "../../_lib/contact-lock.js";
+import { getHidePassengerData, passengerDataHidden } from "../../_lib/partner-privacy.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -8,6 +9,7 @@ export async function onRequestGet(context) {
   if (!env.DB) return Response.json({ error: "database_not_configured" }, { status: 500 });
 
   await ensureCompletedColumn(env.DB);
+  const hideFlag = await getHidePassengerData(env.DB, partnerId);
   const { results } = await env.DB.prepare(
     `SELECT o.id, o.order_number, o.pickup, o.dropoff, o.flight_number, o.flight_time, o.buffer_minutes,
             o.order_date, o.order_time, o.vehicle_type, o.vehicles_needed,
@@ -25,10 +27,9 @@ export async function onRequestGet(context) {
     "SELECT COUNT(*) AS n FROM orders WHERE partner_id = ? AND status IN ('declined', 'cancelled')"
   ).bind(partnerId).first();
 
-  const now = Date.now();
   const orders = (results || []).map((o) => {
-    // 24 h after completion the passenger's contacts are no longer sent to the partner.
-    const hidden = contactsLocked(o, now);
+    // When the admin has switched it on for this partner, completed trips no longer carry the passenger's contacts.
+    const hidden = passengerDataHidden(hideFlag, o);
     return {
     id: o.id,
     orderNumber: o.order_number,

@@ -854,25 +854,13 @@
       <div class="rq-field"><label for="rqWhat" data-i18n="rq_what">What should change?</label>
         <select id="rqWhat">
           <option value="" data-i18n="rq_choose">Select…</option>
-          <option value="time" data-i18n="rq_w_time">Pickup time</option>
           <option value="price" data-i18n="rq_w_price">Price</option>
-          <option value="pickup" data-i18n="rq_w_pickup">Pickup address</option>
-          <option value="dropoff" data-i18n="rq_w_dropoff">Drop-off address</option>
-          <option value="vehicle" data-i18n="rq_w_vehicle">Vehicle type</option>
-          <option value="other" data-i18n="rq_w_other">Other</option>
+          <option value="details" data-i18n="rq_w_details">Clarify details</option>
         </select></div>
-      <div class="rq-field"><label for="rqReason" data-i18n="rq_reason">Reason</label>
-        <select id="rqReason">
-          <option value="" data-i18n="rq_choose">Select…</option>
-          <option value="no_vehicle" data-i18n="rq_r_no_vehicle">No suitable vehicle available</option>
-          <option value="no_driver" data-i18n="rq_r_no_driver">No driver available</option>
-          <option value="time_conflict" data-i18n="rq_r_time_conflict">Conflicts with another trip</option>
-          <option value="price_low" data-i18n="rq_r_price_low">Price is too low for this route</option>
-          <option value="route_issue" data-i18n="rq_r_route_issue">Address or route problem</option>
-          <option value="other" data-i18n="rq_r_other">Other</option>
-        </select></div>
-      <div class="rq-field"><label for="rqComment" data-i18n="rq_comment">Details</label>
-        <textarea id="rqComment" rows="3" maxlength="500" data-i18n-placeholder="rq_comment_ph" placeholder="e.g. A pickup at 14:30 would work for us"></textarea></div>
+      <div class="rq-field" id="rqPriceRow" style="display:none"><label for="rqPrice" data-i18n="rq_price">Price you can accept</label>
+        <div style="display:flex;gap:8px;"><input type="text" id="rqPrice" inputmode="decimal" maxlength="10" autocomplete="off" placeholder="e.g. 280" style="flex:1;min-width:0;"><input type="text" id="rqCur" disabled style="width:86px;text-align:center;" aria-label="Currency"></div></div>
+      <div class="rq-field" id="rqCommentRow" style="display:none"><label for="rqComment" data-i18n="rq_comment">Details</label>
+        <textarea id="rqComment" rows="3" maxlength="500" data-i18n-placeholder="rq_comment_ph" placeholder="What needs to be clarified?"></textarea></div>
       <p class="status" id="rqStatus"></p>
     </div>
     <div class="invoice-modal-actions">

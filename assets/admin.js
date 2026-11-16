@@ -505,6 +505,13 @@
           "</div>"
         : "") +
       "</div>" +
+      '<div class="block"><div class="block-title">Passenger data</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+      '<label class="toggle-switch" style="flex:none;margin-top:2px;"><input type="checkbox" data-hide-pax="' + p.id + '"' + (p.hidePassengerData ? " checked" : "") + '><span class="slider"></span></label>' +
+      '<div><div style="font-weight:600;">Hide passenger data in completed trips</div>' +
+      '<div style="font-size:12.5px;color:var(--ink-2);margin-top:2px;max-width:60ch;">Name, phone and notes are hidden from this partner in all completed trips, including ones completed later. Trips that are still open stay visible. Turn it off to show the data again.</div>' +
+      '<div class="status" id="hidePaxStatus-' + p.id + '" style="margin:6px 0 0;"></div></div>' +
+      "</div></div>" +
       '<div class="block"><div class="block-title">Contract</div>' +
       (d.contract.documents.length ? docList(d.contract.documents) : '<p class="docrow" style="color:var(--ink-2);">Not uploaded yet.</p>') +
       (d.contract.documents.length && !p.contractConfirmExempt
@@ -858,6 +865,24 @@
   });
 
   $("partnerDetailView").addEventListener("change", async function (e) {
+    var paxToggle = e.target.closest("[data-hide-pax]");
+    if (paxToggle) {
+      var hid = Number(paxToggle.getAttribute("data-hide-pax"));
+      var hon = paxToggle.checked;
+      var hst = $("hidePaxStatus-" + hid);
+      try {
+        await api("/api/admin/partner-privacy", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: hid, on: hon })
+        });
+        if (detailCache[hid]) detailCache[hid].partner.hidePassengerData = hon;
+        if (hst) { hst.textContent = hon ? "On: this partner no longer sees passenger data in completed trips." : "Off: this partner sees passenger data again."; hst.className = "status ok"; }
+      } catch (err) {
+        paxToggle.checked = !hon;
+        if (hst) { hst.textContent = "Could not save. Try again."; hst.className = "status err"; }
+      }
+      return;
+    }
     var toggle = e.target.closest("[data-trial-simulate]");
     if (!toggle) return;
     var tpid = Number(toggle.getAttribute("data-trial-simulate"));
@@ -1441,6 +1466,7 @@
     accepted: "Nothing in progress right now.",
     completed: "No completed orders yet.",
     closed: "No declined or cancelled orders.",
+    change_req: "No change requests from partners right now.",
     no_show: "No customer no-show reports right now.",
   };
   function pad2a(n) { return (n < 10 ? "0" : "") + n; }
@@ -1448,6 +1474,9 @@
     var d = new Date();
     return d.getFullYear() + "-" + pad2a(d.getMonth() + 1) + "-" + pad2a(d.getDate());
   }
+
+  // A partner sent the order back with a change request and we haven't re-offered it yet.
+  function isChangeRequested(o) { return o.status === "declined" && !!o.changeRequest; }
 
   function updateOrderTabCounts() {
     var today = todayDateStr();
@@ -1458,6 +1487,13 @@
     var cCompleted = orders.filter(function (o) { return o.status === "completed"; }).length;
     var cClosed = orders.filter(function (o) { return CLOSED_STATUSES.indexOf(o.status) !== -1; }).length;
     var cNoShow = orders.filter(function (o) { return o.status === "no_show"; }).length;
+    var cChange = orders.filter(isChangeRequested).length;
+    $("countChangeReq").textContent = cChange || "";
+    $("countChangeReq").classList.toggle("has", cChange > 0);
+    $("statChangeReq").textContent = cChange;
+    $("statChangeReqCard").classList.toggle("has", cChange > 0);
+    $("ordersNavBadge").textContent = cChange;
+    $("ordersNavBadge").hidden = cChange === 0;
     $("countToday").textContent = cToday || "";
     $("countOffered").textContent = cOffered || "";
     $("countAccepted").textContent = cAccepted || "";
@@ -1486,7 +1522,8 @@
     } else if (orderTab === "today") {
       if (o.orderDate !== todayDateStr()) return false;
     } else {
-      var inTab = orderTab === "closed" ? CLOSED_STATUSES.indexOf(o.status) !== -1 : o.status === orderTab;
+      var inTab = orderTab === "closed" ? CLOSED_STATUSES.indexOf(o.status) !== -1
+        : orderTab === "change_req" ? isChangeRequested(o) : o.status === orderTab;
       if (!inTab) return false;
     }
     var partnerFilter = $("fOrderPartner").value;
@@ -1508,7 +1545,7 @@
     if (openOrderId === id) renderOrderDetail(id);
   }
 
-  var CR_WHAT = { time: "Pickup time", price: "Price", pickup: "Pickup address", dropoff: "Drop-off address", vehicle: "Vehicle type", other: "Other" };
+  var CR_WHAT = { details: "Clarify details", time: "Pickup time", price: "Price", pickup: "Pickup address", dropoff: "Drop-off address", vehicle: "Vehicle type", other: "Other" };
   var CR_REASON = { no_vehicle: "No suitable vehicle available", no_driver: "No driver available", time_conflict: "Conflicts with another trip", price_low: "Price is too low for this route", route_issue: "Address or route problem", other: "Other" };
   function statusBadge(o) {
     if (o.status === "accepted" && o.tripStage && STAGE_LABELS[o.tripStage]) {
@@ -1525,8 +1562,10 @@
     return '<div class="block" style="margin-top:0;margin-bottom:14px;padding:12px 14px;border:1px solid var(--warn-border);background:var(--warn-bg);border-radius:10px;color:var(--warn-ink);">' +
       '<div style="font-weight:700;margin-bottom:6px;">The partner asked for a change and sent the order back</div>' +
       '<div><strong>What to change:</strong> ' + esc(CR_WHAT[c.what] || c.what || "—") + "</div>" +
-      '<div><strong>Reason:</strong> ' + esc(CR_REASON[c.reason] || c.reason || "—") + "</div>" +
-      '<div><strong>Details:</strong> ' + esc(c.comment || "—") + "</div>" +
+      (c.price ? '<div><strong>Partner\'s price:</strong> ' + esc(c.price + " " + (c.currency || o.currency || "")) +
+        (o.price ? ' <span style="opacity:.8;">(our price: ' + esc(o.price + " " + (o.currency || "")) + ")</span>" : "") + "</div>" : "") +
+      (c.reason ? '<div><strong>Reason:</strong> ' + esc(CR_REASON[c.reason] || c.reason) + "</div>" : "") +
+      (c.comment ? '<div><strong>Details:</strong> ' + esc(c.comment) + "</div>" : "") +
       (c.at ? '<div style="margin-top:6px;font-size:12px;opacity:.8;">' + esc(fmtDate(c.at)) + "</div>" : "") +
       '<div style="margin-top:8px;font-size:12.5px;">Fix the order, then open “Reassign to another partner” below, keep the same partner selected and press “Reassign &amp; offer” to send it again.</div>' +
       "</div>";

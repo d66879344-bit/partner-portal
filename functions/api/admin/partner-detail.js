@@ -1,3 +1,4 @@
+import { getHidePassengerData } from "../../_lib/partner-privacy.js";
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { getGroupId, getPinnedInstance } from "../../_lib/whatsapp.js";
 
@@ -107,6 +108,7 @@ export async function onRequestGet(context) {
       organization: partner.organization || null,
       trialStartedAt: partner.trial_started_at || null,
       trialSimulateEnded: Number(partner.trial_simulate_ended) === 1,
+      hidePassengerData: await getHidePassengerData(env.DB, id),
       billingCompany: partner.billing_company || null,
       billingEmail: partner.billing_email || null,
       payAccountHolder: partner.pay_account_holder || "",
