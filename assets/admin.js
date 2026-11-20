@@ -1450,7 +1450,7 @@
         pendingOpenOrderId = null;
         if (orders.some(function (o) { return o.id === reopenId; })) openOrderDetail(reopenId);
       }
-      $("ordersStatus").textContent = orders.length + " order(s)";
+      $("ordersStatus").textContent = "";
       $("ordersStatus").className = "status";
     } catch (e) {
       if (silent) return;
@@ -1478,60 +1478,147 @@
   // A partner sent the order back with a change request and we haven't re-offered it yet.
   function isChangeRequested(o) { return o.status === "declined" && !!o.changeRequest; }
 
+  /* ---------- orders: filters (partner, search, trip dates) ---------- */
+  // Dates filter on the trip date (orderDate). If From is later than To they are
+  // swapped, so a range typed the wrong way round still works.
+  function dateRange() {
+    var from = $("fDateFrom").value, to = $("fDateTo").value;
+    if (from && to && from > to) { var t = from; from = to; to = t; }
+    return { from: from, to: to };
+  }
+  function searchQuery() { return $("fOrderSearch").value.trim().toLowerCase().replace(/^#/, ""); }
+  function filtersActive() {
+    var r = dateRange();
+    return !!(searchQuery() || $("fOrderPartner").value || r.from || r.to);
+  }
+  // Everything except the open tab: partner, trip dates and search text. Drafts
+  // live only in their own tab, never here. Search looks at the partner-facing
+  // order number, our admin #, the route and the partner's company name.
+  function matchesBaseFilter(o) {
+    if (o.status === "draft") return false;
+    var q = searchQuery();
+    if (q) {
+      var hay = [o.orderNumber || String(o.id), o.adminNumber, o.pickup, o.dropoff, o.companyName].filter(Boolean).join(" ").toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    var partnerFilter = $("fOrderPartner").value;
+    if (partnerFilter && String(o.partnerId) !== partnerFilter) return false;
+    var r = dateRange();
+    if (r.from && (o.orderDate || "") < r.from) return false;
+    if (r.to && (o.orderDate || "") > r.to) return false;
+    return true;
+  }
+  function matchesTab(o, tab) {
+    if (tab === "today") return o.orderDate === todayDateStr();
+    if (tab === "closed") return CLOSED_STATUSES.indexOf(o.status) !== -1;
+    if (tab === "change_req") return isChangeRequested(o);
+    return o.status === tab;
+  }
+  var TAB_LABEL = { today: "Today", offered: "Not accepted", accepted: "In progress", completed: "Completed", closed: "Declined / cancelled", change_req: "Change requested", no_show: "Customer no-show" };
+  var TAB_ORDER = ["today", "offered", "accepted", "completed", "closed", "change_req", "no_show"];
+  function tabCounts() {
+    var base = orders.filter(matchesBaseFilter), c = {};
+    TAB_ORDER.forEach(function (t) { c[t] = base.filter(function (o) { return matchesTab(o, t); }).length; });
+    return c;
+  }
+
   function updateOrderTabCounts() {
-    var today = todayDateStr();
     var cDraft = orders.filter(function (o) { return o.status === "draft"; }).length;
-    var cToday = orders.filter(function (o) { return o.orderDate === today && o.status !== "draft"; }).length;
-    var cOffered = orders.filter(function (o) { return o.status === "offered"; }).length;
-    var cAccepted = orders.filter(function (o) { return o.status === "accepted"; }).length;
-    var cCompleted = orders.filter(function (o) { return o.status === "completed"; }).length;
-    var cClosed = orders.filter(function (o) { return CLOSED_STATUSES.indexOf(o.status) !== -1; }).length;
-    var cNoShow = orders.filter(function (o) { return o.status === "no_show"; }).length;
-    var cChange = orders.filter(isChangeRequested).length;
-    $("countChangeReq").textContent = cChange || "";
-    $("countChangeReq").classList.toggle("has", cChange > 0);
-    $("statChangeReq").textContent = cChange;
-    $("statChangeReqCard").classList.toggle("has", cChange > 0);
-    $("ordersNavBadge").textContent = cChange;
-    $("ordersNavBadge").hidden = cChange === 0;
-    $("countToday").textContent = cToday || "";
-    $("countOffered").textContent = cOffered || "";
-    $("countAccepted").textContent = cAccepted || "";
-    $("countCompleted").textContent = cCompleted || "";
-    $("countClosed").textContent = cClosed || "";
-    $("countNoShow").textContent = cNoShow || "";
-    $("statOffered").textContent = cOffered;
-    $("statAccepted").textContent = cAccepted;
-    $("statCompleted").textContent = cCompleted;
-    $("statClosed").textContent = cClosed;
-    $("statNoShow").textContent = cNoShow;
+    var c = tabCounts();
+    // Sidebar badge: always the real number waiting for us, whatever the filters say.
+    var cChangeAll = orders.filter(isChangeRequested).length;
+    $("ordersNavBadge").textContent = cChangeAll;
+    $("ordersNavBadge").hidden = cChangeAll === 0;
+    $("countChangeReq").textContent = c.change_req || "";
+    $("countChangeReq").classList.toggle("has", c.change_req > 0);
+    $("statChangeReq").textContent = c.change_req;
+    $("statChangeReqCard").classList.toggle("has", c.change_req > 0);
+    $("countToday").textContent = c.today || "";
+    $("countOffered").textContent = c.offered || "";
+    $("countAccepted").textContent = c.accepted || "";
+    $("countCompleted").textContent = c.completed || "";
+    $("countClosed").textContent = c.closed || "";
+    $("countNoShow").textContent = c.no_show || "";
+    $("statOffered").textContent = c.offered;
+    $("statAccepted").textContent = c.accepted;
+    $("statCompleted").textContent = c.completed;
+    $("statClosed").textContent = c.closed;
+    $("statNoShow").textContent = c.no_show;
     if ($("countAllOrders")) $("countAllOrders").textContent = (orders.length - cDraft) || "";
     if ($("countDrafts")) $("countDrafts").textContent = cDraft || "";
   }
 
+  // With a search text the list shows matches from every status (you are looking
+  // for one order); otherwise it shows the open tab.
   function matchesOrderFilter(o) {
-    // Drafts live only in the Drafts tab (see renderDrafts) — never in the
-    // normal Orders tabs, the Today tab, or free-text search results.
-    if (o.status === "draft") return false;
-    var q = $("fOrderSearch").value.trim().toLowerCase();
-    if (q) {
-      // Searching looks across every status, not just the open tab — matches
-      // order #, pickup/dropoff or the assigned partner's company name.
-      var hay = [o.orderNumber || String(o.id), o.pickup, o.dropoff, o.companyName].filter(Boolean).join(" ").toLowerCase();
-      if (hay.indexOf(q) === -1) return false;
-    } else if (orderTab === "today") {
-      if (o.orderDate !== todayDateStr()) return false;
+    if (!matchesBaseFilter(o)) return false;
+    return searchQuery() ? true : matchesTab(o, orderTab);
+  }
+
+  // Quick period buttons (local dates) and the "Clear filters" button.
+  function ymd(d) { return d.getFullYear() + "-" + pad2a(d.getMonth() + 1) + "-" + pad2a(d.getDate()); }
+  function quickRange(kind) {
+    var now = new Date(), d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var add = function (n) { return new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + n); };
+    if (kind === "today") return [ymd(d0), ymd(d0)];
+    if (kind === "yesterday") return [ymd(add(-1)), ymd(add(-1))];
+    if (kind === "next7") return [ymd(d0), ymd(add(6))];
+    if (kind === "last7") return [ymd(add(-6)), ymd(d0)];
+    if (kind === "month") return [ymd(new Date(d0.getFullYear(), d0.getMonth(), 1)), ymd(new Date(d0.getFullYear(), d0.getMonth() + 1, 0))];
+    return ["", ""];
+  }
+  function updateFilterUi(shown, total) {
+    var active = filtersActive();
+    // Without filters: just the number in the open tab. With a search text the
+    // list already spans every status, so one number is enough. With dates and/or
+    // a partner: the open tab's count plus the total over all statuses.
+    var dr = dateRange();
+    if (!active) {
+      $("ordersCount").textContent = shown + " order" + (shown === 1 ? "" : "s");
+    } else if (searchQuery()) {
+      $("ordersCount").textContent = "Found " + shown + " order" + (shown === 1 ? "" : "s");
     } else {
-      var inTab = orderTab === "closed" ? CLOSED_STATUSES.indexOf(o.status) !== -1
-        : orderTab === "change_req" ? isChangeRequested(o) : o.status === orderTab;
-      if (!inTab) return false;
+      var all = orders.filter(matchesBaseFilter).length;
+      $("ordersCount").innerHTML = esc(TAB_LABEL[orderTab] || "This tab") + ": <b>" + shown + "</b> &nbsp;·&nbsp; " +
+        ((dr.from || dr.to) ? "Total for the period" : "Total") + ": <b>" + all + "</b> trip" + (all === 1 ? "" : "s");
     }
-    var partnerFilter = $("fOrderPartner").value;
-    if (partnerFilter && String(o.partnerId) !== partnerFilter) return false;
-    var from = $("fDateFrom").value, to = $("fDateTo").value;
-    if (from && o.orderDate < from) return false;
-    if (to && o.orderDate > to) return false;
-    return true;
+    $("clearFilters").hidden = !active;
+    var r = { from: $("fDateFrom").value, to: $("fDateTo").value };
+    $("quickRange").querySelectorAll("[data-range]").forEach(function (b) {
+      var q = quickRange(b.getAttribute("data-range"));
+      b.setAttribute("aria-pressed", String(!!r.from && q[0] === r.from && q[1] === r.to));
+    });
+  }
+  $("quickRange").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-range]");
+    if (!b) return;
+    var q = quickRange(b.getAttribute("data-range"));
+    $("fDateFrom").value = q[0]; $("fDateTo").value = q[1];
+    ordersPage = 1; renderOrders();
+  });
+  $("clearFilters").addEventListener("click", function () {
+    $("fOrderSearch").value = ""; $("fOrderPartner").value = ""; $("fDateFrom").value = ""; $("fDateTo").value = "";
+    ordersPage = 1; renderOrders();
+  });
+  // From the empty-list hint: jump to a tab that does have matches.
+  $("ordersList").addEventListener("click", function (e) {
+    var g = e.target.closest("[data-goto-tab]");
+    if (!g) return;
+    e.stopPropagation();
+    var btn = $("orderTabs").querySelector('[data-order-tab="' + g.getAttribute("data-goto-tab") + '"]');
+    if (btn) btn.click();
+  });
+  function emptyOrdersHtml() {
+    if (!filtersActive()) return EMPTY_ORDER_MESSAGE[orderTab];
+    var c = tabCounts();
+    var others = TAB_ORDER.filter(function (t) { return t !== orderTab && c[t] > 0 && t !== "change_req"; });
+    var msg = "No orders match the filters" + (searchQuery() ? "." : " in this tab.");
+    if (others.length && !searchQuery()) {
+      msg += " Matches in other tabs: " + others.map(function (t) {
+        return '<a href="#" data-goto-tab="' + t + '" onclick="return false;">' + TAB_LABEL[t] + " (" + c[t] + ")</a>";
+      }).join(", ") + ".";
+    }
+    return msg;
   }
 
   var evidenceCache = {};
@@ -1584,8 +1671,9 @@
       var kb = (b.orderDate || "") + " " + (b.orderTime || "");
       return ka < kb ? -dir : ka > kb ? dir : 0;
     });
+    updateFilterUi(rows.length, orders.filter(function (o) { return o.status !== "draft"; }).length);
     if (!rows.length) {
-      $("ordersList").innerHTML = '<tr><td colspan="8" class="empty-cell">' + EMPTY_ORDER_MESSAGE[orderTab] + "</td></tr>";
+      $("ordersList").innerHTML = '<tr><td colspan="8" class="empty-cell">' + emptyOrdersHtml() + "</td></tr>";
       $("ordersPager").innerHTML = "";
       return;
     }
@@ -2231,8 +2319,10 @@
   wirePagerContainer("ordersPager", function () { return ordersPage; }, function (p) { ordersPage = p; }, renderOrders);
   $("fOrderSearch").addEventListener("input", function () { ordersPage = 1; renderOrders(); });
   $("fOrderPartner").addEventListener("change", function () { ordersPage = 1; renderOrders(); });
-  $("fDateFrom").addEventListener("change", function () { ordersPage = 1; renderOrders(); });
-  $("fDateTo").addEventListener("change", function () { ordersPage = 1; renderOrders(); });
+  ["change", "input"].forEach(function (ev) {
+    $("fDateFrom").addEventListener(ev, function () { ordersPage = 1; renderOrders(); });
+    $("fDateTo").addEventListener(ev, function () { ordersPage = 1; renderOrders(); });
+  });
   $("fSort").addEventListener("change", function () { ordersPage = 1; renderOrders(); });
 
   /* ---------- gate ---------- */
