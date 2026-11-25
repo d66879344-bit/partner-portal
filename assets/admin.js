@@ -90,6 +90,11 @@
   $("mainTabs").querySelectorAll(".tab").forEach(function (tab) {
     tab.addEventListener("click", function () {
       $("mainTabs").querySelectorAll(".tab").forEach(function (t) { t.setAttribute("aria-pressed", String(t === tab)); });
+      // Every sidebar tab opens its own first screen: close an open partner card or
+      // order detail and scroll to the top (so "Partners" takes you back to the list).
+      if (openId != null) closePartnerDetail();
+      if (openOrderId != null) { orderDetailReturnTab = "orders"; closeOrderDetail(); }
+      window.scrollTo(0, 0);
       document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === "panel-" + tab.getAttribute("data-tab")); });
       if (tab.getAttribute("data-tab") === "passengers" && !passengersLoaded) {
         passengersLoaded = true;
@@ -199,6 +204,7 @@
     var el = $("partnersNavBadge");
     el.textContent = n;
     el.hidden = n === 0;
+    renderPartnerCountryTabs();
   }
 
   function matchesPartnerFilter(p) {
@@ -245,9 +251,12 @@
     var byCountry = {};
     partners.forEach(function (p) {
       if (!p.country) return;
-      if (!byCountry[p.country]) byCountry[p.country] = { name: p.countryName || p.country, count: 0 };
+      if (!byCountry[p.country]) byCountry[p.country] = { name: p.countryName || p.country, count: 0, review: false };
       byCountry[p.country].count++;
+      if (p.pendingDocs > 0) byCountry[p.country].review = true;
     });
+    var anyReview = partners.some(function (p) { return p.pendingDocs > 0; });
+    var flagHtml = '<i class="tab-flag" title="Documents waiting for review"></i>';
     var codes = Object.keys(byCountry).sort(function (a, b) {
       return byCountry[a].name.localeCompare(byCountry[b].name);
     });
@@ -255,11 +264,11 @@
     // deleted) back to "All" rather than leaving the filter stuck on nothing.
     if (partnerCountryTab && !byCountry[partnerCountryTab]) partnerCountryTab = "";
 
-    var tabsHtml = '<button type="button" class="tab" data-country-tab="" aria-pressed="' + (partnerCountryTab === "" ? "true" : "false") + '">All countries <span class="tab-count">' + partners.length + "</span></button>" +
+    var tabsHtml = '<button type="button" class="tab" data-country-tab="" aria-pressed="' + (partnerCountryTab === "" ? "true" : "false") + '">All countries <span class="tab-count">' + partners.length + "</span>" + (anyReview ? flagHtml : "") + "</button>" +
       codes.map(function (code) {
         var c = byCountry[code];
         return '<button type="button" class="tab" data-country-tab="' + esc(code) + '" aria-pressed="' + (partnerCountryTab === code ? "true" : "false") + '">' +
-          esc(c.name) + ' <span class="tab-count">' + c.count + "</span></button>";
+          esc(c.name) + ' <span class="tab-count">' + c.count + "</span>" + (c.review ? flagHtml : "") + "</button>";
       }).join("");
     $("partnerCountryTabs").innerHTML = tabsHtml;
     $("partnerCountryTabs").querySelectorAll(".tab").forEach(function (tab) {
