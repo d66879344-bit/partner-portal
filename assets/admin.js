@@ -433,7 +433,9 @@
     var pendingCount = reviewDocs.filter(function (doc) { return doc.status === "pending"; }).length;
     var reviewBanner = pendingCount
       ? '<div class="review-banner"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 6v4.5M10 13.4h.01" stroke-linecap="round"/></svg>' +
-        "<span>" + pendingCount + (pendingCount === 1 ? " document" : " documents") + " waiting for review</span></div>"
+        "<span>" + pendingCount + (pendingCount === 1 ? " document" : " documents") + " waiting for review</span>" +
+        '<span class="status" data-bulk-status style="margin:0 0 0 auto;"></span>' +
+        '<button type="button" class="minibtn good" data-bulk-approve="' + p.id + '" title="Downloads every document waiting for review to your download folder and approves it">Download new &amp; approve</button></div>'
       : "";
 
     el.innerHTML = reviewBanner +
@@ -651,6 +653,89 @@
     } catch (err) {
       alert("Could not update. Try again.");
     }
+  });
+
+
+  /* ---------- Download new documents & approve them (per partner) ---------- */
+  var bulkBusy = false;
+  function safeFileName(s) {
+    return String(s || "").replace(/[\\\/:*?"<>|\u0000-\u001f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 150);
+  }
+  // Every document of this partner that is still waiting for review, with the
+  // owner (company / vehicle plate / driver name) it belongs to.
+  function collectPendingDocs(d) {
+    var out = [];
+    function add(docs, owner) {
+      (docs || []).forEach(function (doc) { if (doc.status === "pending") out.push({ doc: doc, owner: owner }); });
+    }
+    add(d.company.documents, "");
+    add(d.contract.documents, "Contract");
+    add(d.other.documents, "Other");
+    d.vehicles.forEach(function (v, i) { add(v.documents, "Vehicle " + (v.plate || (i + 1))); });
+    d.drivers.forEach(function (dr, i) { add(dr.documents, "Driver " + (dr.fullName || (i + 1))); });
+    return out;
+  }
+  // Saves a blob as a normal browser download (goes to the browser's download folder).
+  function saveBlobAs(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name; a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 15000);
+  }
+  function bulkStatus(text, isErr) {
+    var el = document.querySelector("[data-bulk-status]");
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = isErr ? "var(--crit-ink, #b42318)" : "";
+  }
+  $("partnerDetailView").addEventListener("click", async function (e) {
+    var btn = e.target.closest("[data-bulk-approve]");
+    if (!btn) return;
+    e.stopPropagation();
+    if (bulkBusy) return;
+    var pid = Number(btn.getAttribute("data-bulk-approve"));
+    var d = detailCache[pid];
+    if (!d) return;
+    var items = collectPendingDocs(d);
+    if (!items.length) { bulkStatus("Nothing to download: no documents waiting for review."); return; }
+    bulkBusy = true;
+    btn.disabled = true;
+    var company = d.partner.companyName || "Partner";
+    var done = 0, failed = [];
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i], doc = it.doc;
+      bulkStatus("Downloading " + (i + 1) + " of " + items.length + "…");
+      try {
+        var res = await fetch(downloadUrl(doc.id));
+        if (!res.ok) throw new Error("download_failed");
+        var blob = await res.blob();
+        var name = safeFileName([company, it.owner, doc.label, doc.filename || "file"].filter(Boolean).join(" - "));
+        saveBlobAs(blob, name);
+        // Approve only after the file has been received.
+        await api("/api/admin/document-status", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: doc.id, status: "approved" })
+        });
+        done++;
+      } catch (err) {
+        failed.push((doc.label || "document") + " (" + (doc.filename || "file") + ")");
+      }
+      await new Promise(function (r) { setTimeout(r, 600); });
+    }
+    bulkBusy = false;
+    await refreshDetail(pid);
+    // The detail was re-rendered, so the button/status are new elements now.
+    bulkStatus("");
+    var summary = "Downloaded and approved: " + done + (failed.length ? ". Failed (left for review): " + failed.join(", ") : ".");
+    var host = document.querySelector("#pdBody .block-title");
+    var note = document.createElement("div");
+    note.className = "row-meta";
+    note.style.cssText = "margin:0 0 12px;font-weight:600;" + (failed.length ? "color:var(--crit-ink,#b42318);" : "");
+    note.textContent = summary;
+    var body = $("pdBody");
+    if (body) body.insertBefore(note, body.firstChild);
   });
 
   function wirePagerContainer(containerId, getPage, setPage, rerender) {
