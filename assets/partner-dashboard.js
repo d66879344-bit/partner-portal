@@ -77,6 +77,14 @@
   function badge(status) {
     return '<span class="badge badge-' + esc(status) + '">' + esc(status) + "</span>";
   }
+  // A completed order that was cancelled shortly before pickup but is still paid.
+  function lateCancelTag() {
+    return '<span class="badge" style="background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-ink);">' +
+      esc(window.I18N ? I18N.t("late_cancel_badge") : "Late cancellation") + "</span>";
+  }
+  function orderBadge(o) {
+    return o.status === "completed" && o.lateCancel ? lateCancelTag() : badge(o.status);
+  }
   // Pickup/dropoff addresses are free-text, so these just hand them to Google
   // Maps as a search / directions query — no geocoding or map embed on our
   // side, just a link out.
@@ -638,7 +646,7 @@
         '<button type="button" class="minibtn accept" data-accept="' + o.id + '">' + esc(I18N.t("btn_accept")) + '</button>' +
         declineBtnHtml(o) +
         "</div>"
-      : (stageObj ? '<span class="badge badge-accepted">' + esc(stageLabel(stageObj.key)) + "</span>" : badge(o.status));
+      : (stageObj ? '<span class="badge badge-accepted">' + esc(stageLabel(stageObj.key)) + "</span>" : orderBadge(o));
   }
   function orderRowHtml(o, showDate) {
     return '<tr class="data-row" data-order-open="' + o.id + '">' +
@@ -805,6 +813,7 @@
       var tag = o.noShowReviewStatus === "confirmed"
         ? ' <span class="badge" style="background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-ink);">no-show</span>'
         : "";
+      if (o.lateCancel) tag += " " + lateCancelTag();
       return "<tr>" +
         '<td class="col-main">' + (o.orderNumber ? "#" + esc(o.orderNumber) : "#" + o.id) + "</td>" +
         "<td>" + esc(fmtDay(o.orderDate)) + "</td>" +
@@ -905,7 +914,7 @@
       var amt = o.price ? Number(o.price) : 0;
       var cur = o.currency || "";
       if (o.price) totals[cur] = (totals[cur] || 0) + amt;
-      return "<tr><td>" + esc(fmtDay(o.orderDate)) + "</td><td>" + esc(o.pickup) + " → " + esc(o.dropoff) + "</td><td>" +
+      return "<tr><td>" + esc(fmtDay(o.orderDate)) + "</td><td>" + esc(o.pickup) + " → " + esc(o.dropoff) + (o.lateCancel ? " " + lateCancelTag() : "") + "</td><td>" +
         esc(o.vehicleType || "—") + '</td><td class="num">' + (o.price ? esc(o.price) : "—") + "</td></tr>";
     }).join("");
     var totalLabel = Object.keys(totals).sort().map(function (cur) {
@@ -1010,6 +1019,7 @@
   }
 
   function stageProgressHtml(o) {
+    if (o.lateCancel) return ""; // cancelled before pickup: there is no trip progress to show
     if (o.status !== "accepted" && o.status !== "completed" && o.status !== "no_show") return "";
     var keys = STAGES.map(function (s) { return s.key; });
     var currentIndex = o.tripStage ? keys.indexOf(o.tripStage) : -1;
@@ -1105,7 +1115,11 @@
     var o = lastOrders.filter(function (x) { return x.id === id; })[0];
     if (!o) return;
     $("odTitle").textContent = "Order " + (o.orderNumber ? "#" + o.orderNumber : "#" + o.id);
-    $("odStatusBadge").innerHTML = badge(o.status);
+    $("odStatusBadge").innerHTML = orderBadge(o);
+    var lateNote = o.status === "completed" && o.lateCancel
+      ? '<div class="card" style="margin-bottom:14px;background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-ink);font-size:13.5px;font-weight:600;">' +
+        esc(I18N.t("late_cancel_note")) + "</div>"
+      : "";
 
     var tripCard = '<div class="card" style="border-left:4px solid var(--accent);">' +
       '<h2 style="margin:0 0 14px;font-size:14px;">' + esc(I18N.t("od_trip")) + "</h2>" +
@@ -1173,7 +1187,7 @@
       ? '<div class="rq-notice"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v5M10 6.2v.1"/></svg><span>' + esc(I18N.t("rq_info")) + "</span></div>"
       : "";
 
-    var body = '<div class="od-grid od-top">' + tripCard + passengerCard + "</div>" +
+    var body = lateNote + '<div class="od-grid od-top">' + tripCard + passengerCard + "</div>" +
       bottomRow + rqNotice +
       (actionBar
         ? '<div class="od-actionbar"><div style="display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap;">' + actionBar + "</div>" +

@@ -166,6 +166,9 @@ export function flightTimeChangedMessage(orderNumber) {
 export function orderCancelledMessage(orderNumber) {
   return "⚠️ Dear Partners, order [#" + orderNumber + "] has been cancelled. Please check your personal account.";
 }
+export function lateCancelledMessage(orderNumber) {
+  return "⚠️ Dear Partners, order [#" + orderNumber + "] was cancelled by the customer less than 12 hours before pickup. As per our terms, it is counted as completed and will be included in your invoice. Please check your personal account.";
+}
 export function noShowDecisionMessage(orderNumber) {
   return "ℹ️ Dear Partners, a decision has been made on the no-show for order [#" + orderNumber + "]. Please check your personal account.";
 }

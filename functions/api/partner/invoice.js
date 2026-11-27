@@ -1,6 +1,7 @@
 import { getPartnerId } from "../../_lib/auth.js";
 import { computeTrial } from "../../_lib/trial.js";
 import { sendEmail } from "../../_lib/email.js";
+import { ensureLateCancelColumn } from "../../_lib/late-cancel.js";
 
 function escHtml(s) {
   return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -30,7 +31,7 @@ function buildInvoiceEmailHtml(invoice, companyName, trips) {
     return (
       "<tr>" +
       '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;">' + escHtml(fmtDay(o.order_date)) + "</td>" +
-      '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;">' + escHtml(o.pickup) + " &rarr; " + escHtml(o.dropoff) + "</td>" +
+      '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;">' + escHtml(o.pickup) + " &rarr; " + escHtml(o.dropoff) + (o.late_cancel ? ' <span style="color:#7a5a00;">(cancelled less than 12 h before pickup)</span>' : "") + "</td>" +
       '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;">' + escHtml(o.vehicle_type || "—") + "</td>" +
       '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:right;">' + (o.price ? escHtml(o.price) + " " + escHtml(cur) : "—") + "</td>" +
       "</tr>"
@@ -166,8 +167,9 @@ export async function onRequestPost(context) {
 
       const partner = await env.DB.prepare("SELECT company_name, email FROM partners WHERE id = ?").bind(partnerId).first();
 
+      const lateCancelOk = await ensureLateCancelColumn(env.DB);
       const { results: trips } = await env.DB.prepare(
-        `SELECT order_date, pickup, dropoff, vehicle_type, price, currency FROM orders
+        `SELECT order_date, pickup, dropoff, vehicle_type, price, currency${lateCancelOk ? ", late_cancel" : ""} FROM orders
          WHERE partner_id = ? AND status = 'completed' AND order_date >= ? AND order_date <= ?
          ORDER BY order_date ASC`
       ).bind(partnerId, invoice.period_start, invoice.period_end).all();

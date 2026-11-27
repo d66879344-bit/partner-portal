@@ -1,6 +1,8 @@
 import { checkAdminSecret } from "../../_lib/auth.js";
 import { startTrialIfNeeded } from "../../_lib/trial.js";
-import { notifyText, orderCancelledMessage } from "../../_lib/whatsapp.js";
+import { notifyText, orderCancelledMessage, lateCancelledMessage } from "../../_lib/whatsapp.js";
+import { ensureCompletedColumn, nowIso } from "../../_lib/contact-lock.js";
+import { ensureLateCancelColumn } from "../../_lib/late-cancel.js";
 
 const VALID = ["offered", "accepted", "declined", "completed", "cancelled"];
 
@@ -17,11 +19,27 @@ export async function onRequestPost(context) {
     const order = await env.DB.prepare("SELECT id, partner_id, status, order_number FROM orders WHERE id = ?").bind(id).first();
     if (!order) return Response.json({ error: "not_found" }, { status: 404 });
 
+    // "Cancel & count as completed": the customer cancelled shortly before pickup but the
+    // partner is still paid. Only an order the partner has accepted can be treated this way.
+    // It becomes a normal completed order carrying the late_cancel marker.
+    if (body.lateCancel) {
+      if (order.status !== "accepted") return Response.json({ error: "not_accepted" }, { status: 409 });
+      await ensureCompletedColumn(env.DB);
+      if (!(await ensureLateCancelColumn(env.DB))) return Response.json({ error: "server_error" }, { status: 500 });
+      await env.DB.prepare("UPDATE orders SET status = 'completed', late_cancel = 1, completed_at = ? WHERE id = ?")
+        .bind(nowIso(), id).run();
+      await startTrialIfNeeded(env, order.partner_id);
+      notifyText(context, order.partner_id, lateCancelledMessage(order.order_number || order.id));
+      return Response.json({ ok: true });
+    }
+
     // Status change (optional — the same endpoint also handles a driver/vehicle reassignment only).
     if (body.status !== undefined) {
       const status = (body.status || "").toString();
       if (VALID.indexOf(status) === -1) return Response.json({ error: "invalid_request" }, { status: 400 });
       await env.DB.prepare("UPDATE orders SET status = ? WHERE id = ?").bind(status, id).run();
+      // Moving an order to another status removes the "late cancellation" marker.
+      try { await env.DB.prepare("UPDATE orders SET late_cancel = 0 WHERE id = ? AND late_cancel = 1").bind(id).run(); } catch (e) {}
       if (status === "completed") await startTrialIfNeeded(env, order.partner_id);
       // WhatsApp: tell the partner's group when an order they could see is cancelled.
       if (status === "cancelled" && order.status !== "cancelled" && order.status !== "draft") {

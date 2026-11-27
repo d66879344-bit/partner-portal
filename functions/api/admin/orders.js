@@ -2,6 +2,7 @@ import { checkAdminSecret } from "../../_lib/auth.js";
 import { notifyPartners } from "../../_lib/whatsapp.js";
 import { ensureFlightColumns, computePickupManual } from "../../_lib/flight-track.js";
 import { ensureChangeRequestColumn, parseChangeRequest } from "../../_lib/change-request.js";
+import { ensureLateCancelColumn } from "../../_lib/late-cancel.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -26,8 +27,10 @@ export async function onRequestGet(context) {
      WHERE o.hidden_from_admin = 0
      ORDER BY o.order_date DESC, o.order_time DESC`;
 
+  const lateCancelOk = await ensureLateCancelColumn(env.DB);
   const FLIGHT_FIELDS =
-    `o.flight_buffer_minutes, o.pickup_manual, o.flight_status, o.flight_checked_at, o.flight_auto_note, o.change_request`;
+    `o.flight_buffer_minutes, o.pickup_manual, o.flight_status, o.flight_checked_at, o.flight_auto_note, o.change_request` +
+    (lateCancelOk ? ", o.late_cancel" : "");
   let results;
   try {
     await ensureFlightColumns(env.DB);
@@ -80,6 +83,7 @@ export async function onRequestGet(context) {
     noShowType: o.no_show_type,
     noShowAt: o.no_show_at,
     noShowReviewStatus: o.no_show_review_status,
+    lateCancel: !!o.late_cancel,
     createdAt: o.created_at,
     respondedAt: o.responded_at,
   }));

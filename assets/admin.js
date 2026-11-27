@@ -669,7 +669,7 @@
       (docs || []).forEach(function (doc) { if (doc.status === "pending") out.push({ doc: doc, owner: owner }); });
     }
     add(d.company.documents, "");
-    add(d.contract.documents, "Contract");
+    // Contract documents are not downloaded here (review them separately).
     add(d.other.documents, "Other");
     d.vehicles.forEach(function (v, i) { add(v.documents, "Vehicle " + (v.plate || (i + 1))); });
     d.drivers.forEach(function (dr, i) { add(dr.documents, "Driver " + (dr.fullName || (i + 1))); });
@@ -1560,6 +1560,7 @@
     accepted: "Nothing in progress right now.",
     completed: "No completed orders yet.",
     closed: "No declined or cancelled orders.",
+    late_cancel: "No late cancellations yet.",
     change_req: "No change requests from partners right now.",
     no_show: "No customer no-show reports right now.",
   };
@@ -1605,11 +1606,12 @@
   function matchesTab(o, tab) {
     if (tab === "today") return o.orderDate === todayDateStr();
     if (tab === "closed") return CLOSED_STATUSES.indexOf(o.status) !== -1;
+    if (tab === "late_cancel") return !!o.lateCancel;
     if (tab === "change_req") return isChangeRequested(o);
     return o.status === tab;
   }
-  var TAB_LABEL = { today: "Today", offered: "Not accepted", accepted: "In progress", completed: "Completed", closed: "Declined / cancelled", change_req: "Change requested", no_show: "Customer no-show" };
-  var TAB_ORDER = ["today", "offered", "accepted", "completed", "closed", "change_req", "no_show"];
+  var TAB_LABEL = { today: "Today", offered: "Not accepted", accepted: "In progress", completed: "Completed", closed: "Declined / cancelled", late_cancel: "Late cancellations", change_req: "Change requested", no_show: "Customer no-show" };
+  var TAB_ORDER = ["today", "offered", "accepted", "completed", "closed", "late_cancel", "change_req", "no_show"];
   function tabCounts() {
     var base = orders.filter(matchesBaseFilter), c = {};
     TAB_ORDER.forEach(function (t) { c[t] = base.filter(function (o) { return matchesTab(o, t); }).length; });
@@ -1632,6 +1634,8 @@
     $("countAccepted").textContent = c.accepted || "";
     $("countCompleted").textContent = c.completed || "";
     $("countClosed").textContent = c.closed || "";
+    $("countLateCancel").textContent = c.late_cancel || "";
+    $("countLateCancel").classList.toggle("has", c.late_cancel > 0);
     $("countNoShow").textContent = c.no_show || "";
     $("statOffered").textContent = c.offered;
     $("statAccepted").textContent = c.accepted;
@@ -1731,6 +1735,9 @@
   function statusBadge(o) {
     if (o.status === "accepted" && o.tripStage && STAGE_LABELS[o.tripStage]) {
       return '<span class="badge badge-accepted">' + esc(STAGE_LABELS[o.tripStage]) + "</span>";
+    }
+    if (o.status === "completed" && o.lateCancel) {
+      return '<span class="badge badge-late" title="Cancelled less than 12 hours before pickup, counted as completed">Late cancellation</span>';
     }
     if (o.status === "declined" && o.changeRequest) {
       return '<span class="badge" style="background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-border);">Change requested</span>';
@@ -2023,7 +2030,8 @@
 
     var actions = (o.status === "accepted" || o.status === "offered")
       ? '<button type="button" class="minibtn good" data-order-complete="' + o.id + '">Mark completed</button>' +
-        '<button type="button" class="minibtn crit" data-order-cancel="' + o.id + '">Cancel</button>'
+        '<button type="button" class="minibtn crit" data-order-cancel="' + o.id + '">Cancel</button>' +
+        (o.status === "accepted" ? '<button type="button" class="minibtn late" data-order-late-cancel="' + o.id + '" title="The customer cancelled less than 12 hours before pickup, but the partner is still paid">Cancel &amp; count as completed</button>' : "")
       : "";
 
     var evidenceBlock = "";
@@ -2246,6 +2254,7 @@
     }
     var complete = e.target.closest("[data-order-complete]");
     var cancel = e.target.closest("[data-order-cancel]");
+    var lateBtn = e.target.closest("[data-order-late-cancel]");
     var del = e.target.closest("[data-order-delete]");
     var reassign = e.target.closest("[data-order-reassign]");
     var editSave = e.target.closest("[data-order-edit-save], [data-order-edit-send]");
@@ -2395,8 +2404,26 @@
       }
       return;
     }
-    if (!complete && !cancel) return;
+    if (!complete && !cancel && !lateBtn) return;
     e.stopPropagation();
+
+    if (lateBtn) {
+      var lateId = Number(lateBtn.getAttribute("data-order-late-cancel"));
+      if (!confirm("Cancel this order and count it as completed?\n\n" +
+        "- It becomes Completed with the tag \"Late cancellation\".\n" +
+        "- It is included in the partner's invoice and earnings.\n" +
+        "- The partner is told in WhatsApp that the order was cancelled.")) return;
+      try {
+        await api("/api/admin/order-status", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: lateId, lateCancel: true })
+        });
+        await loadOrders();
+      } catch (err) {
+        alert("Could not cancel the order. Only an order the partner has accepted can be counted as completed.");
+      }
+      return;
+    }
 
     try {
       var oid = Number((complete || cancel).getAttribute(complete ? "data-order-complete" : "data-order-cancel"));
